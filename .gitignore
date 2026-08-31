@@ -1,0 +1,16 @@
+# Persistent Database Data
+data/
+*.dbf
+*.mdf
+*.ldf
+*.ndf
+*.log
+*.ibd
+*.sock
+*.pid
+
+# OS / Editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
