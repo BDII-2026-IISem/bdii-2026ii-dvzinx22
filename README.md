@@ -4,9 +4,10 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC292B?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)](https://www.microsoft.com/sql-server)
+[![Oracle](https://img.shields.io/badge/Oracle-F80000?style=for-the-badge&logo=oracle&logoColor=white)](https://www.oracle.com/database/)
 
-Repositorio del proyecto e informe de laboratorio enfocado en la **instalación, configuración, trazabilidad y gestión de motores de bases de datos relacionales y no relacionales** containerizados mediante Docker sobre entorno Linux (Ubuntu / WSL2).
+Repositorio del proyecto e informe de laboratorio enfocado en la **instalación, configuración, trazabilidad y gestión de 4 motores de bases de datos relacionales** containerizados mediante Docker sobre entorno Linux (Ubuntu / WSL2).
 
 ---
 
@@ -18,7 +19,7 @@ Repositorio del proyecto e informe de laboratorio enfocado en la **instalación,
 5. [Credenciales y Puertos de Conexión](#-credenciales-y-puertos-de-conexión)
 6. [Operaciones y Pruebas en Motores](#-operaciones-y-pruebas-en-motores)
 7. [Documentación e Informes](#-documentación-e-informes)
-8. [Autores y Créditos](#-autores-y-créditos)
+8. [Autor](#-autor)
 
 ---
 
@@ -28,9 +29,10 @@ El objetivo de este proyecto es documentar la trazabilidad completa en la creaci
 
 **Capacidades abordadas:**
 * Aislamiento de entornos y configuración de volúmenes persistentes.
-* Despliegue y administración de instancias (MySQL, PostgreSQL, MongoDB, entre otros).
+* Despliegue y administración de instancias (MySQL 8.0, PostgreSQL 17, MSSQL 2022, Oracle XE 21c).
 * Ejecución de scripts DDL (definición de esquemas) y DML (manipulación y consulta de datos).
-* Pruebas de conectividad y verificación de consistencia.
+* Pruebas de conectividad local y remota (DBeaver).
+* Generación y verificación de respaldos (backups).
 
 ---
 
@@ -40,45 +42,59 @@ Asegúrate de contar con el siguiente entorno configurado:
 
 * **Sistema Operativo:** Ubuntu 22.04+ / WSL2 (Windows Subsystem for Linux).
 * **Docker Engine & CLI:** Versión 24.0 o superior.
-* **Docker Compose:** (Opcional pero recomendado).
-* **Cliente de Base de Datos (Opcional):** DBeaver, MySQL Workbench, pgAdmin o Compass.
+* **Docker Compose:** Plugin v2+.
+* **Cliente de Base de Datos:** DBeaver Community.
 
 ---
 
 ## 📂 Estructura del Repositorio
 
 ```text
-├── informe_trazabilidad_motores_bd.md   # Informe técnico detallado de la práctica
-├── docker-compose.yml                  # Orquestación de los contenedores
-├── scripts/                            # Scripts de inicialización y pruebas SQL/NoSQL
-│   ├── mysql_init.sql
-│   └── postgres_init.sql
-├── docs/                               # Diagramas, capturas y evidencias
-└── README.md                           # Documentación principal del repositorio
+├── README.md                                    # Documentación principal del repositorio
+├── .gitignore                                   # Archivos y carpetas ignorados por git
+├── services/
+│   └── motores-bd/                              # Servicios Docker Compose por motor
+│       ├── mysql/                               # Configuración y compose de MySQL 8.0
+│       ├── postgres/                            # Configuración y compose de PostgreSQL 17
+│       ├── mssql/                               # Configuración y compose de SQL Server 2022
+│       └── oracle/                              # Configuración y compose de Oracle XE 21c
+└── projects/
+    └── base de datos 2/
+        ├── informe_trazabilidad_motores_bd.md    # Informe técnico detallado de la práctica
+        └── Reguistro visual/                     # Evidencias y capturas de pantalla del paso a paso
 ```
 
 ---
 
 ## 🚀 Guía de Despliegue
 
-### 1. Iniciar los contenedores
-
-#### Opción A: Despliegue individual con Docker CLI (Ejemplo MySQL)
+### 1. Crear la red compartida de Docker
 ```bash
-sudo docker run -d \
-  --name mysql-server \
-  -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=123456 \
-  -v mysql_data:/var/lib/mysql \
-  mysql:latest
+sudo docker network create ia-lab-network
 ```
 
-#### Opción B: Despliegue con Docker Compose
+### 2. Iniciar los contenedores con Docker Compose
+Puedes levantar cada servicio desde su respectiva carpeta en `services/motores-bd/`:
+
 ```bash
-docker compose up -d
+# Levantar MySQL
+cd services/motores-bd/mysql
+sudo docker compose up -d
+
+# Levantar PostgreSQL
+cd ../postgres
+sudo docker compose up -d
+
+# Levantar Microsoft SQL Server
+cd ../mssql
+sudo docker compose up -d
+
+# Levantar Oracle XE
+cd ../oracle
+sudo docker compose up -d
 ```
 
-### 2. Verificar el estado de los servicios
+### 3. Verificar el estado de los servicios
 ```bash
 sudo docker ps
 ```
@@ -89,9 +105,11 @@ sudo docker ps
 
 | Motor | Contenedor | Puerto Host | Usuario | Contraseña | Base de Datos por Defecto |
 | :--- | :--- | :---: | :---: | :---: | :--- |
-| **MySQL** | `mysql-server` | `3306` | `root` | `123456` | `bd_clase1` |
-| **PostgreSQL** | `postgres-server` | `5432` | `postgres` | `123456` | `postgres` |
-| **MongoDB** | `mongo-server` | `27017` | `root` | `123456` | `admin` |
+| **MySQL 8.0** | `mysql-server` | `3306` | `root` | `123456` | `bd_clase1` / `tecnogua` |
+| **PostgreSQL 17** | `postgres-server` | `5432` | `postgres` | `123456` | `postgres` / `tecnogua` |
+| **Microsoft SQL Server 2022** | `mssql-server` | `1433` | `sa` | `Abc123456**` | `master` / `tecnogua` |
+| **Oracle Database 21c XE** | `oracle-server` | `1521` | `system` / `SYS` | `MiNiCo57**` | `tecnogua` / `XEPDB1` |
+| **MongoDB** *(Opcional)* | `mongo-server` | `27017` | `root` | `123456` | `admin` |
 
 ---
 
@@ -101,26 +119,22 @@ sudo docker ps
 ```bash
 sudo docker exec -it mysql-server mysql -u root -p
 ```
-*(Ingresar la contraseña: `123456`)*
+*(Contraseña: `123456`)*
 
-#### Comandos SQL de verificación:
-```sql
--- Creación de la base de datos
-CREATE DATABASE bd_clase1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-SHOW DATABASES;
-USE bd_clase1;
+### Acceso a la consola de PostgreSQL
+```bash
+sudo docker exec -it postgres-server psql -U postgres -d tecnogua
+```
+*(Contraseña: `123456`)*
 
--- Creación de tabla de prueba
-CREATE TABLE estudiante (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  nombre VARCHAR(100) NOT NULL,
-  email VARCHAR(100) UNIQUE,
-  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### Acceso a la consola de Microsoft SQL Server
+```bash
+sudo docker exec -it mssql-server /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Abc123456**" -C
+```
 
--- Inserción y consulta
-INSERT INTO estudiante (nombre, email) VALUES ('Juan Perez', 'juan.perez@example.com');
-SELECT * FROM estudiante;
+### Acceso a la consola de Oracle Database
+```bash
+sudo docker exec -it oracle-server sqlplus system/MiNiCo57**@//localhost:1521/tecnogua
 ```
 
 ---
@@ -128,11 +142,13 @@ SELECT * FROM estudiante;
 ## 📑 Documentación e Informes
 
 Para consultar el paso a paso detallado con todas las evidencias, comandos ejecutados y resultados de las pruebas, revisa el archivo principal:
-👉 **[informe_trazabilidad_motores_bd.md](./informe_trazabilidad_motores_bd.md)**
+👉 **[informe_trazabilidad_motores_bd.md](projects/base%20de%20datos%202/informe_trazabilidad_motores_bd.md)**
 
 ---
 
 ## 👤 Autor
 
-* **Desarrollador / Estudiante:** Proyecto de Laboratorio de Bases de Datos
+* **Estudiante:** Moises Bolivar
+* **Programa:** Ingeniería de Sistemas - Universidad de La Guajira
+* **Docente:** Ing. Jaider Quintero M.
 * **Fecha:** 2026
