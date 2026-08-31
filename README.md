@@ -109,7 +109,6 @@ sudo docker ps
 | **PostgreSQL 17** | `postgres-server` | `5432` | `postgres` | `123456` | `postgres` / `tecnogua` |
 | **Microsoft SQL Server 2022** | `mssql-server` | `1433` | `sa` | `Abc123456**` | `master` / `tecnogua` |
 | **Oracle Database 21c XE** | `oracle-server` | `1521` | `system` / `SYS` | `MiNiCo57**` | `tecnogua` / `XEPDB1` |
-| **MongoDB** *(Opcional)* | `mongo-server` | `27017` | `root` | `123456` | `admin` |
 
 ---
 
