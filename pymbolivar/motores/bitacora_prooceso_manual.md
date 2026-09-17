@@ -1671,6 +1671,25 @@ Para la implementación de la base de datos en **Oracle Database 21c Express Edi
 
 ## 6.2 Creación de la tabla customers
 
+Se crea la tabla `customers`, destinada a: Almacena la información de los clientes registrados, datos de contacto y saldo acumulado en el programa de fidelización de la cafetería.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `code` | VARCHAR2(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR2(100) | NOT NULL |
+| `last_name` | VARCHAR2(100) | NOT NULL |
+| `email` | VARCHAR2(150) | NOT NULL, UNIQUE |
+| `phone` | VARCHAR2(30) |  |
+| `current_points` | NUMBER(10) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active', CHECK (status IN ('active', 'inactive')) |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ```sql
 CREATE TABLE customers (
  id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1703,6 +1722,24 @@ END;
 
 ## 6.3 Creación de la tabla employees
 
+Se crea la tabla `employees`, destinada a: Registra al personal operativo, baristas, administradores y cajeros de TazaNorte.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `code` | VARCHAR2(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR2(100) | NOT NULL |
+| `last_name` | VARCHAR2(100) | NOT NULL |
+| `email` | VARCHAR2(150) | NOT NULL, UNIQUE |
+| `role` | VARCHAR2(50) | NOT NULL |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active', CHECK (status IN ('active', 'inactive')) |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ```sql
 CREATE TABLE employees (
  id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1734,6 +1771,23 @@ END;
 
 ## 6.4 Creación de la tabla supplies
 
+Se crea la tabla `supplies`, destinada a: Controla el catálogo de insumos y materias primas (café en grano, leche, jarabes, vasos) con su respectiva unidad de medida y stock mínimo.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `code` | VARCHAR2(50) | NOT NULL, UNIQUE |
+| `name` | VARCHAR2(150) | NOT NULL |
+| `unit_of_measure` | VARCHAR2(30) | NOT NULL |
+| `min_stock` | NUMBER(15,3) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active', CHECK (status IN ('active', 'inactive')) |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ```sql
 CREATE TABLE supplies (
  id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1763,6 +1817,23 @@ END;
 ---
 
 ## 6.5 Creación de la tabla products
+
+Se crea la tabla `products`, destinada a: Almacena los productos comerciales terminados (bebidas de especialidad, repostería y métodos filtrados) con sus precios de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `sku` | VARCHAR2(100) | NOT NULL, UNIQUE |
+| `name` | VARCHAR2(150) | NOT NULL |
+| `description` | VARCHAR2(500) |  |
+| `price` | NUMBER(15,2) | NOT NULL |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active', CHECK (status IN ('active', 'inactive')) |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ```sql
 CREATE TABLE products (
@@ -1794,6 +1865,22 @@ END;
 
 ## 6.6 Creación de la tabla recipe_supplies
 
+Se crea la tabla `recipe_supplies`, destinada a: Entidad intermedia que modela la receta de preparación y escandallo (relación N:M entre productos e insumos) con la cantidad de insumo requerida.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `product_id` | NUMBER(19) | NOT NULL, FK -> products(id) |
+| `supply_id` | NUMBER(19) | NOT NULL, FK -> supplies(id) |
+| `quantity` | NUMBER(15,3) | NOT NULL |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active' |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ```sql
 CREATE TABLE recipe_supplies (
  id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1823,6 +1910,26 @@ END;
 ---
 
 ## 6.7 Creación de la tabla cash_shifts
+
+Se crea la tabla `cash_shifts`, destinada a: Gestiona los turnos y aperturas/cierres de caja en el punto de venta, registrando al empleado a cargo y los saldos inicial y final.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `employee_id` | NUMBER(19) | NOT NULL, FK -> employees(id) |
+| `name` | VARCHAR2(100) | NOT NULL |
+| `description` | VARCHAR2(500) |  |
+| `opened_at` | DATE | NOT NULL, DEFAULT SYSDATE |
+| `closed_at` | DATE | NULL |
+| `initial_balance` | NUMBER(15,2) | NOT NULL, DEFAULT 0 |
+| `final_balance` | NUMBER(15,2) | NULL |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active' |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ```sql
 CREATE TABLE cash_shifts (
@@ -1857,6 +1964,25 @@ END;
 
 ## 6.8 Creación de la tabla orders
 
+Se crea la tabla `orders`, destinada a: Registra las transacciones y comandas de venta emitidas a clientes, asociadas a un turno de caja específico.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `customer_id` | NUMBER(19) | NOT NULL, FK -> customers(id) |
+| `cash_shift_id` | NUMBER(19) | NOT NULL, FK -> cash_shifts(id) |
+| `channel` | VARCHAR2(20) | NOT NULL, DEFAULT 'pos' |
+| `order_date` | DATE | NOT NULL, DEFAULT SYSDATE |
+| `subtotal` | NUMBER(15,2) | NOT NULL, DEFAULT 0 |
+| `total` | NUMBER(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR2(30) | NOT NULL, DEFAULT 'pending' |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ```sql
 CREATE TABLE orders (
  id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1889,6 +2015,24 @@ END;
 
 ## 6.9 Creación de la tabla order_details
 
+Se crea la tabla `order_details`, destinada a: Detalla las líneas de producto, cantidades ordenadas y precios unitarios cobrados por cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `order_id` | NUMBER(19) | NOT NULL, FK -> orders(id) |
+| `product_id` | NUMBER(19) | NOT NULL, FK -> products(id) |
+| `quantity` | NUMBER(10,2) | NOT NULL, DEFAULT 1 |
+| `unit_price` | NUMBER(15,2) | NOT NULL, DEFAULT 0 |
+| `subtotal` | NUMBER(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active' |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ```sql
 CREATE TABLE order_details (
  id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1920,6 +2064,23 @@ END;
 
 ## 6.10 Creación de la tabla payments
 
+Se crea la tabla `payments`, destinada a: Registra los métodos de pago (efectivo, tarjeta, transferencia) y montos transaccionados para liquidar cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `order_id` | NUMBER(19) | NOT NULL, FK -> orders(id) |
+| `payment_method` | VARCHAR2(30) | NOT NULL, DEFAULT 'cash' |
+| `amount` | NUMBER(15,2) | NOT NULL, DEFAULT 0 |
+| `payment_date` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `status` | VARCHAR2(30) | NOT NULL, DEFAULT 'completed' |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ```sql
 CREATE TABLE payments (
  id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1949,6 +2110,27 @@ END;
 ---
 
 ## 6.11 Creación de la tabla point_movements
+
+Se crea la tabla `point_movements`, destinada a: Audita y registra cada transacción de puntos (acumulación por compra, redención o ajuste manual) del programa de lealtad.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER(19) | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `customer_id` | NUMBER(19) | NOT NULL, FK -> customers(id) |
+| `order_id` | NUMBER(19) | FK -> orders(id) (opcional) |
+| `reference_type` | VARCHAR2(50) | NOT NULL |
+| `reference_id` | NUMBER | NOT NULL |
+| `movement_type` | VARCHAR2(50) | NOT NULL |
+| `points` | NUMBER(10) | NOT NULL |
+| `movement_date` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `observations` | VARCHAR2(500) |  |
+| `status` | VARCHAR2(8) | NOT NULL, DEFAULT 'active' |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ```sql
 CREATE TABLE point_movements (
