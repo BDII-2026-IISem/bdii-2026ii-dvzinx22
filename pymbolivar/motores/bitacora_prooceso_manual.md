@@ -1070,3 +1070,401 @@ A través de la funcionalidad nativa *Database Diagrams* de SSMS, se generó el 
 
 ### Conclusión de la Sección 5
 La implementación visual en Microsoft SQL Server Management Studio (SSMS) evidenció la capacidad del entorno gráfico de Microsoft para estructurar modelos relacionales complejos sin necesidad de codificar sentencias DDL manuales. Al igual que se constató en MySQL Workbench y pgAdmin 4, las restricciones de integridad y tipos de datos se corresponden fielmente con la arquitectura diseñada, con la excepción técnica documentada de los triggers que requieren ventana de consulta por diseño de la propia herramienta SSMS.
+
+
+---
+
+# 6. Base de Datos Oracle Database — Parte Código (DBeaver / PL-SQL)
+
+## 6.1 Conexión y preparación del esquema tazanorte en Oracle
+Para la implementación de la base de datos en **Oracle Database 21c Express Edition**, se utilizó la base de datos conectable (*Pluggable Database*) `XEPDB1`. La conexión se estableció a través del driver nativo Oracle JDBC Thin en DBeaver mediante el usuario y esquema dedicado `tazanorte`, asignándole tablespaces dedicados y privilegios administrativos completos (`CONNECT`, `RESOURCE`, `DBA`).
+
+### Evidencia (imagen):
+![Conexión y sesión del esquema tazanorte en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/01_conexion_oracle.png)
+
+**Resultado:** Sesión activa y autenticada en Oracle Database bajo el servicio `XEPDB1`, lista para el despliegue del catálogo DDL.
+
+---
+
+## 6.2 Creación de la tabla customers
+
+```sql
+CREATE TABLE customers (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code VARCHAR2(50) NOT NULL UNIQUE,
+    first_name VARCHAR2(100) NOT NULL,
+    last_name VARCHAR2(100) NOT NULL,
+    email VARCHAR2(150) NOT NULL UNIQUE,
+    phone VARCHAR2(30),
+    current_points NUMBER(10) DEFAULT 0 NOT NULL,
+    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_customers_updated_at
+BEFORE UPDATE ON customers
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla customers y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/02_crear_customers.png)
+
+**Resultado:** Tabla `customers` creada exitosamente en Oracle utilizando `NUMBER(19) GENERATED ALWAYS AS IDENTITY` para la clave subrogada y disparador `BEFORE UPDATE` para refrescar `updated_at`.
+
+---
+
+## 6.3 Creación de la tabla employees
+
+```sql
+CREATE TABLE employees (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code VARCHAR2(50) NOT NULL UNIQUE,
+    first_name VARCHAR2(100) NOT NULL,
+    last_name VARCHAR2(100) NOT NULL,
+    email VARCHAR2(150) NOT NULL UNIQUE,
+    role VARCHAR2(50) NOT NULL,
+    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_employees_updated_at
+BEFORE UPDATE ON employees
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla employees y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/03_crear_employees.png)
+
+**Resultado:** Tabla `employees` creada con restricciones de unicidad e integridad de estado.
+
+---
+
+## 6.4 Creación de la tabla supplies
+
+```sql
+CREATE TABLE supplies (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code VARCHAR2(50) NOT NULL UNIQUE,
+    name VARCHAR2(150) NOT NULL,
+    unit_of_measure VARCHAR2(30) NOT NULL,
+    min_stock NUMBER(15,3) DEFAULT 0 NOT NULL,
+    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_supplies_updated_at
+BEFORE UPDATE ON supplies
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla supplies y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/04_crear_supplies.png)
+
+**Resultado:** Tabla `supplies` creada con precisión numérica `NUMBER(15,3)` para el inventario.
+
+---
+
+## 6.5 Creación de la tabla products
+
+```sql
+CREATE TABLE products (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sku VARCHAR2(100) NOT NULL UNIQUE,
+    name VARCHAR2(150) NOT NULL,
+    description CLOB,
+    price NUMBER(15,2) NOT NULL,
+    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_products_updated_at
+BEFORE UPDATE ON products
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla products y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/05_crear_products.png)
+
+**Resultado:** Tabla `products` creada con campo textual extendido `CLOB` y precisión monetaria `NUMBER(15,2)`.
+
+---
+
+## 6.6 Creación de la tabla recipe_supplies
+
+```sql
+CREATE TABLE recipe_supplies (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id NUMBER(19) NOT NULL REFERENCES products(id),
+    supply_id NUMBER(19) NOT NULL REFERENCES supplies(id),
+    quantity NUMBER(15,3) NOT NULL,
+    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_recipe_supplies_prod_sup UNIQUE (product_id, supply_id)
+);
+
+CREATE OR REPLACE TRIGGER trg_recipe_supplies_upd
+BEFORE UPDATE ON recipe_supplies
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla recipe_supplies y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/06_crear_recipe_supplies.png)
+
+**Resultado:** Tabla intermedia `recipe_supplies` creada resolviendo la relación N:M entre productos e insumos con clave foránea compuesta única.
+
+---
+
+## 6.7 Creación de la tabla cash_shifts
+
+```sql
+CREATE TABLE cash_shifts (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_id NUMBER(19) NOT NULL REFERENCES employees(id),
+    name VARCHAR2(100) NOT NULL,
+    description CLOB,
+    opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    closed_at TIMESTAMP NULL,
+    initial_balance NUMBER(15,2) DEFAULT 0 NOT NULL,
+    final_balance NUMBER(15,2) NULL,
+    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_cash_shifts_updated_at
+BEFORE UPDATE ON cash_shifts
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla cash_shifts y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/07_crear_cash_shifts.png)
+
+**Resultado:** Tabla `cash_shifts` creada con referencia hacia `employees`.
+
+---
+
+## 6.8 Creación de la tabla orders
+
+```sql
+CREATE TABLE orders (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_id NUMBER(19) NOT NULL REFERENCES customers(id),
+    cash_shift_id NUMBER(19) NOT NULL REFERENCES cash_shifts(id),
+    channel VARCHAR2(20) DEFAULT 'pos' NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    subtotal NUMBER(15,2) DEFAULT 0 NOT NULL,
+    total NUMBER(15,2) DEFAULT 0 NOT NULL,
+    status VARCHAR2(30) DEFAULT 'pending' NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_orders_updated_at
+BEFORE UPDATE ON orders
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla orders y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/08_crear_orders.png)
+
+**Resultado:** Tabla `orders` creada con integridad referencial a clientes y turnos de caja.
+
+---
+
+## 6.9 Creación de la tabla order_details
+
+```sql
+CREATE TABLE order_details (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id NUMBER(19) NOT NULL REFERENCES orders(id),
+    product_id NUMBER(19) NOT NULL REFERENCES products(id),
+    quantity NUMBER(10,2) DEFAULT 1 NOT NULL,
+    unit_price NUMBER(15,2) DEFAULT 0 NOT NULL,
+    subtotal NUMBER(15,2) DEFAULT 0 NOT NULL,
+    status VARCHAR2(30) DEFAULT 'active' NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_order_details_updated_at
+BEFORE UPDATE ON order_details
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla order_details y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/09_crear_order_details.png)
+
+**Resultado:** Tabla `order_details` creada con doble clave foránea hacia comandas y catálogo de productos.
+
+---
+
+## 6.10 Creación de la tabla payments
+
+```sql
+CREATE TABLE payments (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id NUMBER(19) NOT NULL REFERENCES orders(id),
+    payment_method VARCHAR2(30) DEFAULT 'cash' NOT NULL,
+    amount NUMBER(15,2) DEFAULT 0 NOT NULL,
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    status VARCHAR2(30) DEFAULT 'completed' NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_payments_updated_at
+BEFORE UPDATE ON payments
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla payments y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/10_crear_payments.png)
+
+**Resultado:** Tabla `payments` creada en Oracle con trigger actualizador.
+
+---
+
+## 6.11 Creación de la tabla point_movements
+
+```sql
+CREATE TABLE point_movements (
+    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_id NUMBER(19) NOT NULL REFERENCES customers(id),
+    order_id NUMBER(19) NULL REFERENCES orders(id),
+    reference_type VARCHAR2(50) NOT NULL,
+    reference_id NUMBER(19) NOT NULL,
+    movement_type VARCHAR2(50) NOT NULL,
+    points NUMBER(10) NOT NULL,
+    movement_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    observations CLOB,
+    status VARCHAR2(30) DEFAULT 'active' NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER trg_point_movements_updated_at
+BEFORE UPDATE ON point_movements
+FOR EACH ROW
+BEGIN
+    :NEW.updated_at := CURRENT_TIMESTAMP;
+END;
+/
+```
+
+### Evidencia (imagen):
+![Creación de tabla point_movements y trigger en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/11_crear_point_movements.png)
+
+**Resultado:** Tabla `point_movements` creada en Oracle para el seguimiento de fidelización.
+
+---
+
+## 6.12 Verificación de tablas en el diccionario de datos de Oracle
+
+```sql
+SELECT table_name FROM user_tables ORDER BY table_name;
+```
+
+### Evidencia (imagen):
+![Verificación de las 10 tablas en user_tables en Oracle DBeaver](./evidencias_bitacora/oracle-dbeaver/12_verificacion_oracle.png)
+
+**Resultado:** Consulta sobre la vista de diccionario de datos `user_tables` confirmando las 10 entidades desplegadas exitosamente.
+
+---
+
+# 7. Base de Datos Oracle Database — Parte Visual (Oracle SQL Developer)
+
+## 7.1 Conexión y configuración en Oracle SQL Developer
+Se empleó la herramienta nativa **Oracle SQL Developer**, entorno gráfico oficial distribuido por Oracle Corporation para administración y modelado. La conexión se configuró mediante el tipo de conexión básica (*Basic*), conectando a `172.30.137.66` (o `localhost`) sobre el puerto 1521, con nombre de servicio (*Service Name*) `XEPDB1` y autenticación bajo el usuario de esquema `tazanorte`.
+
+### Evidencia (imagen):
+![Conexión al esquema tazanorte en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/01_conexion_sqldeveloper.png)
+
+---
+
+## 7.2 Exploración visual y diseño de tablas en Oracle SQL Developer
+Mediante el inspector y diseñador gráfico de tablas (*Edit Table / Columns / Constraints*) de Oracle SQL Developer, se constata visualmente la definición de tipos de datos (`NUMBER`, `VARCHAR2`, `CLOB`, `TIMESTAMP`), restricciones de clave primaria, restricciones de unicidad y llaves foráneas.
+
+### Evidencias de diseño de tablas (imágenes):
+- **Tabla customers:**
+![Diseñador visual de tabla customers en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/02_disenador_customers.png)
+
+- **Tabla employees:**
+![Diseñador visual de tabla employees en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/03_disenador_employees.png)
+
+- **Tabla supplies:**
+![Diseñador visual de tabla supplies en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/04_disenador_supplies.png)
+
+- **Tabla products:**
+![Diseñador visual de tabla products en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/05_disenador_products.png)
+
+- **Tabla recipe_supplies:**
+![Diseñador visual de tabla recipe_supplies en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/06_disenador_recipe_supplies.png)
+
+- **Tabla cash_shifts:**
+![Diseñador visual de tabla cash_shifts en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/07_disenador_cash_shifts.png)
+
+- **Tabla orders:**
+![Diseñador visual de tabla orders en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/08_disenador_orders.png)
+
+- **Tabla order_details:**
+![Diseñador visual de tabla order_details en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/09_disenador_order_details.png)
+
+- **Tabla payments:**
+![Diseñador visual de tabla payments en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/10_disenador_payments.png)
+
+- **Tabla point_movements:**
+![Diseñador visual de tabla point_movements en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/11_disenador_point_movements.png)
+
+---
+
+## 7.3 Diagrama Relacional ER Oficial en Oracle SQL Developer (Data Modeler)
+Utilizando la funcionalidad integrada de ingeniería inversa (*Data Modeler ➡️ Import ➡️ Data Dictionary*), se realizó la importación del esquema `tazanorte` para generar el diagrama de modelo relacional nativo en Oracle SQL Developer.
+
+### Evidencia (imagen):
+![Diagrama Relacional ER generado en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/12_diagrama_erd_oracle.png)
+
+**Resultado:** Modelo relacional completo generado en Oracle SQL Developer Data Modeler, validando las 10 entidades y la arquitectura íntegra de claves foráneas y relaciones del ecosistema TazaNorte.
+
+### Conclusión General de los 4 Motores de Base de Datos
+Se completó de forma exhaustiva el ciclo de vida de modelado, scripting DDL e implementación visual a través de los cuatro motores de bases de datos líderes de la industria (MySQL, PostgreSQL, Microsoft SQL Server y Oracle Database). Cada plataforma fue abordada tanto desde clientes universales (DBeaver) como desde sus respectivos entornos de desarrollo y modelado visual nativos (MySQL Workbench, pgAdmin 4, SQL Server Management Studio y Oracle SQL Developer), demostrando la adaptabilidad técnica de los tipos de datos, mecanismos de identidad, disparadores y diagramación relacional.
