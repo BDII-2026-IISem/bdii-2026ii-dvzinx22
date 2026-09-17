@@ -710,3 +710,323 @@ SELECT name FROM sys.tables ORDER BY name;
 
 ### Conclusión de la Sección 4
 Con esto se finaliza con éxito la implementación de la base de datos `tazanorte` en Microsoft SQL Server. A diferencia de MySQL y PostgreSQL, fue necesario implementar triggers `AFTER UPDATE` (ya que SQL Server no soporta disparadores `BEFORE UPDATE`) utilizando la pseudotabla `inserted` para replicar el comportamiento automático de `ON UPDATE CURRENT_TIMESTAMP` en las marcas temporales `updated_at`. Todas las restricciones de integridad y tipos de datos se adaptaron a los estándares óptimos de T-SQL.
+
+
+---
+
+# 5. Base de Datos SQL Server — Parte Visual (SQL Server Management Studio)
+
+## 5.1 Conexión y configuración en SSMS
+Se utilizó **Microsoft SQL Server Management Studio 22 (SSMS)** como la herramienta cliente gráfica oficial de Microsoft para la administración y modelado visual sobre el motor SQL Server 2022. La conexión se estableció mediante autenticación nativa de SQL Server (*SQL Server Authentication*) con el usuario administrador `sa` sobre el puerto TCP 1433 y certificado de servidor de confianza habilitado.
+
+### Evidencia (imagen):
+![Conexión a SQL Server completada exitosamente en SSMS](./evidencias_bitacora/ssms/01_conexion_ssms.png)
+
+**Nota metodológica:** Al igual que en MySQL Workbench y pgAdmin 4, se utiliza la interfaz oficial recomendada por el fabricante del motor de base de datos para la definición de esquemas, diseño visual de tablas, configuración de restricciones de integridad relacional (Primary Keys, Foreign Keys, Unique Constraints) y generación del diagrama entidad-relación oficial mediante el componente nativo *Database Diagrams*.
+
+---
+
+## 5.2 Creación de la base de datos tazanorte_visual
+Se procedió con la creación de la base de datos `tazanorte_visual` mediante el asistente visual *"Nueva base de datos..."* (*New Database*) de SSMS, sin requerir la ejecución de comandos SQL directos por consola, fungiendo como esquema visual independiente al creado previamente por script en la Sección 4.
+
+### Evidencia (imagen):
+![Base de datos tazanorte_visual creada en SSMS](./evidencias_bitacora/ssms/02_crear_bd_visual.png)
+
+**Resultado:** Se creó la base de datos `tazanorte_visual` con sus archivos de datos primarios (`.mdf`) y de registro de transacciones (`.ldf`) configurados con los parámetros por defecto de intercalación (*collation*) y crecimiento automático administrados por SSMS.
+
+---
+
+## 5.3 Creación de la tabla customers
+Configuración visual de la entidad en el Diseñador de tablas (*Table Designer*) de SSMS:
+- Clave primaria `id` de tipo `BIGINT` con propiedad `Identity Specification` habilitada (`Is Identity = Yes`, `Identity Increment = 1`, `Identity Seed = 1`).
+- Restricciones de unicidad `UNIQUE` sobre `code` y `email` configuradas a través del diálogo visual *"Índices o claves..."* (*Indexes/Keys*).
+- Valores predeterminados `0` en `current_points`, `1` en `is_active`, y `(getdate())` en `created_at` y `updated_at` asignados en la propiedad `Default Value or Binding`.
+
+### Evidencia (imagen):
+![Columnas y diseño de la tabla customers en SSMS](./evidencias_bitacora/ssms/03_disenador_customers.png)
+
+**Nota metodológica — trigger updated_at:** SSMS no dispone de un asistente gráfico interactivo para la definición de disparadores (*triggers*), a diferencia de herramientas como MySQL Workbench o pgAdmin. Por tal motivo, y como criterio técnico documentado en esta sección visual, el disparador `trg_customers_updated_at` se implementa mediante ventana de consulta sobre `tazanorte_visual`, mientras que la definición estructural de columnas, tipos, nulos y llaves se elabora 100% en el diseñador visual.
+
+```sql
+CREATE TRIGGER trg_customers_updated_at
+ON customers
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE customers
+    SET updated_at = GETDATE()
+    FROM customers
+    INNER JOIN inserted ON customers.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `customers` diseñada visualmente en SSMS.
+
+---
+
+## 5.4 Creación de la tabla employees
+Configuración de la entidad de empleados y personal operativo mediante el diseñador gráfico:
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Restricciones `UNIQUE` en `code` y `email` definidas en el diálogo *Índices o claves*.
+- Valores por defecto: `is_active = 1`, `created_at = (getdate())`, `updated_at = (getdate())`.
+
+### Evidencia (imagen):
+![Columnas y diseño de la tabla employees en SSMS](./evidencias_bitacora/ssms/04_disenador_employees.png)
+
+```sql
+CREATE TRIGGER trg_employees_updated_at
+ON employees
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE employees
+    SET updated_at = GETDATE()
+    FROM employees
+    INNER JOIN inserted ON employees.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `employees` creada con el diseñador de SSMS.
+
+---
+
+## 5.5 Creación de la tabla supplies
+Configuración en el diseñador de tablas de insumos y materia prima:
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Restricción `UNIQUE` sobre `code` configurada en el diálogo de índices.
+- Tipos de datos numéricos con precisión: `min_stock` de tipo `DECIMAL(15,3)` con valor por defecto `0`.
+- Valores por defecto: `is_active = 1`, marcas temporales con `(getdate())`.
+
+### Evidencia (imagen):
+![Columnas y diseño de la tabla supplies en SSMS](./evidencias_bitacora/ssms/05_disenador_supplies.png)
+
+```sql
+CREATE TRIGGER trg_supplies_updated_at
+ON supplies
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE supplies
+    SET updated_at = GETDATE()
+    FROM supplies
+    INNER JOIN inserted ON supplies.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `supplies` creada en SSMS sin escribir sentencias DDL manuales.
+
+---
+
+## 5.6 Creación de la tabla products
+Configuración visual del catálogo de productos y bebidas de cafetería:
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Índice único `UNIQUE` sobre `sku`.
+- Campo de descripción extendida `description` de tipo `VARCHAR(MAX)`.
+- Precio monetario `price` de tipo `DECIMAL(15,2)` y `is_active` con valor por defecto `1`.
+
+### Evidencia (imagen):
+![Columnas y diseño de la tabla products en SSMS](./evidencias_bitacora/ssms/06_disenador_products.png)
+
+```sql
+CREATE TRIGGER trg_products_updated_at
+ON products
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE products
+    SET updated_at = GETDATE()
+    FROM products
+    INNER JOIN inserted ON products.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `products` diseñada visualmente en SSMS.
+
+---
+
+## 5.7 Creación de la tabla recipe_supplies
+Configuración visual de la entidad intermedia de recetas y escandallos (relación N:M entre `products` y `supplies`):
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Configuración de dos Foreign Keys mediante el diálogo visual *"Relaciones de clave externa..."* (*Foreign Key Relationships*):
+  - `FK_recipe_supplies_products`: `product_id` -> `products(id)`
+  - `FK_recipe_supplies_supplies`: `supply_id` -> `supplies(id)`
+- Restricción compuesta `UNIQUE (product_id, supply_id)` en el diálogo de índices.
+- Campo de dosificación `quantity` de tipo `DECIMAL(15,3)`.
+
+### Evidencia (imagen):
+![Columnas y relaciones de recipe_supplies en SSMS](./evidencias_bitacora/ssms/07_disenador_recipe_supplies.png)
+
+```sql
+CREATE TRIGGER trg_recipe_supplies_updated_at
+ON recipe_supplies
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE recipe_supplies
+    SET updated_at = GETDATE()
+    FROM recipe_supplies
+    INNER JOIN inserted ON recipe_supplies.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla intermedia `recipe_supplies` con sus dos relaciones foráneas configuradas por diálogo visual en SSMS.
+
+---
+
+## 5.8 Creación de la tabla cash_shifts
+Configuración visual del control de turnos de caja en cafetería:
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Configuración de Foreign Key mediante el diálogo *Relaciones*: `FK_cash_shifts_employees` (`employee_id` -> `employees(id)`).
+- Balances monetarios: `initial_balance` y `final_balance` de tipo `DECIMAL(15,2)`.
+- Marcas de apertura y cierre: `opened_at` (predeterminado `(getdate())`) y `closed_at` (admite nulos).
+
+### Evidencia (imagen):
+![Columnas y diseño de cash_shifts en SSMS](./evidencias_bitacora/ssms/08_disenador_cash_shifts.png)
+
+```sql
+CREATE TRIGGER trg_cash_shifts_updated_at
+ON cash_shifts
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE cash_shifts
+    SET updated_at = GETDATE()
+    FROM cash_shifts
+    INNER JOIN inserted ON cash_shifts.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `cash_shifts` creada y vinculada visualmente a `employees`.
+
+---
+
+## 5.9 Creación de la tabla orders
+Configuración visual de la entidad de comandas y órdenes de venta:
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Configuración de dos Foreign Keys en el diálogo *Relaciones*:
+  - `FK_orders_customers`: `customer_id` -> `customers(id)`
+  - `FK_orders_cash_shifts`: `cash_shift_id` -> `cash_shifts(id)`
+- Atributos comerciales: `channel` con valor predeterminado `'pos'`, `subtotal` y `total` (`DECIMAL(15,2)`), y `status` con predeterminado `'pending'`.
+
+### Evidencia (imagen):
+![Columnas y relaciones de orders en SSMS](./evidencias_bitacora/ssms/09_disenador_orders.png)
+
+```sql
+CREATE TRIGGER trg_orders_updated_at
+ON orders
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE orders
+    SET updated_at = GETDATE()
+    FROM orders
+    INNER JOIN inserted ON orders.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `orders` modelada con sus dos claves foráneas visuales en SSMS.
+
+---
+
+## 5.10 Creación de la tabla order_details
+Configuración visual del detalle de comanda (ítems por orden):
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Configuración de dos Foreign Keys en el diálogo *Relaciones*:
+  - `FK_order_details_orders`: `order_id` -> `orders(id)`
+  - `FK_order_details_products`: `product_id` -> `products(id)`
+- Cantidad `quantity` (`DECIMAL(10,2)`), precio unitario `unit_price` y `subtotal` (`DECIMAL(15,2)`).
+
+### Evidencia (imagen):
+![Columnas y diseño de order_details en SSMS](./evidencias_bitacora/ssms/10_disenador_order_details.png)
+
+```sql
+CREATE TRIGGER trg_order_details_updated_at
+ON order_details
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE order_details
+    SET updated_at = GETDATE()
+    FROM order_details
+    INNER JOIN inserted ON order_details.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla de detalle `order_details` vinculada con integridad referencial a órdenes y productos.
+
+---
+
+## 5.11 Creación de la tabla payments
+Configuración visual de transacciones y pagos de comanda:
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Configuración de Foreign Key: `FK_payments_orders` (`order_id` -> `orders(id)`).
+- Atributos: `payment_method` con valor predeterminado `'cash'`, `amount` (`DECIMAL(15,2)`), `status` con predeterminado `'completed'`.
+
+### Evidencia (imagen):
+![Columnas y diseño de payments en SSMS](./evidencias_bitacora/ssms/11_disenador_payments.png)
+
+```sql
+CREATE TRIGGER trg_payments_updated_at
+ON payments
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE payments
+    SET updated_at = GETDATE()
+    FROM payments
+    INNER JOIN inserted ON payments.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `payments` creada en SSMS.
+
+---
+
+## 5.12 Creación de la tabla point_movements
+Configuración visual de transacciones del programa de fidelización:
+- Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
+- Configuración de Foreign Keys:
+  - `FK_point_movements_customers`: `customer_id` -> `customers(id)` (obligatorio).
+  - `FK_point_movements_orders`: `order_id` -> `orders(id)` (admite nulos para bonificaciones directas sin comanda asociada).
+- Atributos de puntos: `points` de tipo `INT`, `movement_type` y `reference_type`.
+
+### Evidencia (imagen):
+![Columnas y diseño de point_movements en SSMS](./evidencias_bitacora/ssms/12_disenador_point_movements.png)
+
+```sql
+CREATE TRIGGER trg_point_movements_updated_at
+ON point_movements
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE point_movements
+    SET updated_at = GETDATE()
+    FROM point_movements
+    INNER JOIN inserted ON point_movements.id = inserted.id;
+END;
+```
+
+**Resultado:** Tabla `point_movements` creada mediante diseñador gráfico en SSMS.
+
+---
+
+## 5.13 Diagrama Relacional ER en SSMS (Database Diagrams)
+A través de la funcionalidad nativa *Database Diagrams* de SSMS, se generó el diagrama de entidad-relación que consolida las 10 entidades y la totalidad de sus relaciones de clave foránea.
+
+### Evidencia (imagen):
+![Diagrama de Base de Datos ER generado en SSMS](./evidencias_bitacora/ssms/13_diagrama_erd_ssms.png)
+
+**Resultado:** Diagrama relacional visual generado directamente por SQL Server Management Studio, verificando que la totalidad de relaciones 1:N y N:M se encuentran debidamente construidas y validadas por el motor.
+
+### Conclusión de la Sección 5
+La implementación visual en Microsoft SQL Server Management Studio (SSMS) evidenció la capacidad del entorno gráfico de Microsoft para estructurar modelos relacionales complejos sin necesidad de codificar sentencias DDL manuales. Al igual que se constató en MySQL Workbench y pgAdmin 4, las restricciones de integridad y tipos de datos se corresponden fielmente con la arquitectura diseñada, con la excepción técnica documentada de los triggers que requieren ventana de consulta por diseño de la propia herramienta SSMS.
