@@ -110,6 +110,25 @@ A continuación, se presenta la matriz de entidades y tablas físicas del domini
 
 ## 1. Creación de la tabla Customers
 
+Se crea la tabla `customers`, destinada a: Almacena la información de los clientes registrados, datos de contacto y saldo acumulado en el programa de fidelización de la cafetería.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, AUTO_INCREMENT |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `phone` | VARCHAR(30) |  |
+| `current_points` | INT | NOT NULL, DEFAULT 0 |
+| `is_active` | TINYINT(1) | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP |
+
+
+
 La tabla `customers` almacena la información de los clientes registrados en la cafetería para su identificación, historial de pedidos y acumulación de puntos en el programa de fidelización.
 
 ### Código SQL
@@ -135,6 +154,24 @@ CREATE TABLE customers (
 ---
 
 ## 2. Creación de la tabla Employees
+
+Se crea la tabla `employees`, destinada a: Registra al personal operativo, baristas, administradores y cajeros de TazaNorte.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, AUTO_INCREMENT |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `role` | VARCHAR(50) | NOT NULL |
+| `is_active` | TINYINT(1) | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP |
+
+
 
 La tabla `employees` almacena los datos de los baristas, cajeros y supervisores encargados de los turnos y pedidos.
 
@@ -167,6 +204,25 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 
 ## 3.2 Creación de la tabla customers
 
+Se crea la tabla `customers`, destinada a: Almacena la información de los clientes registrados, datos de contacto y saldo acumulado en el programa de fidelización de la cafetería.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `phone` | VARCHAR(30) |  |
+| `current_points` | INTEGER | NOT NULL, DEFAULT 0 |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ### Columnas de customers configuradas en pgAdmin:
 ![Columnas customers configuradas en pgAdmin](./evidencias_bitacora/pgadmin/02_editor_customers.png)
 
@@ -178,6 +234,24 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 ---
 
 ## 3.3 Creación de la tabla employees
+
+Se crea la tabla `employees`, destinada a: Registra al personal operativo, baristas, administradores y cajeros de TazaNorte.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `role` | VARCHAR(50) | NOT NULL |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ### Columnas de employees configuradas en pgAdmin:
 ![Columnas employees configuradas en pgAdmin](./evidencias_bitacora/pgadmin/03_editor_employees.png)
@@ -191,6 +265,23 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 
 ## 3.4 Creación de la tabla supplies
 
+Se crea la tabla `supplies`, destinada a: Controla el catálogo de insumos y materias primas (café en grano, leche, jarabes, vasos) con su respectiva unidad de medida y stock mínimo.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `name` | VARCHAR(150) | NOT NULL |
+| `unit_of_measure` | VARCHAR(30) | NOT NULL |
+| `min_stock` | NUMERIC(15,3) | NOT NULL, DEFAULT 0 |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ### Columnas de supplies configuradas en pgAdmin:
 ![Columnas supplies configuradas en pgAdmin](./evidencias_bitacora/pgadmin/04_editor_supplies.png)
 
@@ -202,6 +293,23 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 ---
 
 ## 3.5 Creación de la tabla products
+
+Se crea la tabla `products`, destinada a: Almacena los productos comerciales terminados (bebidas de especialidad, repostería y métodos filtrados) con sus precios de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `sku` | VARCHAR(100) | NOT NULL, UNIQUE |
+| `name` | VARCHAR(150) | NOT NULL |
+| `description` | TEXT |  |
+| `price` | NUMERIC(15,2) | NOT NULL |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ### Columnas de products configuradas en pgAdmin:
 ![Columnas products configuradas en pgAdmin](./evidencias_bitacora/pgadmin/05_editor_products.png)
@@ -215,6 +323,22 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 
 ## 3.6 Creación de la tabla recipe_supplies
 
+Se crea la tabla `recipe_supplies`, destinada a: Entidad intermedia que modela la receta de preparación y escandallo (relación N:M entre productos e insumos) con la cantidad de insumo requerida.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `product_id` | BIGINT | NOT NULL, FK -> products(id) |
+| `supply_id` | BIGINT | NOT NULL, FK -> supplies(id) |
+| `quantity` | NUMERIC(15,3) | NOT NULL |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ### Columnas y Foreign Keys de recipe_supplies configuradas en pgAdmin:
 ![Columnas recipe_supplies configuradas en pgAdmin](./evidencias_bitacora/pgadmin/06_editor_recipe_supplies.png)
 
@@ -226,6 +350,26 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 ---
 
 ## 3.7 Creación de la tabla cash_shifts
+
+Se crea la tabla `cash_shifts`, destinada a: Gestiona los turnos y aperturas/cierres de caja en el punto de venta, registrando al empleado a cargo y los saldos inicial y final.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `employee_id` | BIGINT | NOT NULL, FK -> employees(id) |
+| `name` | VARCHAR(100) | NOT NULL |
+| `description` | TEXT |  |
+| `opened_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `closed_at` | TIMESTAMPTZ | NULL |
+| `initial_balance` | NUMERIC(15,2) | NOT NULL, DEFAULT 0 |
+| `final_balance` | NUMERIC(15,2) | NULL |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ### Columnas y Foreign Key de cash_shifts configuradas en pgAdmin:
 ![Columnas cash_shifts configuradas en pgAdmin](./evidencias_bitacora/pgadmin/07_editor_cash_shifts.png)
@@ -239,6 +383,25 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 
 ## 3.8 Creación de la tabla orders
 
+Se crea la tabla `orders`, destinada a: Registra las transacciones y comandas de venta emitidas a clientes, asociadas a un turno de caja específico.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `customer_id` | BIGINT | NOT NULL, FK -> customers(id) |
+| `cash_shift_id` | BIGINT | NOT NULL, FK -> cash_shifts(id) |
+| `channel` | VARCHAR(20) | NOT NULL, DEFAULT 'pos' |
+| `order_date` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `subtotal` | NUMERIC(15,2) | NOT NULL, DEFAULT 0 |
+| `total` | NUMERIC(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'pending' |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ### Columnas y Foreign Keys de orders configuradas en pgAdmin:
 ![Columnas orders configuradas en pgAdmin](./evidencias_bitacora/pgadmin/08_editor_orders.png)
 
@@ -250,6 +413,24 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 ---
 
 ## 3.9 Creación de la tabla order_details
+
+Se crea la tabla `order_details`, destinada a: Detalla las líneas de producto, cantidades ordenadas y precios unitarios cobrados por cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `order_id` | BIGINT | NOT NULL, FK -> orders(id) |
+| `product_id` | BIGINT | NOT NULL, FK -> products(id) |
+| `quantity` | NUMERIC(10,2) | NOT NULL, DEFAULT 1 |
+| `unit_price` | NUMERIC(15,2) | NOT NULL, DEFAULT 0 |
+| `subtotal` | NUMERIC(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'active' |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ### Columnas y Foreign Keys de order_details configuradas en pgAdmin:
 ![Columnas order_details configuradas en pgAdmin](./evidencias_bitacora/pgadmin/09_editor_order_details.png)
@@ -263,6 +444,23 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 
 ## 3.10 Creación de la tabla payments
 
+Se crea la tabla `payments`, destinada a: Registra los métodos de pago (efectivo, tarjeta, transferencia) y montos transaccionados para liquidar cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `order_id` | BIGINT | NOT NULL, FK -> orders(id) |
+| `payment_method` | VARCHAR(30) | NOT NULL, DEFAULT 'cash' |
+| `amount` | NUMERIC(15,2) | NOT NULL, DEFAULT 0 |
+| `payment_date` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'completed' |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
+
 ### Columnas y Foreign Key de payments configuradas en pgAdmin:
 ![Columnas payments configuradas en pgAdmin](./evidencias_bitacora/pgadmin/10_editor_payments.png)
 
@@ -274,6 +472,27 @@ En esta sección se documenta el modelado y verificación visual de las 10 tabla
 ---
 
 ## 3.11 Creación de la tabla point_movements
+
+Se crea la tabla `point_movements`, destinada a: Audita y registra cada transacción de puntos (acumulación por compra, redención o ajuste manual) del programa de lealtad.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, GENERATED ALWAYS AS IDENTITY |
+| `customer_id` | BIGINT | NOT NULL, FK -> customers(id) |
+| `order_id` | BIGINT | FK -> orders(id) (opcional) |
+| `reference_type` | VARCHAR(50) | NOT NULL |
+| `reference_id` | BIGINT | NOT NULL |
+| `movement_type` | VARCHAR(50) | NOT NULL |
+| `points` | INTEGER | NOT NULL |
+| `movement_date` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `observations` | TEXT |  |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'active' |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+
 
 ### Columnas y Foreign Keys de point_movements configuradas en pgAdmin:
 ![Columnas point_movements configuradas en pgAdmin](./evidencias_bitacora/pgadmin/11_editor_point_movements.png)
