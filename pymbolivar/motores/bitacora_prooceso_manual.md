@@ -157,740 +157,143 @@ CREATE TABLE employees (
 
 ---
 
-## 3. Creación de la tabla Supplies
+## 3. Base de Datos en PostgreSQL (pgAdmin - Creación Visual)
 
-La tabla `supplies` (Insumos) almacena los ingredientes base (café en grano, leche, jarabes, vasos) y su stock mínimo.
+## 3.1 Preparación y contexto del entorno
 
-### Código SQL
-
-```sql
-CREATE TABLE supplies (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    unit_of_measure VARCHAR(30) NOT NULL,
-    min_stock DECIMAL(15,3) NOT NULL DEFAULT 0,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear supplies en MySQL](./evidencias_bitacora/scripts-mysql/image-3.png)
+En esta sección se documenta el modelado y verificación visual de las 10 tablas del dominio **TazaNorte** directamente en el entorno gráfico de **pgAdmin 4**. A través de sus ventanas de propiedades (*Table Properties*), pestañas de columnas (*Columns*) y generación automática de DDL (*CREATE Script*), se valida la estructura relacional, tipos de datos PostgreSQL, claves primarias Identity y restricciones de integridad.
 
 ---
 
-## 4. Creación de la tabla Products
+## 3.2 Creación de la tabla customers
 
-La tabla `products` contiene el catálogo de bebidas y alimentos disponibles en la cafetería.
+### Columnas de customers configuradas en pgAdmin:
+![Columnas customers configuradas en pgAdmin](./evidencias_bitacora/pgadmin/02_editor_customers.png)
 
-### Código SQL
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE customers generado](./evidencias_bitacora/pgadmin/02_script_customers.png)
 
-```sql
-CREATE TABLE products (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    sku VARCHAR(100) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    description TEXT,
-    price DECIMAL(15,2) NOT NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear products en MySQL](./evidencias_bitacora/scripts-mysql/image-4.png)
+**Resultado:** Se configuró la tabla `customers` mediante la interfaz gráfica de pgAdmin, definiendo la columna autoincremental `id` (`BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY`), la restricción `UNIQUE (document_number)`, indicador booleano `is_active DEFAULT true` y marcas temporales automáticas `created_at` y `updated_at`. El script DDL generado por pgAdmin confirma la correcta definición de la entidad.
 
 ---
 
-## 5. Creación de la tabla RecipeSupplies
+## 3.3 Creación de la tabla employees
 
-La tabla `recipe_supplies` materializa la relación N:M entre `products` e `supplies`, definiendo qué insumos y en qué cantidad componen cada producto.
+### Columnas de employees configuradas en pgAdmin:
+![Columnas employees configuradas en pgAdmin](./evidencias_bitacora/pgadmin/03_editor_employees.png)
 
-### Código SQL
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE employees generado](./evidencias_bitacora/pgadmin/03_script_employees.png)
 
-```sql
-CREATE TABLE recipe_supplies (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    supply_id BIGINT NOT NULL,
-    quantity DECIMAL(15,3) NOT NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_recipe_supplies_product
-        FOREIGN KEY (product_id) REFERENCES products(id),
-    CONSTRAINT fk_recipe_supplies_supply
-        FOREIGN KEY (supply_id) REFERENCES supplies(id),
-    CONSTRAINT uq_product_supply UNIQUE (product_id, supply_id)
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear recipe_supplies en MySQL](./evidencias_bitacora/scripts-mysql/image-5.png)
+**Resultado:** Se configuró la tabla `employees` en pgAdmin con sus atributos de identificación y auditoría, asignando `name` (`character varying(150)`), `description` (`text`) y el trigger disparador `trg_employees_updated_at` para el control de actualizaciones.
 
 ---
 
-## 6. Creación de la tabla CashShifts
+## 3.4 Creación de la tabla supplies
 
-La tabla `cash_shifts` administra la apertura, control y cierre de turnos de caja asignados a cada empleado.
+### Columnas de supplies configuradas en pgAdmin:
+![Columnas supplies configuradas en pgAdmin](./evidencias_bitacora/pgadmin/04_editor_supplies.png)
 
-### Código SQL
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE supplies generado](./evidencias_bitacora/pgadmin/04_script_supplies.png)
 
-```sql
-CREATE TABLE cash_shifts (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    employee_id BIGINT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    opened_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    closed_at DATETIME NULL,
-    initial_balance DECIMAL(15,2) NOT NULL DEFAULT 0,
-    final_balance DECIMAL(15,2) NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_cash_shifts_employee
-        FOREIGN KEY (employee_id) REFERENCES employees(id)
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear cash_shifts en MySQL](./evidencias_bitacora/scripts-mysql/image-6.png)
+**Resultado:** Se modeló la tabla de insumos (`supplies`) con la restricción `UNIQUE (code)`, unidad de medida y stock mínimo en formato decimal `numeric(15,3)` con valor inicial `0`, verificado mediante el DDL generado en pgAdmin.
 
 ---
 
-## 7. Creación de la tabla Orders
+## 3.5 Creación de la tabla products
 
-La tabla `orders` registra los pedidos atendidos en caja o para llevar, vinculados al cliente y al turno de caja activo.
+### Columnas de products configuradas en pgAdmin:
+![Columnas products configuradas en pgAdmin](./evidencias_bitacora/pgadmin/05_editor_products.png)
 
-### Código SQL
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE products generado](./evidencias_bitacora/pgadmin/05_script_products.png)
 
-```sql
-CREATE TABLE orders (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    customer_id BIGINT NOT NULL,
-    cash_shift_id BIGINT NOT NULL,
-    channel VARCHAR(50) NOT NULL,
-    order_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    subtotal DECIMAL(15,2) NOT NULL,
-    total DECIMAL(15,2) NOT NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_orders_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id),
-    CONSTRAINT fk_orders_cash_shift
-        FOREIGN KEY (cash_shift_id) REFERENCES cash_shifts(id)
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear orders en MySQL](./evidencias_bitacora/scripts-mysql/image-7.png)
+**Resultado:** Se configuró la entidad `products` con código comercial único `sku` (`character varying(100)`), descripción y precio unitario `price` con precisión monetaria `numeric(15,2)`, junto con su respectivo disparador de auditoría.
 
 ---
 
-## 8. Creación de la tabla OrderDetails
+## 3.6 Creación de la tabla recipe_supplies
 
-La tabla `order_details` contiene cada ítem del pedido, cantidad, precio, valor total y notas/variantes (leche deslactosada, sin azúcar, etc.).
+### Columnas y Foreign Keys de recipe_supplies configuradas en pgAdmin:
+![Columnas recipe_supplies configuradas en pgAdmin](./evidencias_bitacora/pgadmin/06_editor_recipe_supplies.png)
 
-### Código SQL
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE recipe_supplies generado](./evidencias_bitacora/pgadmin/06_script_recipe_supplies.png)
 
-```sql
-CREATE TABLE order_details (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    order_id BIGINT NOT NULL,
-    product_id BIGINT NOT NULL,
-    quantity DECIMAL(15,3) NOT NULL,
-    unit_price DECIMAL(15,2) NOT NULL,
-    total DECIMAL(15,2) NOT NULL,
-    observations TEXT,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_order_details_order
-        FOREIGN KEY (order_id) REFERENCES orders(id),
-    CONSTRAINT fk_order_details_product
-        FOREIGN KEY (product_id) REFERENCES products(id)
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear order_details en MySQL](./evidencias_bitacora/scripts-mysql/image-8.png)
+**Resultado:** Se implementó la tabla asociativa `recipe_supplies` resolviendo la relación N:M entre productos e insumos. En pgAdmin se verifican las Foreign Keys hacia `products(id)` y `supplies(id)`, la columna de dosificación `quantity` (`numeric(15,3)`) y la restricción compuesta `UNIQUE (product_id, supply_id)`.
 
 ---
 
-## 9. Creación de la tabla Payments
+## 3.7 Creación de la tabla cash_shifts
 
-La tabla `payments` gestiona los pagos realizados sobre los pedidos (efectivo, tarjeta, transferencia).
+### Columnas y Foreign Key de cash_shifts configuradas en pgAdmin:
+![Columnas cash_shifts configuradas en pgAdmin](./evidencias_bitacora/pgadmin/07_editor_cash_shifts.png)
 
-### Código SQL
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE cash_shifts generado](./evidencias_bitacora/pgadmin/07_script_cash_shifts.png)
 
-```sql
-CREATE TABLE payments (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    reference_type VARCHAR(50) NOT NULL,
-    reference_id BIGINT NOT NULL,
-    method VARCHAR(50) NOT NULL,
-    amount DECIMAL(15,2) NOT NULL,
-    payment_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear payments en MySQL](./evidencias_bitacora/scripts-mysql/image-9.png)
+**Resultado:** Se configuró la entidad de turnos de caja (`cash_shifts`), enlazando la Foreign Key `employee_id -> employees(id)` y los balances de apertura y cierre con precisión `numeric(15,2)`.
 
 ---
 
-## 10. Creación de la tabla PointMovements
+## 3.8 Creación de la tabla orders
 
-La tabla `point_movements` almacena el historial auditable de acumulación o redención de puntos del cliente asociado a sus pedidos pagados.
+### Columnas y Foreign Keys de orders configuradas en pgAdmin:
+![Columnas orders configuradas en pgAdmin](./evidencias_bitacora/pgadmin/08_editor_orders.png)
 
-### Código SQL
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE orders generado](./evidencias_bitacora/pgadmin/08_script_orders.png)
 
-```sql
-CREATE TABLE point_movements (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    customer_id BIGINT NOT NULL,
-    order_id BIGINT NULL,
-    reference_type VARCHAR(50) NOT NULL,
-    reference_id BIGINT NOT NULL,
-    movement_type VARCHAR(50) NOT NULL,
-    points INT NOT NULL,
-    movement_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    observations TEXT,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_point_movements_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id),
-    CONSTRAINT fk_point_movements_order
-        FOREIGN KEY (order_id) REFERENCES orders(id)
-);
-```
-
-### Evidencia en DBeaver
-
-![Crear point_movements en MySQL](./evidencias_bitacora/scripts-mysql/image-10.png)
+**Resultado:** Se configuró la cabecera de pedidos (`orders`), validando en pgAdmin las dos Foreign Keys: `customer_id -> customers(id)` y `cash_shift_id -> cash_shifts(id)`, montos de facturación (`subtotal`, `total`) y estado con valor por defecto `'pending'`.
 
 ---
 
-## 📐 Diagrama de la base de datos en MySQL
+## 3.9 Creación de la tabla order_details
 
-Una vez creadas todas las tablas y establecidas las relaciones correspondientes, se procede a visualizar el diagrama de la base de datos en DBeaver.
+### Columnas y Foreign Keys de order_details configuradas en pgAdmin:
+![Columnas order_details configuradas en pgAdmin](./evidencias_bitacora/pgadmin/09_editor_order_details.png)
 
-### Evidencia en DBeaver
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE order_details generado](./evidencias_bitacora/pgadmin/09_script_order_details.png)
 
-![Diagrama MySQL TazaNorte](./evidencias_bitacora/scripts-mysql/image-11.png)
-
-
----
-
-# 2. Creación de la base de datos de forma visual por MySQL Workbench
-
-## 2.1 Creación de la base de datos tazanorte_visual
-
-![Schema tazanorte_visual creado](./evidencias_bitacora/workbench/01_schema_tazanorte_visual.png)
-
-**Resultado:** Se creó el schema `tazanorte_visual` dentro del EER Model de MySQL Workbench, como destino separado del `TazaNorte` ya evaluado en la Sección 1, para no sobrescribir esa evidencia y conservar ambos métodos de aprovisionamiento independientes.
+**Resultado:** Se configuró la tabla de líneas de pedido (`order_details`) con sus Foreign Keys `order_id -> orders(id)` y `product_id -> products(id)`, asegurando la precisión de cálculo entre `quantity` (`numeric(10,2)`), `unit_price` y `subtotal`.
 
 ---
 
-## 2.2 Creación de la tabla customers
+## 3.10 Creación de la tabla payments
 
-### Columnas de customers configuradas en el editor
-![Columnas customers configuradas](./evidencias_bitacora/workbench/02_editor_customers.png)
+### Columnas y Foreign Key de payments configuradas en pgAdmin:
+![Columnas payments configuradas en pgAdmin](./evidencias_bitacora/pgadmin/10_editor_payments.png)
 
-### Script SQL generado por el modelo:
-![Script CREATE TABLE customers generado](./evidencias_bitacora/workbench/02_script_customers.png)
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE payments generado](./evidencias_bitacora/pgadmin/10_script_payments.png)
 
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear customers](./evidencias_bitacora/workbench/02_show_tables_customers.png)
-
-**Resultado:** Se configuraron las columnas `id` (PK, AI, BIGINT), `document_type` (VARCHAR 30), `document_number` (VARCHAR 50, UQ), `name` (VARCHAR 150), `phone` (VARCHAR 30), `email` (VARCHAR 150), `status` (ENUM 'active','inactive', DEFAULT 'active'), `created_at` y `updated_at`, replicando exactamente la definición de la Sección 1. Se ejecutó el Forward Engineer individual y `SHOW TABLES` confirma la primera tabla creada.
+**Resultado:** Se configuró la tabla `payments` enlazada mediante Foreign Key a `orders(id)`, estableciendo métodos de pago válidos (`cash`, `card`, `transfer`, `points`) y monto con precisión `numeric(15,2)`.
 
 ---
 
-## 2.3 Creación de la tabla employees
+## 3.11 Creación de la tabla point_movements
 
-### Columnas de employees configuradas en el editor
-![Columnas employees configuradas](./evidencias_bitacora/workbench/03_editor_employees.png)
+### Columnas y Foreign Keys de point_movements configuradas en pgAdmin:
+![Columnas point_movements configuradas en pgAdmin](./evidencias_bitacora/pgadmin/11_editor_point_movements.png)
 
-### Script SQL generado por el modelo:
-![Script CREATE TABLE employees generado](./evidencias_bitacora/workbench/03_script_employees.png)
+### Script SQL generado por pgAdmin:
+![Script CREATE TABLE point_movements generado](./evidencias_bitacora/pgadmin/11_script_point_movements.png)
 
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear employees](./evidencias_bitacora/workbench/03_show_tables_employees.png)
-
-**Resultado:** Se cargaron las columnas `id` (PK, AI), `name`, `description`, `status`, `created_at` y `updated_at`. Se ejecutó el Forward Engineer individual para esta tabla, y `SHOW TABLES` sobre `tazanorte_visual` confirma dos tablas creadas (`customers`, `employees`).
+**Resultado:** Se configuró la tabla de fidelización `point_movements` en pgAdmin. Se verifican las referencias `customer_id -> customers(id)` obligatoria y `order_id -> orders(id)` nullable (permitiendo movimientos manuales o promocionales), junto con el saldo entero `points` (`integer`).
 
 ---
 
-## 2.4 Creación de la tabla supplies
+## 3.12 Verificación final en pgAdmin
 
-### Columnas de supplies configuradas en el editor
-![Columnas supplies configuradas](./evidencias_bitacora/workbench/04_editor_supplies.png)
+### Diagrama ERD obtenido desde pgAdmin (ERD Tool):
+![Diagrama ERD generado por pgAdmin — 10 tablas](./evidencias_bitacora/pgadmin/12_erd_pgadmin_final.png)
 
-### Script SQL generado por el modelo:
-![Script CREATE TABLE supplies generado](./evidencias_bitacora/workbench/04_script_supplies.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear supplies](./evidencias_bitacora/workbench/04_show_tables_supplies.png)
-
-**Resultado:** Se configuraron `id` (PK, AI), `code` (VARCHAR 50, UQ), `name`, `unit_of_measure`, `min_stock` (DECIMAL 15,3, DEFAULT 0), `status`, `created_at` y `updated_at`. `SHOW TABLES` confirma tres tablas creadas (`customers`, `employees`, `supplies`).
-
----
-
-## 2.5 Creación de la tabla products
-
-### Columnas de products configuradas en el editor
-![Columnas products configuradas](./evidencias_bitacora/workbench/05_editor_products.png)
-
-### Script SQL generado por el modelo:
-![Script CREATE TABLE products generado](./evidencias_bitacora/workbench/05_script_products.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear products](./evidencias_bitacora/workbench/05_show_tables_products.png)
-
-**Resultado:** Se configuraron `id` (PK, AI), `sku` (VARCHAR 100, UQ), `name`, `description`, `price` (DECIMAL 15,2), `status`, `created_at` y `updated_at`. `SHOW TABLES` confirma cuatro tablas creadas en `tazanorte_visual`.
-
----
-
-## 2.6 Creación de la tabla recipe_supplies
-
-### Columnas de recipe_supplies configuradas en el editor
-![Columnas recipe_supplies configuradas](./evidencias_bitacora/workbench/06_editor_recipe_supplies.png)
-
-### Script SQL generado por el modelo:
-![Script CREATE TABLE recipe_supplies generado](./evidencias_bitacora/workbench/06_script_recipe_supplies.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear recipe_supplies](./evidencias_bitacora/workbench/06_show_tables_recipe_supplies.png)
-
-**Resultado:** Se cargaron las columnas y se configuraron las dos Foreign Keys (`product_id → products(id)` y `supply_id → supplies(id)`), además de la restricción de unicidad compuesta `uq_product_supply(product_id, supply_id)`. Se ejecutó el Forward Engineer individual y `SHOW TABLES` confirma cinco tablas creadas.
-
----
-
-## 2.7 Creación de la tabla cash_shifts
-
-### Columnas de cash_shifts configuradas en el editor
-![Columnas cash_shifts configuradas](./evidencias_bitacora/workbench/07_editor_cash_shifts.png)
-
-### Script SQL generado por el modelo:
-![Script CREATE TABLE cash_shifts generado](./evidencias_bitacora/workbench/07_script_cash_shifts.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear cash_shifts](./evidencias_bitacora/workbench/07_show_tables_cash_shifts.png)
-
-**Resultado:** Se configuraron las columnas y la Foreign Key `employee_id → employees(id)`, visible como conector en el diagrama EER. `SHOW TABLES` confirma seis tablas creadas hasta el momento.
-
----
-
-## 2.8 Creación de la tabla orders
-
-### Columnas de orders configuradas en el editor
-![Columnas orders configuradas](./evidencias_bitacora/workbench/08_editor_orders.png)
-
-### Script SQL generado por el modelo:
-![Script CREATE TABLE orders generado](./evidencias_bitacora/workbench/08_script_orders.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear orders](./evidencias_bitacora/workbench/08_show_tables_orders.png)
-
-**Resultado:** Se cargaron las columnas y las dos Foreign Keys requeridas: `customer_id → customers(id)` y `cash_shift_id → cash_shifts(id)`. Se ejecutó el Forward Engineer individual y `SHOW TABLES` confirma siete tablas creadas.
-
----
-
-## 2.9 Creación de la tabla order_details
-
-### Columnas de order_details configuradas en el editor
-![Columnas order_details configuradas](./evidencias_bitacora/workbench/09_editor_order_details.png)
-
-### Script SQL generado por el modelo:
-![Script CREATE TABLE order_details generado](./evidencias_bitacora/workbench/09_script_order_details.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear order_details](./evidencias_bitacora/workbench/09_show_tables_order_details.png)
-
-**Resultado:** Se cargaron las columnas y las dos Foreign Keys indispensables para la relación maestro-detalle: `order_id → orders(id)` e `product_id → products(id)`. `SHOW TABLES` confirma ocho tablas creadas.
-
----
-
-## 2.10 Creación de la tabla payments
-
-### Columnas de payments configuradas en el editor
-![Columnas payments configuradas](./evidencias_bitacora/workbench/10_editor_payments.png)
-
-### Script SQL generado por el modelo:
-![Script CREATE TABLE payments generado](./evidencias_bitacora/workbench/10_script_payments.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear payments](./evidencias_bitacora/workbench/10_show_tables_payments.png)
-
-**Resultado:** Se configuraron las columnas sin Foreign Key rígida dado que `reference_id` es de naturaleza polimórfica (puede referenciar a pedidos u otros conceptos según `reference_type`), idéntico al modelo de la Sección 1. `SHOW TABLES` confirma nueve tablas creadas.
-
----
-
-## 2.11 Creación de la tabla point_movements
-
-### Columnas de point_movements configuradas en el editor
-![Columnas point_movements configuradas](./evidencias_bitacora/workbench/11_editor_point_movements.png)
-
-### Script SQL generado por el modelo:
-![Script CREATE TABLE point_movements generado](./evidencias_bitacora/workbench/11_script_point_movements.png)
-
-### Evidencia de la creación (Forward Engineer):
-![SHOW TABLES tras crear point_movements](./evidencias_bitacora/workbench/11_show_tables_point_movements.png)
-
-**Resultado:** Se cargaron las columnas y las dos Foreign Keys: `customer_id → customers(id)` (obligatoria) y `order_id → orders(id)` (nullable, para movimientos manuales de fidelización o promocionales). Se ejecutó el Forward Engineer individual y `SHOW TABLES` confirma las diez tablas creadas.
-
----
-
-### Verificación final de las 10 tablas en MySQL:
-![SHOW TABLES final sobre tazanorte_visual](./evidencias_bitacora/workbench/12_show_tables_final.png)
-
-### Conclusión de la Sección 2
-Con esto se finaliza con éxito la creación y modelado de la base de datos `tazanorte_visual` en MySQL Workbench, habiendo modelado individualmente cada una de las 10 tablas del dominio, configurado sus respectivas columnas y tipos de datos, establecido las relaciones foráneas (Foreign Keys) de negocio y receta, y validado su persistencia efectiva en el motor MySQL tabla a tabla mediante *Forward Engineer* individual, verificado mediante `SHOW TABLES` con las 10 tablas completas creadas en el schema visual.
-
----
-
-# 3. 🐘 Base de datos en PostgreSQL - Scripts DBeaver
-
-## 3.1 Limpieza y preparación del entorno
-
-Para asegurar una ejecución limpia y reproducible en PostgreSQL, se eliminan las tablas en el orden inverso estricto de sus dependencias por claves foráneas y se crea la función disparadora para la actualización automática de auditoría (`updated_at`):
-
-```sql
-DROP TABLE IF EXISTS point_movements;
-DROP TABLE IF EXISTS payments;
-DROP TABLE IF EXISTS order_details;
-DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS cash_shifts;
-DROP TABLE IF EXISTS recipe_supplies;
-DROP TABLE IF EXISTS products;
-DROP TABLE IF EXISTS supplies;
-DROP TABLE IF EXISTS employees;
-DROP TABLE IF EXISTS customers;
-
--- Función disparadora para simular ON UPDATE CURRENT_TIMESTAMP
-CREATE OR REPLACE FUNCTION actualizar_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = CURRENT_TIMESTAMP;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
-
-**Resultado:** Se preparó el entorno en PostgreSQL eliminando cualquier residuo previo y definiendo la función disparadora `actualizar_updated_at()` en lenguaje PL/pgSQL, la cual es invocada por los triggers `BEFORE UPDATE` de cada entidad del dominio.
-
----
-
-## 3.2 Creación de las tablas en PostgreSQL
-
-### 3.2.1 Creación de la tabla customers
-
-```sql
-CREATE TABLE customers (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    document_type VARCHAR(30) NOT NULL,
-    document_number VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    phone VARCHAR(30),
-    email VARCHAR(150),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER trg_customers_updated_at
-BEFORE UPDATE ON customers
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear customers en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-1.png)
-
----
-
-### 3.2.2 Creación de la tabla employees
-
-```sql
-CREATE TABLE employees (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    description TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER trg_employees_updated_at
-BEFORE UPDATE ON employees
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear employees en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-2.png)
-
----
-
-### 3.2.3 Creación de la tabla supplies
-
-```sql
-CREATE TABLE supplies (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    unit_of_measure VARCHAR(30) NOT NULL,
-    min_stock NUMERIC(15,3) NOT NULL DEFAULT 0,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER trg_supplies_updated_at
-BEFORE UPDATE ON supplies
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear supplies en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-3.png)
-
----
-
-### 3.2.4 Creación de la tabla products
-
-```sql
-CREATE TABLE products (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    sku VARCHAR(100) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    description TEXT,
-    price NUMERIC(15,2) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER trg_products_updated_at
-BEFORE UPDATE ON products
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear products en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-4.png)
-
----
-
-### 3.2.5 Creación de la tabla recipe_supplies
-
-```sql
-CREATE TABLE recipe_supplies (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    supply_id BIGINT NOT NULL,
-    quantity NUMERIC(15,3) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_recipe_supplies_product
-        FOREIGN KEY (product_id) REFERENCES products(id),
-    CONSTRAINT fk_recipe_supplies_supply
-        FOREIGN KEY (supply_id) REFERENCES supplies(id),
-    CONSTRAINT uq_recipe_supplies_prod_sup
-        UNIQUE (product_id, supply_id)
-);
-
-CREATE TRIGGER trg_recipe_supplies_updated_at
-BEFORE UPDATE ON recipe_supplies
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear recipe_supplies en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-5.png)
-
----
-
-### 3.2.6 Creación de la tabla cash_shifts
-
-```sql
-CREATE TABLE cash_shifts (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id BIGINT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    opened_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    closed_at TIMESTAMP,
-    initial_balance NUMERIC(15,2) NOT NULL DEFAULT 0,
-    final_balance NUMERIC(15,2),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_cash_shifts_employee
-        FOREIGN KEY (employee_id) REFERENCES employees(id)
-);
-
-CREATE TRIGGER trg_cash_shifts_updated_at
-BEFORE UPDATE ON cash_shifts
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear cash_shifts en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-6.png)
-
----
-
-### 3.2.7 Creación de la tabla orders
-
-```sql
-CREATE TABLE orders (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    customer_id BIGINT NOT NULL,
-    cash_shift_id BIGINT NOT NULL,
-    channel VARCHAR(20) NOT NULL DEFAULT 'pos',
-    order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    subtotal NUMERIC(15,2) NOT NULL DEFAULT 0,
-    total NUMERIC(15,2) NOT NULL DEFAULT 0,
-    status VARCHAR(30) NOT NULL DEFAULT 'pending',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_orders_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id),
-    CONSTRAINT fk_orders_cash_shift
-        FOREIGN KEY (cash_shift_id) REFERENCES cash_shifts(id)
-);
-
-CREATE TRIGGER trg_orders_updated_at
-BEFORE UPDATE ON orders
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear orders en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-7.png)
-
----
-
-### 3.2.8 Creación de la tabla order_details
-
-```sql
-CREATE TABLE order_details (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    order_id BIGINT NOT NULL,
-    product_id BIGINT NOT NULL,
-    quantity NUMERIC(10,2) NOT NULL DEFAULT 1,
-    unit_price NUMERIC(15,2) NOT NULL DEFAULT 0,
-    subtotal NUMERIC(15,2) NOT NULL DEFAULT 0,
-    status VARCHAR(30) NOT NULL DEFAULT 'active',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_order_details_order
-        FOREIGN KEY (order_id) REFERENCES orders(id),
-    CONSTRAINT fk_order_details_product
-        FOREIGN KEY (product_id) REFERENCES products(id)
-);
-
-CREATE TRIGGER trg_order_details_updated_at
-BEFORE UPDATE ON order_details
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear order_details en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-8.png)
-
----
-
-### 3.2.9 Creación de la tabla payments
-
-```sql
-CREATE TABLE payments (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    order_id BIGINT NOT NULL,
-    payment_method VARCHAR(30) NOT NULL DEFAULT 'cash',
-    amount NUMERIC(15,2) NOT NULL DEFAULT 0,
-    payment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(30) NOT NULL DEFAULT 'completed',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_payments_order
-        FOREIGN KEY (order_id) REFERENCES orders(id)
-);
-
-CREATE TRIGGER trg_payments_updated_at
-BEFORE UPDATE ON payments
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear payments en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-9.png)
-
----
-
-### 3.2.10 Creación de la tabla point_movements
-
-```sql
-CREATE TABLE point_movements (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    customer_id BIGINT NOT NULL,
-    order_id BIGINT NULL,
-    reference_type VARCHAR(50) NOT NULL,
-    reference_id BIGINT NOT NULL,
-    movement_type VARCHAR(50) NOT NULL,
-    points INT NOT NULL,
-    movement_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    observations TEXT,
-    status VARCHAR(30) NOT NULL DEFAULT 'active',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_point_movements_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id),
-    CONSTRAINT fk_point_movements_order
-        FOREIGN KEY (order_id) REFERENCES orders(id)
-);
-
-CREATE TRIGGER trg_point_movements_updated_at
-BEFORE UPDATE ON point_movements
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_updated_at();
-```
-
-### Evidencia:
-![Crear point_movements en PostgreSQL](./evidencias_bitacora/scripts-postgres/image-10.png)
-
----
-
-## 3.3 📐 Diagramas de la base de datos en PostgreSQL
-
-Una vez creadas todas las tablas y establecidas las relaciones correspondientes, se procede a visualizar el modelo relacional generado tanto en pgAdmin (herramienta ERD Tool) como en DBeaver sobre el esquema `public`.
-
-### Evidencia del Diagrama ERD en pgAdmin:
-![Diagrama ERD generado por pgAdmin](./evidencias_bitacora/scripts-postgres/12_erd_pgadmin_final.png)
-
-### Evidencia del Diagrama ER en DBeaver:
-![Diagrama PostgreSQL TazaNorte](./evidencias_bitacora/scripts-postgres/image-11.png)
+**Resultado:** Para verificar que el modelo relacional construido en PostgreSQL coincide exactamente con los requerimientos del dominio, se generó un diagrama ERD directamente desde la herramienta visual *ERD Tool* de pgAdmin sobre el esquema `public`. El resultado confirma las 10 tablas físicas y todas las líneas de relación (Foreign Keys) debidamente conectadas.
 
 ### Conclusión de la Sección 3
-Se concluye con éxito la creación y validación de la base de datos de TazaNorte en PostgreSQL, contando tanto con la ejecución de scripts en DBeaver como con el modelado visual en pgAdmin 4. Se modelaron e implementaron las 10 entidades físicas con columnas autoincrementales estándar SQL `GENERATED ALWAYS AS IDENTITY`, restricciones de unicidad, claves foráneas maestro-detalle y de receta, y disparadores PL/pgSQL `BEFORE UPDATE` para garantizar la actualización automática del campo `updated_at`. El modelo relacional fue validado visual e integralmente a través del diagrama ERD en pgAdmin y el diagrama ER en DBeaver.
+Se concluye exitosamente la creación y verificación de la base de datos de TazaNorte en PostgreSQL mediante el entorno visual de pgAdmin 4. Se modelaron e inspeccionaron individualmente cada una de las 10 entidades físicas, validando sus columnas, tipos de datos PostgreSQL, claves primarias autoincrementales Identity, restricciones de unicidad y claves foráneas maestro-detalle, respaldado por el script DDL generado y el diagrama ERD oficial del motor.
 
 ---
 
