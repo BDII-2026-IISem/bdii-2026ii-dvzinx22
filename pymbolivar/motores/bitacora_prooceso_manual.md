@@ -361,7 +361,7 @@ GO
 ### Evidencia (imagen):
 ![Tabla customers y trigger creados en SQL Server](./evidencias_bitacora/sqlserver/02_crear_customers.png)
 
-**Resultado:** Se creó la tabla `customers` con columna autoincremental `IDENTITY(1,1)`, restricción de unicidad sobre `document_number`, indicador booleano `BIT` y trigger `AFTER UPDATE` (dado que SQL Server no admite disparadores `BEFORE UPDATE`) para actualizar `updated_at` a partir de la pseudotabla `inserted`.
+**Resultado:** Se creó la tabla `customers` con columna autoincremental `IDENTITY(1,1)`, restricción de unicidad sobre `document_number`, indicador booleano `BIT` y trigger `AFTER UPDATE` (dado que SQL Server no admite disparadores `BEFORE UPDATE`) para actualizar `updated_at` a partir de la pseudotabla `inserted`. Como evidencia de la creación física y persistencia efectiva en el motor SQL Server dentro de DBeaver, se ejecutó una consulta directa `SELECT * FROM customers;`, la cual confirma en la cuadrícula de resultados la estructura completa de columnas generadas (`id`, `document_type`, `document_number`, `name`, `phone`, `email`, `is_active`, `created_at`, `updated_at`) sobre el catálogo `dbo@tazanorte`.
 
 ---
 
