@@ -879,15 +879,18 @@ EXECUTE FUNCTION actualizar_updated_at();
 
 ---
 
-## 3.3 📐 Diagrama de la base de datos en PostgreSQL
+## 3.3 📐 Diagramas de la base de datos en PostgreSQL
 
-Una vez creadas todas las tablas y establecidas las relaciones correspondientes, se procede a visualizar el diagrama relacional en DBeaver sobre el esquema `public`.
+Una vez creadas todas las tablas y establecidas las relaciones correspondientes, se procede a visualizar el modelo relacional generado tanto en pgAdmin (herramienta ERD Tool) como en DBeaver sobre el esquema `public`.
 
-### Evidencia en DBeaver:
+### Evidencia del Diagrama ERD en pgAdmin:
+![Diagrama ERD generado por pgAdmin](./evidencias_bitacora/scripts-postgres/12_erd_pgadmin_final.png)
+
+### Evidencia del Diagrama ER en DBeaver:
 ![Diagrama PostgreSQL TazaNorte](./evidencias_bitacora/scripts-postgres/image-11.png)
 
 ### Conclusión de la Sección 3
-Se concluye con éxito la creación de la base de datos de TazaNorte en PostgreSQL mediante DBeaver. Se modelaron e implementaron las 10 entidades físicas con columnas autoincrementales estándar SQL `GENERATED ALWAYS AS IDENTITY`, restricciones de unicidad, claves foráneas maestro-detalle y de receta, y disparadores PL/pgSQL `BEFORE UPDATE` para garantizar la actualización automática del campo `updated_at`. El modelo relacional fue validado integralmente a través del diagrama ER generado por el motor.
+Se concluye con éxito la creación y validación de la base de datos de TazaNorte en PostgreSQL, contando tanto con la ejecución de scripts en DBeaver como con el modelado visual en pgAdmin 4. Se modelaron e implementaron las 10 entidades físicas con columnas autoincrementales estándar SQL `GENERATED ALWAYS AS IDENTITY`, restricciones de unicidad, claves foráneas maestro-detalle y de receta, y disparadores PL/pgSQL `BEFORE UPDATE` para garantizar la actualización automática del campo `updated_at`. El modelo relacional fue validado visual e integralmente a través del diagrama ERD en pgAdmin y el diagrama ER en DBeaver.
 
 ---
 
