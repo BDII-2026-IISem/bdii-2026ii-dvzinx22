@@ -1414,57 +1414,336 @@ SELECT table_name FROM user_tables ORDER BY table_name;
 
 # 7. Base de Datos Oracle Database — Parte Visual (Oracle SQL Developer)
 
-## 7.1 Conexión y configuración en Oracle SQL Developer
-Se empleó la herramienta nativa **Oracle SQL Developer**, entorno gráfico oficial distribuido por Oracle Corporation para administración y modelado. La conexión se configuró mediante el tipo de conexión básica (*Basic*), conectando a `172.30.137.66` (o `localhost`) sobre el puerto 1521, con nombre de servicio (*Service Name*) `XEPDB1` y autenticación bajo el usuario de esquema `tazanorte`.
+## Conexión inicial
+Una vez descargado e iniciado Oracle SQL Developer, se establece la conexión con el motor Oracle Database 21c (servicio `XEPDB1`, puerto 1521, usuario `tazanorte`).
 
-### Evidencia (imagen):
+### Evidencia
 ![Conexión al esquema tazanorte en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/01_conexion_sqldeveloper.png)
 
 ---
 
-## 7.2 Exploración visual y diseño de tablas en Oracle SQL Developer
-Mediante el inspector y diseñador gráfico de tablas (*Edit Table / Columns / Constraints*) de Oracle SQL Developer, se constata visualmente la definición de tipos de datos (`NUMBER`, `VARCHAR2`, `CLOB`, `TIMESTAMP`), restricciones de clave primaria, restricciones de unicidad y llaves foráneas.
+## Creación de tablas
+Una vez establecida la conexión con Oracle, se procede a crear cada una de las tablas mediante la interfaz gráfica de Oracle SQL Developer.
 
-### Evidencias de diseño de tablas (imágenes):
-- **Tabla customers:**
-![Diseñador visual de tabla customers en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/02_disenador_customers.png)
+La creación se realiza individualmente para cada tabla, configurando los campos, restricciones y relaciones correspondientes.
 
-- **Tabla employees:**
-![Diseñador visual de tabla employees en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/03_disenador_employees.png)
+### 1. Creación de la tabla customers
+Se crea la tabla `customers`, destinada a almacenar la información de los clientes registrados y su puntaje de fidelización en la cafetería.
 
-- **Tabla supplies:**
-![Diseñador visual de tabla supplies en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/04_disenador_supplies.png)
+La tabla contiene los siguientes campos:
 
-- **Tabla products:**
-![Diseñador visual de tabla products en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/05_disenador_products.png)
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `code` | VARCHAR2(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR2(100) | NOT NULL |
+| `last_name` | VARCHAR2(100) | NOT NULL |
+| `email` | VARCHAR2(150) | NOT NULL, UNIQUE |
+| `phone` | VARCHAR2(30) | |
+| `current_points` | NUMBER(10) | NOT NULL, Default: 0 |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
 
-- **Tabla recipe_supplies:**
-![Diseñador visual de tabla recipe_supplies en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/06_disenador_recipe_supplies.png)
+El campo `id` se establece como clave primaria y se configura como columna Identity para generar automáticamente los identificadores.
 
-- **Tabla cash_shifts:**
-![Diseñador visual de tabla cash_shifts en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/07_disenador_cash_shifts.png)
+Los campos `code` y `email` se configuran como únicos para evitar duplicidad de registros de clientes.
 
-- **Tabla orders:**
-![Diseñador visual de tabla orders en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/08_disenador_orders.png)
+El campo `status` se configura mediante una restricción CHECK, permitiendo únicamente los valores `active` e `inactive`.
 
-- **Tabla order_details:**
-![Diseñador visual de tabla order_details en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/09_disenador_order_details.png)
-
-- **Tabla payments:**
-![Diseñador visual de tabla payments en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/10_disenador_payments.png)
-
-- **Tabla point_movements:**
-![Diseñador visual de tabla point_movements en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/11_disenador_point_movements.png)
+#### Evidencia
+![Creación de la tabla customers en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/02_crear_customers.png)
 
 ---
 
-## 7.3 Diagrama Relacional ER Oficial en Oracle SQL Developer (Data Modeler)
-Utilizando la funcionalidad integrada de ingeniería inversa (*Data Modeler ➡️ Import ➡️ Data Dictionary*), se realizó la importación del esquema `tazanorte` para generar el diagrama de modelo relacional nativo en Oracle SQL Developer.
+### 2. Creación de la tabla employees
+Se crea la tabla `employees`, destinada a almacenar la información del personal y baristas de la cafetería.
 
-### Evidencia (imagen):
-![Diagrama Relacional ER generado en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/12_diagrama_erd_oracle.png)
+La tabla contiene los siguientes campos:
 
-**Resultado:** Modelo relacional completo generado en Oracle SQL Developer Data Modeler, validando las 10 entidades y la arquitectura íntegra de claves foráneas y relaciones del ecosistema TazaNorte.
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `code` | VARCHAR2(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR2(100) | NOT NULL |
+| `last_name` | VARCHAR2(100) | NOT NULL |
+| `email` | VARCHAR2(150) | NOT NULL, UNIQUE |
+| `role` | VARCHAR2(50) | NOT NULL |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+El campo `id` se establece como clave primaria con generación automática Identity.
+
+Los campos `code` y `email` se definen con restricción de unicidad UNIQUE.
+
+#### Evidencia
+![Creación de la tabla employees en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/03_crear_employees.png)
+
+---
+
+### 3. Creación de la tabla supplies
+Se crea la tabla `supplies`, destinada a registrar los insumos de materia prima (granos de café, leche, jarabes, empaques) utilizados en las preparaciones.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `code` | VARCHAR2(50) | NOT NULL, UNIQUE |
+| `name` | VARCHAR2(150) | NOT NULL |
+| `unit_of_measure` | VARCHAR2(30) | NOT NULL |
+| `min_stock` | NUMBER(15,3) | NOT NULL, Default: 0 |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+El campo `id` se configura como clave primaria Identity.
+
+El campo `min_stock` utiliza precisión de tres decimales `NUMBER(15,3)` para admitir pesos y volúmenes exactos (ej. kilogramos, litros).
+
+#### Evidencia
+![Creación de la tabla supplies en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/04_crear_supplies.png)
+
+---
+
+### 4. Creación de la tabla products
+Se crea la tabla `products`, destinada a almacenar el menú de bebidas, postres y alimentos comercializados en TazaNorte.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `sku` | VARCHAR2(100) | NOT NULL, UNIQUE |
+| `name` | VARCHAR2(150) | NOT NULL |
+| `description` | VARCHAR2(500) | |
+| `price` | NUMBER(15,2) | NOT NULL |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+El campo `id` se establece como clave primaria Identity.
+
+El campo `sku` se configura como índice único, y `price` almacena el valor comercial con dos decimales de precisión monetaria.
+
+#### Evidencia
+![Creación de la tabla products en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/05_crear_products.png)
+
+---
+
+### 5. Creación de la tabla recipe_supplies
+Se crea la tabla `recipe_supplies`, destinada a almacenar la receta y ficha técnica de dosificación de insumos por cada producto (relación N:M entre productos e insumos).
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `product_id` | NUMBER | NOT NULL, FK |
+| `supply_id` | NUMBER | NOT NULL, FK |
+| `quantity` | NUMBER(15,3) | NOT NULL |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+Se establecen dos claves foráneas para vincular cada insumo dosificado con su producto respectivo.
+
+#### Relaciones
+- `recipe_supplies.product_id → products.id`
+- `recipe_supplies.supply_id → supplies.id`
+
+#### Evidencia
+![Creación de la tabla recipe_supplies en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/06_crear_recipe_supplies.png)
+
+---
+
+### 6. Creación de la tabla cash_shifts
+Se crea la tabla `cash_shifts`, destinada a gestionar la apertura, arqueo y cierre de turnos de caja en el punto de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `employee_id` | NUMBER | NOT NULL, FK |
+| `name` | VARCHAR2(100) | NOT NULL |
+| `description` | VARCHAR2(500) | |
+| `opened_at` | DATE | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `closed_at` | DATE | |
+| `initial_balance` | NUMBER(15,2) | NOT NULL, Default: 0 |
+| `final_balance` | NUMBER(15,2) | |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+El campo `employee_id` se establece como clave foránea relacionada con el cajero o barista responsable.
+
+#### Relación
+- `cash_shifts.employee_id → employees.id`
+
+#### Evidencia
+![Creación de la tabla cash_shifts en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/07_crear_cash_shifts.png)
+
+---
+
+### 7. Creación de la tabla orders
+Se crea la tabla `orders`, destinada a registrar las órdenes de compra y comandas generadas por los clientes.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `customer_id` | NUMBER | NOT NULL, FK |
+| `cash_shift_id` | NUMBER | NOT NULL, FK |
+| `channel` | VARCHAR2(20) | NOT NULL, Default: pos |
+| `order_date` | DATE | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `subtotal` | NUMBER(15,2) | NOT NULL, Default: 0 |
+| `total` | NUMBER(15,2) | NOT NULL, Default: 0 |
+| `status` | VARCHAR2(30) | NOT NULL, Default: pending |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+Se configuran dos claves foráneas que asocian la orden con el cliente y con el turno de caja activo.
+
+#### Relaciones
+- `orders.customer_id → customers.id`
+- `orders.cash_shift_id → cash_shifts.id`
+
+#### Evidencia
+![Creación de la tabla orders en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/08_crear_orders.png)
+
+---
+
+### 8. Creación de la tabla order_details
+Se crea la tabla `order_details`, destinada a almacenar el detalle de los productos incluidos en cada comanda.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `order_id` | NUMBER | NOT NULL, FK |
+| `product_id` | NUMBER | NOT NULL, FK |
+| `quantity` | NUMBER(10,2) | NOT NULL, Default: 1 |
+| `unit_price` | NUMBER(15,2) | NOT NULL, Default: 0 |
+| `subtotal` | NUMBER(15,2) | NOT NULL, Default: 0 |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+Se establecen dos claves foráneas para relacionar cada línea de detalle con la orden de venta y con el catálogo de productos.
+
+#### Relaciones
+- `order_details.order_id → orders.id`
+- `order_details.product_id → products.id`
+
+#### Evidencia
+![Creación de la tabla order_details en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/09_crear_order_details.png)
+
+---
+
+### 9. Creación de la tabla payments
+Se crea la tabla `payments`, destinada a registrar los pagos realizados dentro del sistema para liquidar las comandas.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `order_id` | NUMBER | NOT NULL, FK |
+| `payment_method` | VARCHAR2(30) | NOT NULL, Default: cash |
+| `amount` | NUMBER(15,2) | NOT NULL, Default: 0 |
+| `payment_date` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `status` | VARCHAR2(30) | NOT NULL, Default: completed |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+El campo `order_id` se establece como clave foránea hacia la orden correspondiente.
+
+#### Relación
+- `payments.order_id → orders.id`
+
+#### Evidencia
+![Creación de la tabla payments en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/10_crear_payments.png)
+
+---
+
+### 10. Creación de la tabla point_movements
+Finalmente, se crea la tabla `point_movements`, destinada a registrar las transacciones del programa de fidelización (acumulación y redención de puntos).
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | NUMBER | PK, NOT NULL, Identity |
+| `customer_id` | NUMBER | NOT NULL, FK |
+| `order_id` | NUMBER | FK (permite nulos) |
+| `reference_type` | VARCHAR2(50) | NOT NULL |
+| `reference_id` | NUMBER | NOT NULL |
+| `movement_type` | VARCHAR2(50) | NOT NULL |
+| `points` | NUMBER(10) | NOT NULL |
+| `movement_date` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `observations` | VARCHAR2(500) | |
+| `status` | VARCHAR2(8) | NOT NULL, Default: active |
+| `created_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+| `updated_at` | TIMESTAMP | NOT NULL, Default: CURRENT_TIMESTAMP |
+
+El campo `customer_id` se establece como clave foránea obligatoria hacia `customers`, mientras que `order_id` es una relación opcional para permitir bonificaciones de bienvenida o cortesías no atadas a una compra.
+
+#### Relaciones
+- `point_movements.customer_id → customers.id`
+- `point_movements.order_id → orders.id`
+
+#### Evidencia
+![Creación de la tabla point_movements en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/11_crear_point_movements.png)
+
+---
+
+## Diagrama de la base de datos
+Una vez finalizada la creación de todas las tablas mediante la interfaz gráfica de Oracle SQL Developer, se procede a verificar la estructura de la base de datos y las relaciones establecidas.
+
+El diagrama permite visualizar gráficamente las tablas que conforman **TazaNorte** y las relaciones establecidas mediante claves foráneas a través de la herramienta integrada Data Modeler.
+
+### Evidencia
+![Diagrama de la base de datos TazaNorte en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/12_diagrama_erd_oracle.png)
+
+---
+
+## Consideraciones de la implementación en Oracle SQL Developer
+Para esta implementación se utilizaron los tipos de datos correspondientes a Oracle Database:
+
+| Elemento | Tipo utilizado |
+| :--- | :--- |
+| Identificadores | NUMBER |
+| Textos | VARCHAR2(n) |
+| Fechas | DATE |
+| Fecha de creación y actualización | TIMESTAMP |
+| Números reales y valores monetarios | NUMBER(15,2) |
+| Cantidades con tres decimales | NUMBER(15,3) |
+| Estado | VARCHAR2(8) + CHECK |
+| Identificadores automáticos | IDENTITY |
+
+El campo `status` se implementó mediante `VARCHAR2(8)` acompañado de una restricción CHECK, debido a que Oracle no utiliza un tipo ENUM nativo como MySQL.
+
+Los valores permitidos para el campo son:
+- `active`
+- `inactive`
+
+Todas las tablas cuentan con los campos `created_at` y `updated_at`, destinados a registrar la fecha y hora de creación y actualización de los registros.
+
+Las relaciones implementadas mediante claves foráneas son:
+- `recipe_supplies.product_id → products.id`
+- `recipe_supplies.supply_id → supplies.id`
+- `cash_shifts.employee_id → employees.id`
+- `orders.customer_id → customers.id`
+- `orders.cash_shift_id → cash_shifts.id`
+- `order_details.order_id → orders.id`
+- `order_details.product_id → products.id`
+- `payments.order_id → orders.id`
+- `point_movements.customer_id → customers.id`
+- `point_movements.order_id → orders.id`
 
 ### Conclusión General de los 4 Motores de Base de Datos
 Se completó de forma exhaustiva el ciclo de vida de modelado, scripting DDL e implementación visual a través de los cuatro motores de bases de datos líderes de la industria (MySQL, PostgreSQL, Microsoft SQL Server y Oracle Database). Cada plataforma fue abordada tanto desde clientes universales (DBeaver) como desde sus respectivos entornos de desarrollo y modelado visual nativos (MySQL Workbench, pgAdmin 4, SQL Server Management Studio y Oracle SQL Developer), demostrando la adaptabilidad técnica de los tipos de datos, mecanismos de identidad, disparadores y diagramación relacional.
