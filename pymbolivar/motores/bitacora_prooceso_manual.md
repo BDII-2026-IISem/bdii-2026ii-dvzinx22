@@ -1,17 +1,17 @@
-# ☕ Creación de Base de Datos - TazaNorte
+# Creación de Base de Datos - TazaNorte
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Project-TazaNorte_Cafetería-6F4E37?style=for-the-badge&logo=coffeescript&logoColor=white" alt="TazaNorte" />
-  <img src="https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
-  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/MSSQL_Server-CC292B?style=for-the-badge&logo=microsoftsqlserver&logoColor=white" alt="MSSQL Server" />
-  <img src="https://img.shields.io/badge/Oracle_Database-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="Oracle" />
-  <img src="https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Ubuntu" />
+ <img src="https://img.shields.io/badge/Project-TazaNorte_Cafetería-6F4E37?style=for-the-badge&logo=coffeescript&logoColor=white" alt="TazaNorte" />
+ <img src="https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
+ <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+ <img src="https://img.shields.io/badge/MSSQL_Server-CC292B?style=for-the-badge&logo=microsoftsqlserver&logoColor=white" alt="MSSQL Server" />
+ <img src="https://img.shields.io/badge/Oracle_Database-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="Oracle" />
+ <img src="https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Ubuntu" />
 </p>
 
 ---
 
-## 🖥️ Apertura de las bases de datos en terminal
+## Apertura de las bases de datos en terminal
 
 Para la inicialización y aprovisionamiento de las bases de datos en cada motor de persistencia relacional, se estableció sesión directa a través de la terminal de **Ubuntu (WSL)** empleando las credenciales de administración previamente configuradas. A continuación, se detallan las instrucciones ejecutadas en la interfaz de línea de comandos (CLI) de cada motor:
 
@@ -46,7 +46,7 @@ ALTER USER tazanorte QUOTA UNLIMITED ON USERS;
 
 ---
 
-### 📸 Ejecución
+### Ejecución
 
 A continuación se documenta el proceso de invocación de los motores de bases de datos y la creación de cada instancia desde la terminal:
 
@@ -54,7 +54,7 @@ A continuación se documenta el proceso de invocación de los motores de bases d
 
 ---
 
-### 🔍 Evidencia
+### Evidencia
 
 Confirmación visual de las bases de datos creadas y disponibles para su gestión y conexión desde herramientas de administración:
 
@@ -62,23 +62,23 @@ Confirmación visual de las bases de datos creadas y disponibles para su gestió
 
 ---
 
-## 📋 Anotaciones y Convenciones de Diseño
+## Anotaciones y Convenciones de Diseño
 
 Para garantizar uniformidad, escalabilidad y compatibilidad con arquitecturas limpias y Domain-Driven Design (DDD), se aplicaron los siguientes estándares en todas las implementaciones:
 
-- 🏷️ **Entidades de Dominio:** Se estructuran como objetos en lenguaje **inglés**, empleando notación **PascalCase** y en formato **singular** (ejemplo: `Customer`, `Product`, `Order`, `CashShift`).
-- 🗄️ **Tablas Físicas:** Se nombran en **inglés**, en **minúsculas** y en formato **plural** utilizando la convención **snake_case** (ejemplo: `customers`, `products`, `orders`, `cash_shifts`).
-- 📝 **Atributos y Columnas:** Todos los campos se encuentran definidos en **inglés** bajo el formato **snake_case** (ejemplo: `document_type`, `unit_of_measure`, `created_at`).
-- 🔑 **Claves Primarias:** Cada tabla cuenta con una llave primaria unificada e indexada denominada **`id`**, configurada como tipo entero de alta capacidad (**`BIGINT`** o su equivalente nativo).
-- 🔗 **Claves Foráneas (FK):** Siguen la regla estricta del nombre de la entidad/tabla relacionada en **singular** acompañado del sufijo **`_id`** (ejemplo: `customer_id`, `product_id`, `employee_id`, `cash_shift_id`).
-- ⏱️ **Trazabilidad y Auditoría Temporal:** Todas las tablas registran automáticamente los sellos temporales **`created_at`** y **`updated_at`**, asegurando un histórico cronológico inalterable.
-- 🛡️ **Restricciones de Integridad y Unicidad:** Aquellos atributos que no admiten duplicidad (como documentos de identidad, códigos SKU e identificadores de insumos) están resguardados por restricciones **`UNIQUE`**.
-- 🚦 **Gestión de Estados (Soft Control):** Se integra una columna de control de ciclo de vida (`status` o `is_active`) para permitir bajas lógicas e inhabilitaciones sin perder trazabilidad transaccional.
-- 📐 **Diagramación Relacional:** Una vez completada la persistencia física en cada motor, se genera y valida el respectivo Diagrama Entidad-Relación (ER) mediante DBeaver.
+- **Entidades de Dominio:** Se estructuran como objetos en lenguaje **inglés**, empleando notación **PascalCase** y en formato **singular** (ejemplo: `Customer`, `Product`, `Order`, `CashShift`).
+- **Tablas Físicas:** Se nombran en **inglés**, en **minúsculas** y en formato **plural** utilizando la convención **snake_case** (ejemplo: `customers`, `products`, `orders`, `cash_shifts`).
+- **Atributos y Columnas:** Todos los campos se encuentran definidos en **inglés** bajo el formato **snake_case** (ejemplo: `document_type`, `unit_of_measure`, `created_at`).
+- **Claves Primarias:** Cada tabla cuenta con una llave primaria unificada e indexada denominada **`id`**, configurada como tipo entero de alta capacidad (**`BIGINT`** o su equivalente nativo).
+- **Claves Foráneas (FK):** Siguen la regla estricta del nombre de la entidad/tabla relacionada en **singular** acompañado del sufijo **`_id`** (ejemplo: `customer_id`, `product_id`, `employee_id`, `cash_shift_id`).
+- **Trazabilidad y Auditoría Temporal:** Todas las tablas registran automáticamente los sellos temporales **`created_at`** y **`updated_at`**, asegurando un histórico cronológico inalterable.
+- **Restricciones de Integridad y Unicidad:** Aquellos atributos que no admiten duplicidad (como documentos de identidad, códigos SKU e identificadores de insumos) están resguardados por restricciones **`UNIQUE`**.
+- **Gestión de Estados (Soft Control):** Se integra una columna de control de ciclo de vida (`status` o `is_active`) para permitir bajas lógicas e inhabilitaciones sin perder trazabilidad transaccional.
+- **Diagramación Relacional:** Una vez completada la persistencia física en cada motor, se genera y valida el respectivo Diagrama Entidad-Relación (ER) mediante DBeaver.
 
 ---
 
-# 📊 Tablas del Dominio
+# Tablas del Dominio
 
 **TazaNorte** es una plataforma de software diseñada para la operación omnicanal de cafeterías y puntos de venta especializados. El sistema centraliza la gestión de pedidos tanto en caja como para llevar, capturando especificaciones personalizadas (variantes de leche, endulzantes, extras y observaciones de baristas), coordinando el envío de comandas a la zona de preparación, controlando el inventario crítico de insumos mediante recetas predefinidas y auditando la apertura y cierre de turnos de caja. Asimismo, administra un programa de fidelización por puntos que acredita saldos auditables únicamente sobre ventas liquidadas y autoriza redenciones controladas.
 
@@ -106,7 +106,7 @@ A continuación, se presenta la matriz de entidades y tablas físicas del domini
 
 ---
 
-# 🐬 Base de datos en MySQL - Scripts DBeaver
+# Base de datos en MySQL - Scripts DBeaver
 
 ## 1. Creación de la tabla Customers
 
@@ -116,15 +116,15 @@ La tabla `customers` almacena la información de los clientes registrados en la 
 
 ```sql
 CREATE TABLE customers (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    document_type VARCHAR(30) NOT NULL,
-    document_number VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    phone VARCHAR(30),
-    email VARCHAR(150),
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+ id BIGINT AUTO_INCREMENT PRIMARY KEY,
+ document_type VARCHAR(30) NOT NULL,
+ document_number VARCHAR(50) NOT NULL UNIQUE,
+ name VARCHAR(150) NOT NULL,
+ phone VARCHAR(30),
+ email VARCHAR(150),
+ status ENUM('active', 'inactive') DEFAULT 'active',
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
 
@@ -142,12 +142,12 @@ La tabla `employees` almacena los datos de los baristas, cajeros y supervisores 
 
 ```sql
 CREATE TABLE employees (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    description TEXT,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+ id BIGINT AUTO_INCREMENT PRIMARY KEY,
+ name VARCHAR(150) NOT NULL,
+ description TEXT,
+ status ENUM('active', 'inactive') DEFAULT 'active',
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
 
@@ -309,8 +309,8 @@ GO
 
 IF EXISTS (SELECT name FROM sys.databases WHERE name = 'tazanorte')
 BEGIN
-    ALTER DATABASE tazanorte SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE tazanorte;
+ ALTER DATABASE tazanorte SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+ DROP DATABASE tazanorte;
 END
 GO
 
@@ -332,15 +332,15 @@ GO
 
 ```sql
 CREATE TABLE customers (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    document_type VARCHAR(30) NOT NULL,
-    document_number VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    phone VARCHAR(30),
-    email VARCHAR(150),
-    is_active BIT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ document_type VARCHAR(30) NOT NULL,
+ document_number VARCHAR(50) NOT NULL UNIQUE,
+ name VARCHAR(150) NOT NULL,
+ phone VARCHAR(30),
+ email VARCHAR(150),
+ is_active BIT NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -349,11 +349,11 @@ ON customers
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE customers
-    SET updated_at = GETDATE()
-    FROM customers
-    INNER JOIN inserted ON customers.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE customers
+ SET updated_at = GETDATE()
+ FROM customers
+ INNER JOIN inserted ON customers.id = inserted.id;
 END;
 GO
 ```
@@ -369,12 +369,12 @@ GO
 
 ```sql
 CREATE TABLE employees (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    description VARCHAR(MAX),
-    is_active BIT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ name VARCHAR(150) NOT NULL,
+ description VARCHAR(MAX),
+ is_active BIT NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -383,11 +383,11 @@ ON employees
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE employees
-    SET updated_at = GETDATE()
-    FROM employees
-    INNER JOIN inserted ON employees.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE employees
+ SET updated_at = GETDATE()
+ FROM employees
+ INNER JOIN inserted ON employees.id = inserted.id;
 END;
 GO
 ```
@@ -403,14 +403,14 @@ GO
 
 ```sql
 CREATE TABLE supplies (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    unit_of_measure VARCHAR(30) NOT NULL,
-    min_stock DECIMAL(15,3) NOT NULL DEFAULT 0,
-    is_active BIT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ code VARCHAR(50) NOT NULL UNIQUE,
+ name VARCHAR(150) NOT NULL,
+ unit_of_measure VARCHAR(30) NOT NULL,
+ min_stock DECIMAL(15,3) NOT NULL DEFAULT 0,
+ is_active BIT NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -419,11 +419,11 @@ ON supplies
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE supplies
-    SET updated_at = GETDATE()
-    FROM supplies
-    INNER JOIN inserted ON supplies.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE supplies
+ SET updated_at = GETDATE()
+ FROM supplies
+ INNER JOIN inserted ON supplies.id = inserted.id;
 END;
 GO
 ```
@@ -439,14 +439,14 @@ GO
 
 ```sql
 CREATE TABLE products (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    sku VARCHAR(100) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    description VARCHAR(MAX),
-    price DECIMAL(15,2) NOT NULL,
-    is_active BIT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ sku VARCHAR(100) NOT NULL UNIQUE,
+ name VARCHAR(150) NOT NULL,
+ description VARCHAR(MAX),
+ price DECIMAL(15,2) NOT NULL,
+ is_active BIT NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -455,11 +455,11 @@ ON products
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE products
-    SET updated_at = GETDATE()
-    FROM products
-    INNER JOIN inserted ON products.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE products
+ SET updated_at = GETDATE()
+ FROM products
+ INNER JOIN inserted ON products.id = inserted.id;
 END;
 GO
 ```
@@ -475,14 +475,14 @@ GO
 
 ```sql
 CREATE TABLE recipe_supplies (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    product_id BIGINT NOT NULL REFERENCES products(id),
-    supply_id BIGINT NOT NULL REFERENCES supplies(id),
-    quantity DECIMAL(15,3) NOT NULL,
-    is_active BIT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT uq_recipe_supplies_prod_sup UNIQUE (product_id, supply_id)
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ product_id BIGINT NOT NULL REFERENCES products(id),
+ supply_id BIGINT NOT NULL REFERENCES supplies(id),
+ quantity DECIMAL(15,3) NOT NULL,
+ is_active BIT NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE(),
+ CONSTRAINT uq_recipe_supplies_prod_sup UNIQUE (product_id, supply_id)
 );
 GO
 
@@ -491,11 +491,11 @@ ON recipe_supplies
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE recipe_supplies
-    SET updated_at = GETDATE()
-    FROM recipe_supplies
-    INNER JOIN inserted ON recipe_supplies.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE recipe_supplies
+ SET updated_at = GETDATE()
+ FROM recipe_supplies
+ INNER JOIN inserted ON recipe_supplies.id = inserted.id;
 END;
 GO
 ```
@@ -511,17 +511,17 @@ GO
 
 ```sql
 CREATE TABLE cash_shifts (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    employee_id BIGINT NOT NULL REFERENCES employees(id),
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(MAX),
-    opened_at DATETIME NOT NULL DEFAULT GETDATE(),
-    closed_at DATETIME NULL,
-    initial_balance DECIMAL(15,2) NOT NULL DEFAULT 0,
-    final_balance DECIMAL(15,2) NULL,
-    is_active BIT NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ employee_id BIGINT NOT NULL REFERENCES employees(id),
+ name VARCHAR(100) NOT NULL,
+ description VARCHAR(MAX),
+ opened_at DATETIME NOT NULL DEFAULT GETDATE(),
+ closed_at DATETIME NULL,
+ initial_balance DECIMAL(15,2) NOT NULL DEFAULT 0,
+ final_balance DECIMAL(15,2) NULL,
+ is_active BIT NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -530,11 +530,11 @@ ON cash_shifts
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE cash_shifts
-    SET updated_at = GETDATE()
-    FROM cash_shifts
-    INNER JOIN inserted ON cash_shifts.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE cash_shifts
+ SET updated_at = GETDATE()
+ FROM cash_shifts
+ INNER JOIN inserted ON cash_shifts.id = inserted.id;
 END;
 GO
 ```
@@ -550,16 +550,16 @@ GO
 
 ```sql
 CREATE TABLE orders (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    customer_id BIGINT NOT NULL REFERENCES customers(id),
-    cash_shift_id BIGINT NOT NULL REFERENCES cash_shifts(id),
-    channel VARCHAR(20) NOT NULL DEFAULT 'pos',
-    order_date DATETIME NOT NULL DEFAULT GETDATE(),
-    subtotal DECIMAL(15,2) NOT NULL DEFAULT 0,
-    total DECIMAL(15,2) NOT NULL DEFAULT 0,
-    status VARCHAR(30) NOT NULL DEFAULT 'pending',
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ customer_id BIGINT NOT NULL REFERENCES customers(id),
+ cash_shift_id BIGINT NOT NULL REFERENCES cash_shifts(id),
+ channel VARCHAR(20) NOT NULL DEFAULT 'pos',
+ order_date DATETIME NOT NULL DEFAULT GETDATE(),
+ subtotal DECIMAL(15,2) NOT NULL DEFAULT 0,
+ total DECIMAL(15,2) NOT NULL DEFAULT 0,
+ status VARCHAR(30) NOT NULL DEFAULT 'pending',
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -568,11 +568,11 @@ ON orders
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE orders
-    SET updated_at = GETDATE()
-    FROM orders
-    INNER JOIN inserted ON orders.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE orders
+ SET updated_at = GETDATE()
+ FROM orders
+ INNER JOIN inserted ON orders.id = inserted.id;
 END;
 GO
 ```
@@ -588,15 +588,15 @@ GO
 
 ```sql
 CREATE TABLE order_details (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    order_id BIGINT NOT NULL REFERENCES orders(id),
-    product_id BIGINT NOT NULL REFERENCES products(id),
-    quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
-    unit_price DECIMAL(15,2) NOT NULL DEFAULT 0,
-    subtotal DECIMAL(15,2) NOT NULL DEFAULT 0,
-    status VARCHAR(30) NOT NULL DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ order_id BIGINT NOT NULL REFERENCES orders(id),
+ product_id BIGINT NOT NULL REFERENCES products(id),
+ quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+ unit_price DECIMAL(15,2) NOT NULL DEFAULT 0,
+ subtotal DECIMAL(15,2) NOT NULL DEFAULT 0,
+ status VARCHAR(30) NOT NULL DEFAULT 'active',
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -605,11 +605,11 @@ ON order_details
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE order_details
-    SET updated_at = GETDATE()
-    FROM order_details
-    INNER JOIN inserted ON order_details.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE order_details
+ SET updated_at = GETDATE()
+ FROM order_details
+ INNER JOIN inserted ON order_details.id = inserted.id;
 END;
 GO
 ```
@@ -625,14 +625,14 @@ GO
 
 ```sql
 CREATE TABLE payments (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    order_id BIGINT NOT NULL REFERENCES orders(id),
-    payment_method VARCHAR(30) NOT NULL DEFAULT 'cash',
-    amount DECIMAL(15,2) NOT NULL DEFAULT 0,
-    payment_date DATETIME NOT NULL DEFAULT GETDATE(),
-    status VARCHAR(30) NOT NULL DEFAULT 'completed',
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ order_id BIGINT NOT NULL REFERENCES orders(id),
+ payment_method VARCHAR(30) NOT NULL DEFAULT 'cash',
+ amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+ payment_date DATETIME NOT NULL DEFAULT GETDATE(),
+ status VARCHAR(30) NOT NULL DEFAULT 'completed',
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -641,11 +641,11 @@ ON payments
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE payments
-    SET updated_at = GETDATE()
-    FROM payments
-    INNER JOIN inserted ON payments.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE payments
+ SET updated_at = GETDATE()
+ FROM payments
+ INNER JOIN inserted ON payments.id = inserted.id;
 END;
 GO
 ```
@@ -661,18 +661,18 @@ GO
 
 ```sql
 CREATE TABLE point_movements (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    customer_id BIGINT NOT NULL REFERENCES customers(id),
-    order_id BIGINT NULL REFERENCES orders(id),
-    reference_type VARCHAR(50) NOT NULL,
-    reference_id BIGINT NOT NULL,
-    movement_type VARCHAR(50) NOT NULL,
-    points INT NOT NULL,
-    movement_date DATETIME NOT NULL DEFAULT GETDATE(),
-    observations VARCHAR(MAX),
-    status VARCHAR(30) NOT NULL DEFAULT 'active',
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+ id BIGINT IDENTITY(1,1) PRIMARY KEY,
+ customer_id BIGINT NOT NULL REFERENCES customers(id),
+ order_id BIGINT NULL REFERENCES orders(id),
+ reference_type VARCHAR(50) NOT NULL,
+ reference_id BIGINT NOT NULL,
+ movement_type VARCHAR(50) NOT NULL,
+ points INT NOT NULL,
+ movement_date DATETIME NOT NULL DEFAULT GETDATE(),
+ observations VARCHAR(MAX),
+ status VARCHAR(30) NOT NULL DEFAULT 'active',
+ created_at DATETIME NOT NULL DEFAULT GETDATE(),
+ updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -681,11 +681,11 @@ ON point_movements
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE point_movements
-    SET updated_at = GETDATE()
-    FROM point_movements
-    INNER JOIN inserted ON point_movements.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE point_movements
+ SET updated_at = GETDATE()
+ FROM point_movements
+ INNER JOIN inserted ON point_movements.id = inserted.id;
 END;
 GO
 ```
@@ -757,11 +757,11 @@ ON customers
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE customers
-    SET updated_at = GETDATE()
-    FROM customers
-    INNER JOIN inserted ON customers.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE customers
+ SET updated_at = GETDATE()
+ FROM customers
+ INNER JOIN inserted ON customers.id = inserted.id;
 END;
 ```
 
@@ -788,11 +788,11 @@ ON employees
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE employees
-    SET updated_at = GETDATE()
-    FROM employees
-    INNER JOIN inserted ON employees.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE employees
+ SET updated_at = GETDATE()
+ FROM employees
+ INNER JOIN inserted ON employees.id = inserted.id;
 END;
 ```
 
@@ -820,11 +820,11 @@ ON supplies
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE supplies
-    SET updated_at = GETDATE()
-    FROM supplies
-    INNER JOIN inserted ON supplies.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE supplies
+ SET updated_at = GETDATE()
+ FROM supplies
+ INNER JOIN inserted ON supplies.id = inserted.id;
 END;
 ```
 
@@ -852,11 +852,11 @@ ON products
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE products
-    SET updated_at = GETDATE()
-    FROM products
-    INNER JOIN inserted ON products.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE products
+ SET updated_at = GETDATE()
+ FROM products
+ INNER JOIN inserted ON products.id = inserted.id;
 END;
 ```
 
@@ -868,8 +868,8 @@ END;
 Configuración visual de la entidad intermedia de recetas y escandallos (relación N:M entre `products` y `supplies`):
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de dos Foreign Keys mediante el diálogo visual *"Relaciones de clave externa..."* (*Foreign Key Relationships*):
-  - `FK_recipe_supplies_products`: `product_id` -> `products(id)`
-  - `FK_recipe_supplies_supplies`: `supply_id` -> `supplies(id)`
+ - `FK_recipe_supplies_products`: `product_id` -> `products(id)`
+ - `FK_recipe_supplies_supplies`: `supply_id` -> `supplies(id)`
 - Restricción compuesta `UNIQUE (product_id, supply_id)` en el diálogo de índices.
 - Campo de dosificación `quantity` de tipo `DECIMAL(15,3)`.
 
@@ -886,11 +886,11 @@ ON recipe_supplies
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE recipe_supplies
-    SET updated_at = GETDATE()
-    FROM recipe_supplies
-    INNER JOIN inserted ON recipe_supplies.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE recipe_supplies
+ SET updated_at = GETDATE()
+ FROM recipe_supplies
+ INNER JOIN inserted ON recipe_supplies.id = inserted.id;
 END;
 ```
 
@@ -918,11 +918,11 @@ ON cash_shifts
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE cash_shifts
-    SET updated_at = GETDATE()
-    FROM cash_shifts
-    INNER JOIN inserted ON cash_shifts.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE cash_shifts
+ SET updated_at = GETDATE()
+ FROM cash_shifts
+ INNER JOIN inserted ON cash_shifts.id = inserted.id;
 END;
 ```
 
@@ -934,8 +934,8 @@ END;
 Configuración visual de la entidad de comandas y órdenes de venta:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de dos Foreign Keys en el diálogo *Relaciones*:
-  - `FK_orders_customers`: `customer_id` -> `customers(id)`
-  - `FK_orders_cash_shifts`: `cash_shift_id` -> `cash_shifts(id)`
+ - `FK_orders_customers`: `customer_id` -> `customers(id)`
+ - `FK_orders_cash_shifts`: `cash_shift_id` -> `cash_shifts(id)`
 - Atributos comerciales: `channel` con valor predeterminado `'pos'`, `subtotal` y `total` (`DECIMAL(15,2)`), y `status` con predeterminado `'pending'`.
 
 ### Evidencias (imágenes):
@@ -951,11 +951,11 @@ ON orders
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE orders
-    SET updated_at = GETDATE()
-    FROM orders
-    INNER JOIN inserted ON orders.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE orders
+ SET updated_at = GETDATE()
+ FROM orders
+ INNER JOIN inserted ON orders.id = inserted.id;
 END;
 ```
 
@@ -967,8 +967,8 @@ END;
 Configuración visual del detalle de comanda (ítems por orden):
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de dos Foreign Keys en el diálogo *Relaciones*:
-  - `FK_order_details_orders`: `order_id` -> `orders(id)`
-  - `FK_order_details_products`: `product_id` -> `products(id)`
+ - `FK_order_details_orders`: `order_id` -> `orders(id)`
+ - `FK_order_details_products`: `product_id` -> `products(id)`
 - Cantidad `quantity` (`DECIMAL(10,2)`), precio unitario `unit_price` y `subtotal` (`DECIMAL(15,2)`).
 
 ### Evidencias (imágenes):
@@ -984,11 +984,11 @@ ON order_details
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE order_details
-    SET updated_at = GETDATE()
-    FROM order_details
-    INNER JOIN inserted ON order_details.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE order_details
+ SET updated_at = GETDATE()
+ FROM order_details
+ INNER JOIN inserted ON order_details.id = inserted.id;
 END;
 ```
 
@@ -1015,11 +1015,11 @@ ON payments
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE payments
-    SET updated_at = GETDATE()
-    FROM payments
-    INNER JOIN inserted ON payments.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE payments
+ SET updated_at = GETDATE()
+ FROM payments
+ INNER JOIN inserted ON payments.id = inserted.id;
 END;
 ```
 
@@ -1031,8 +1031,8 @@ END;
 Configuración visual de transacciones del programa de fidelización:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de Foreign Keys:
-  - `FK_point_movements_customers`: `customer_id` -> `customers(id)` (obligatorio).
-  - `FK_point_movements_orders`: `order_id` -> `orders(id)` (admite nulos para bonificaciones directas sin comanda asociada).
+ - `FK_point_movements_customers`: `customer_id` -> `customers(id)` (obligatorio).
+ - `FK_point_movements_orders`: `order_id` -> `orders(id)` (admite nulos para bonificaciones directas sin comanda asociada).
 - Atributos de puntos: `points` de tipo `INT`, `movement_type` y `reference_type`.
 
 ### Evidencias (imágenes):
@@ -1048,11 +1048,11 @@ ON point_movements
 AFTER UPDATE
 AS
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE point_movements
-    SET updated_at = GETDATE()
-    FROM point_movements
-    INNER JOIN inserted ON point_movements.id = inserted.id;
+ SET NOCOUNT ON;
+ UPDATE point_movements
+ SET updated_at = GETDATE()
+ FROM point_movements
+ INNER JOIN inserted ON point_movements.id = inserted.id;
 END;
 ```
 
@@ -1090,23 +1090,23 @@ Para la implementación de la base de datos en **Oracle Database 21c Express Edi
 
 ```sql
 CREATE TABLE customers (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    code VARCHAR2(50) NOT NULL UNIQUE,
-    first_name VARCHAR2(100) NOT NULL,
-    last_name VARCHAR2(100) NOT NULL,
-    email VARCHAR2(150) NOT NULL UNIQUE,
-    phone VARCHAR2(30),
-    current_points NUMBER(10) DEFAULT 0 NOT NULL,
-    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ code VARCHAR2(50) NOT NULL UNIQUE,
+ first_name VARCHAR2(100) NOT NULL,
+ last_name VARCHAR2(100) NOT NULL,
+ email VARCHAR2(150) NOT NULL UNIQUE,
+ phone VARCHAR2(30),
+ current_points NUMBER(10) DEFAULT 0 NOT NULL,
+ is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_customers_updated_at
 BEFORE UPDATE ON customers
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1122,22 +1122,22 @@ END;
 
 ```sql
 CREATE TABLE employees (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    code VARCHAR2(50) NOT NULL UNIQUE,
-    first_name VARCHAR2(100) NOT NULL,
-    last_name VARCHAR2(100) NOT NULL,
-    email VARCHAR2(150) NOT NULL UNIQUE,
-    role VARCHAR2(50) NOT NULL,
-    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ code VARCHAR2(50) NOT NULL UNIQUE,
+ first_name VARCHAR2(100) NOT NULL,
+ last_name VARCHAR2(100) NOT NULL,
+ email VARCHAR2(150) NOT NULL UNIQUE,
+ role VARCHAR2(50) NOT NULL,
+ is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_employees_updated_at
 BEFORE UPDATE ON employees
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1153,21 +1153,21 @@ END;
 
 ```sql
 CREATE TABLE supplies (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    code VARCHAR2(50) NOT NULL UNIQUE,
-    name VARCHAR2(150) NOT NULL,
-    unit_of_measure VARCHAR2(30) NOT NULL,
-    min_stock NUMBER(15,3) DEFAULT 0 NOT NULL,
-    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ code VARCHAR2(50) NOT NULL UNIQUE,
+ name VARCHAR2(150) NOT NULL,
+ unit_of_measure VARCHAR2(30) NOT NULL,
+ min_stock NUMBER(15,3) DEFAULT 0 NOT NULL,
+ is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_supplies_updated_at
 BEFORE UPDATE ON supplies
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1183,21 +1183,21 @@ END;
 
 ```sql
 CREATE TABLE products (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    sku VARCHAR2(100) NOT NULL UNIQUE,
-    name VARCHAR2(150) NOT NULL,
-    description CLOB,
-    price NUMBER(15,2) NOT NULL,
-    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ sku VARCHAR2(100) NOT NULL UNIQUE,
+ name VARCHAR2(150) NOT NULL,
+ description CLOB,
+ price NUMBER(15,2) NOT NULL,
+ is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_products_updated_at
 BEFORE UPDATE ON products
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1213,21 +1213,21 @@ END;
 
 ```sql
 CREATE TABLE recipe_supplies (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    product_id NUMBER(19) NOT NULL REFERENCES products(id),
-    supply_id NUMBER(19) NOT NULL REFERENCES supplies(id),
-    quantity NUMBER(15,3) NOT NULL,
-    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT uq_recipe_supplies_prod_sup UNIQUE (product_id, supply_id)
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ product_id NUMBER(19) NOT NULL REFERENCES products(id),
+ supply_id NUMBER(19) NOT NULL REFERENCES supplies(id),
+ quantity NUMBER(15,3) NOT NULL,
+ is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ CONSTRAINT uq_recipe_supplies_prod_sup UNIQUE (product_id, supply_id)
 );
 
 CREATE OR REPLACE TRIGGER trg_recipe_supplies_upd
 BEFORE UPDATE ON recipe_supplies
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1243,24 +1243,24 @@ END;
 
 ```sql
 CREATE TABLE cash_shifts (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id NUMBER(19) NOT NULL REFERENCES employees(id),
-    name VARCHAR2(100) NOT NULL,
-    description CLOB,
-    opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    closed_at TIMESTAMP NULL,
-    initial_balance NUMBER(15,2) DEFAULT 0 NOT NULL,
-    final_balance NUMBER(15,2) NULL,
-    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ employee_id NUMBER(19) NOT NULL REFERENCES employees(id),
+ name VARCHAR2(100) NOT NULL,
+ description CLOB,
+ opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ closed_at TIMESTAMP NULL,
+ initial_balance NUMBER(15,2) DEFAULT 0 NOT NULL,
+ final_balance NUMBER(15,2) NULL,
+ is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_cash_shifts_updated_at
 BEFORE UPDATE ON cash_shifts
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1276,23 +1276,23 @@ END;
 
 ```sql
 CREATE TABLE orders (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    customer_id NUMBER(19) NOT NULL REFERENCES customers(id),
-    cash_shift_id NUMBER(19) NOT NULL REFERENCES cash_shifts(id),
-    channel VARCHAR2(20) DEFAULT 'pos' NOT NULL,
-    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    subtotal NUMBER(15,2) DEFAULT 0 NOT NULL,
-    total NUMBER(15,2) DEFAULT 0 NOT NULL,
-    status VARCHAR2(30) DEFAULT 'pending' NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ customer_id NUMBER(19) NOT NULL REFERENCES customers(id),
+ cash_shift_id NUMBER(19) NOT NULL REFERENCES cash_shifts(id),
+ channel VARCHAR2(20) DEFAULT 'pos' NOT NULL,
+ order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ subtotal NUMBER(15,2) DEFAULT 0 NOT NULL,
+ total NUMBER(15,2) DEFAULT 0 NOT NULL,
+ status VARCHAR2(30) DEFAULT 'pending' NOT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_orders_updated_at
 BEFORE UPDATE ON orders
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1308,22 +1308,22 @@ END;
 
 ```sql
 CREATE TABLE order_details (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    order_id NUMBER(19) NOT NULL REFERENCES orders(id),
-    product_id NUMBER(19) NOT NULL REFERENCES products(id),
-    quantity NUMBER(10,2) DEFAULT 1 NOT NULL,
-    unit_price NUMBER(15,2) DEFAULT 0 NOT NULL,
-    subtotal NUMBER(15,2) DEFAULT 0 NOT NULL,
-    status VARCHAR2(30) DEFAULT 'active' NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ order_id NUMBER(19) NOT NULL REFERENCES orders(id),
+ product_id NUMBER(19) NOT NULL REFERENCES products(id),
+ quantity NUMBER(10,2) DEFAULT 1 NOT NULL,
+ unit_price NUMBER(15,2) DEFAULT 0 NOT NULL,
+ subtotal NUMBER(15,2) DEFAULT 0 NOT NULL,
+ status VARCHAR2(30) DEFAULT 'active' NOT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_order_details_updated_at
 BEFORE UPDATE ON order_details
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1339,21 +1339,21 @@ END;
 
 ```sql
 CREATE TABLE payments (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    order_id NUMBER(19) NOT NULL REFERENCES orders(id),
-    payment_method VARCHAR2(30) DEFAULT 'cash' NOT NULL,
-    amount NUMBER(15,2) DEFAULT 0 NOT NULL,
-    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    status VARCHAR2(30) DEFAULT 'completed' NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ order_id NUMBER(19) NOT NULL REFERENCES orders(id),
+ payment_method VARCHAR2(30) DEFAULT 'cash' NOT NULL,
+ amount NUMBER(15,2) DEFAULT 0 NOT NULL,
+ payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ status VARCHAR2(30) DEFAULT 'completed' NOT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_payments_updated_at
 BEFORE UPDATE ON payments
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
@@ -1369,25 +1369,25 @@ END;
 
 ```sql
 CREATE TABLE point_movements (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    customer_id NUMBER(19) NOT NULL REFERENCES customers(id),
-    order_id NUMBER(19) NULL REFERENCES orders(id),
-    reference_type VARCHAR2(50) NOT NULL,
-    reference_id NUMBER(19) NOT NULL,
-    movement_type VARCHAR2(50) NOT NULL,
-    points NUMBER(10) NOT NULL,
-    movement_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    observations CLOB,
-    status VARCHAR2(30) DEFAULT 'active' NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+ id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ customer_id NUMBER(19) NOT NULL REFERENCES customers(id),
+ order_id NUMBER(19) NULL REFERENCES orders(id),
+ reference_type VARCHAR2(50) NOT NULL,
+ reference_id NUMBER(19) NOT NULL,
+ movement_type VARCHAR2(50) NOT NULL,
+ points NUMBER(10) NOT NULL,
+ movement_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ observations CLOB,
+ status VARCHAR2(30) DEFAULT 'active' NOT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trg_point_movements_updated_at
 BEFORE UPDATE ON point_movements
 FOR EACH ROW
 BEGIN
-    :NEW.updated_at := CURRENT_TIMESTAMP;
+ :NEW.updated_at := CURRENT_TIMESTAMP;
 END;
 /
 ```
