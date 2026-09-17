@@ -732,20 +732,24 @@ Se procedió con la creación de la base de datos `tazanorte_visual` mediante el
 ### Evidencia (imagen):
 ![Base de datos tazanorte_visual creada en SSMS](./evidencias_bitacora/ssms/02_crear_bd_visual.png)
 
-**Resultado:** Se creó la base de datos `tazanorte_visual` con sus archivos de datos primarios (`.mdf`) y de registro de transacciones (`.ldf`) configurados con los parámetros por defecto de intercalación (*collation*) y crecimiento automático administrados por SSMS.
+**Resultado:** Se creó la base de datos `tazanorte_visual` con sus archivos de datos primarios (`.mdf`) y de registro de transacciones (`.ldf`) administrados por el entorno gráfico de SSMS.
 
 ---
 
 ## 5.3 Creación de la tabla customers
 Configuración visual de la entidad en el Diseñador de tablas (*Table Designer*) de SSMS:
-- Clave primaria `id` de tipo `BIGINT` con propiedad `Identity Specification` habilitada (`Is Identity = Yes`, `Identity Increment = 1`, `Identity Seed = 1`).
+- Clave primaria `id` de tipo `BIGINT` con propiedad `Identity Specification` habilitada (`Is Identity = Yes`).
 - Restricciones de unicidad `UNIQUE` sobre `code` y `email` configuradas a través del diálogo visual *"Índices o claves..."* (*Indexes/Keys*).
-- Valores predeterminados `0` en `current_points`, `1` en `is_active`, y `(getdate())` en `created_at` y `updated_at` asignados en la propiedad `Default Value or Binding`.
+- Valores predeterminados en `current_points`, `is_active` y marcas temporales `created_at` / `updated_at`.
 
-### Evidencia (imagen):
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
 ![Columnas y diseño de la tabla customers en SSMS](./evidencias_bitacora/ssms/03_disenador_customers.png)
 
-**Nota metodológica — trigger updated_at:** SSMS no dispone de un asistente gráfico interactivo para la definición de disparadores (*triggers*), a diferencia de herramientas como MySQL Workbench o pgAdmin. Por tal motivo, y como criterio técnico documentado en esta sección visual, el disparador `trg_customers_updated_at` se implementa mediante ventana de consulta sobre `tazanorte_visual`, mientras que la definición estructural de columnas, tipos, nulos y llaves se elabora 100% en el diseñador visual.
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE customers generado por SSMS](./evidencias_bitacora/ssms/04_script_customers.png)
+
+**Nota metodológica — trigger updated_at:** SSMS no dispone de un asistente gráfico interactivo para la definición de disparadores (*triggers*), a diferencia de MySQL Workbench y pgAdmin. Por tal motivo, y como excepción documentada dentro de esta sección visual, el disparador `trg_customers_updated_at` se implementa mediante ventana de consulta sobre `tazanorte_visual`, mientras que la definición estructural de columnas, tipos, nulos y llaves se elabora 100% en el diseñador visual.
 
 ```sql
 CREATE TRIGGER trg_customers_updated_at
@@ -761,7 +765,7 @@ BEGIN
 END;
 ```
 
-**Resultado:** Tabla `customers` diseñada visualmente en SSMS.
+**Resultado:** Tabla `customers` diseñada visualmente en SSMS y script DDL oficial generado.
 
 ---
 
@@ -771,8 +775,12 @@ Configuración de la entidad de empleados y personal operativo mediante el dise�
 - Restricciones `UNIQUE` en `code` y `email` definidas en el diálogo *Índices o claves*.
 - Valores por defecto: `is_active = 1`, `created_at = (getdate())`, `updated_at = (getdate())`.
 
-### Evidencia (imagen):
-![Columnas y diseño de la tabla employees en SSMS](./evidencias_bitacora/ssms/04_disenador_employees.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y diseño de la tabla employees en SSMS](./evidencias_bitacora/ssms/05_disenador_employees.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE employees generado por SSMS](./evidencias_bitacora/ssms/06_script_employees.png)
 
 ```sql
 CREATE TRIGGER trg_employees_updated_at
@@ -788,7 +796,7 @@ BEGIN
 END;
 ```
 
-**Resultado:** Tabla `employees` creada con el diseñador de SSMS.
+**Resultado:** Tabla `employees` creada con el diseñador de SSMS y script DDL oficial verificado.
 
 ---
 
@@ -796,11 +804,15 @@ END;
 Configuración en el diseñador de tablas de insumos y materia prima:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Restricción `UNIQUE` sobre `code` configurada en el diálogo de índices.
-- Tipos de datos numéricos con precisión: `min_stock` de tipo `DECIMAL(15,3)` con valor por defecto `0`.
+- Precisión numérica: `min_stock` de tipo `DECIMAL(15,3)` con valor por defecto `0`.
 - Valores por defecto: `is_active = 1`, marcas temporales con `(getdate())`.
 
-### Evidencia (imagen):
-![Columnas y diseño de la tabla supplies en SSMS](./evidencias_bitacora/ssms/05_disenador_supplies.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y diseño de la tabla supplies en SSMS](./evidencias_bitacora/ssms/07_disenador_supplies.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE supplies generado por SSMS](./evidencias_bitacora/ssms/08_script_supplies.png)
 
 ```sql
 CREATE TRIGGER trg_supplies_updated_at
@@ -827,8 +839,12 @@ Configuración visual del catálogo de productos y bebidas de cafetería:
 - Campo de descripción extendida `description` de tipo `VARCHAR(MAX)`.
 - Precio monetario `price` de tipo `DECIMAL(15,2)` y `is_active` con valor por defecto `1`.
 
-### Evidencia (imagen):
-![Columnas y diseño de la tabla products en SSMS](./evidencias_bitacora/ssms/06_disenador_products.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y diseño de la tabla products en SSMS](./evidencias_bitacora/ssms/09_disenador_products.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE products generado por SSMS](./evidencias_bitacora/ssms/10_script_products.png)
 
 ```sql
 CREATE TRIGGER trg_products_updated_at
@@ -857,8 +873,12 @@ Configuración visual de la entidad intermedia de recetas y escandallos (relaci�
 - Restricción compuesta `UNIQUE (product_id, supply_id)` en el diálogo de índices.
 - Campo de dosificación `quantity` de tipo `DECIMAL(15,3)`.
 
-### Evidencia (imagen):
-![Columnas y relaciones de recipe_supplies en SSMS](./evidencias_bitacora/ssms/07_disenador_recipe_supplies.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y relaciones de recipe_supplies en SSMS](./evidencias_bitacora/ssms/11_disenador_recipe_supplies.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE recipe_supplies generado por SSMS](./evidencias_bitacora/ssms/12_script_recipe_supplies.png)
 
 ```sql
 CREATE TRIGGER trg_recipe_supplies_updated_at
@@ -885,8 +905,12 @@ Configuración visual del control de turnos de caja en cafetería:
 - Balances monetarios: `initial_balance` y `final_balance` de tipo `DECIMAL(15,2)`.
 - Marcas de apertura y cierre: `opened_at` (predeterminado `(getdate())`) y `closed_at` (admite nulos).
 
-### Evidencia (imagen):
-![Columnas y diseño de cash_shifts en SSMS](./evidencias_bitacora/ssms/08_disenador_cash_shifts.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y diseño de cash_shifts en SSMS](./evidencias_bitacora/ssms/13_disenador_cash_shifts.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE cash_shifts generado por SSMS](./evidencias_bitacora/ssms/14_script_cash_shifts.png)
 
 ```sql
 CREATE TRIGGER trg_cash_shifts_updated_at
@@ -914,8 +938,12 @@ Configuración visual de la entidad de comandas y órdenes de venta:
   - `FK_orders_cash_shifts`: `cash_shift_id` -> `cash_shifts(id)`
 - Atributos comerciales: `channel` con valor predeterminado `'pos'`, `subtotal` y `total` (`DECIMAL(15,2)`), y `status` con predeterminado `'pending'`.
 
-### Evidencia (imagen):
-![Columnas y relaciones de orders en SSMS](./evidencias_bitacora/ssms/09_disenador_orders.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y relaciones de orders en SSMS](./evidencias_bitacora/ssms/15_disenador_orders.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE orders generado por SSMS](./evidencias_bitacora/ssms/16_script_orders.png)
 
 ```sql
 CREATE TRIGGER trg_orders_updated_at
@@ -943,8 +971,12 @@ Configuración visual del detalle de comanda (ítems por orden):
   - `FK_order_details_products`: `product_id` -> `products(id)`
 - Cantidad `quantity` (`DECIMAL(10,2)`), precio unitario `unit_price` y `subtotal` (`DECIMAL(15,2)`).
 
-### Evidencia (imagen):
-![Columnas y diseño de order_details en SSMS](./evidencias_bitacora/ssms/10_disenador_order_details.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y diseño de order_details en SSMS](./evidencias_bitacora/ssms/17_disenador_order_details.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE order_details generado por SSMS](./evidencias_bitacora/ssms/18_script_order_details.png)
 
 ```sql
 CREATE TRIGGER trg_order_details_updated_at
@@ -970,8 +1002,12 @@ Configuración visual de transacciones y pagos de comanda:
 - Configuración de Foreign Key: `FK_payments_orders` (`order_id` -> `orders(id)`).
 - Atributos: `payment_method` con valor predeterminado `'cash'`, `amount` (`DECIMAL(15,2)`), `status` con predeterminado `'completed'`.
 
-### Evidencia (imagen):
-![Columnas y diseño de payments en SSMS](./evidencias_bitacora/ssms/11_disenador_payments.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y diseño de payments en SSMS](./evidencias_bitacora/ssms/19_disenador_payments.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE payments generado por SSMS](./evidencias_bitacora/ssms/20_script_payments.png)
 
 ```sql
 CREATE TRIGGER trg_payments_updated_at
@@ -999,8 +1035,12 @@ Configuración visual de transacciones del programa de fidelización:
   - `FK_point_movements_orders`: `order_id` -> `orders(id)` (admite nulos para bonificaciones directas sin comanda asociada).
 - Atributos de puntos: `points` de tipo `INT`, `movement_type` y `reference_type`.
 
-### Evidencia (imagen):
-![Columnas y diseño de point_movements en SSMS](./evidencias_bitacora/ssms/12_disenador_point_movements.png)
+### Evidencias (imágenes):
+1. **Diseño de columnas en SSMS:**
+![Columnas y diseño de point_movements en SSMS](./evidencias_bitacora/ssms/21_disenador_point_movements.png)
+
+2. **Script SQL generado por SSMS (Generar script de tabla como → CREATE To):**
+![Script CREATE TABLE point_movements generado por SSMS](./evidencias_bitacora/ssms/22_script_point_movements.png)
 
 ```sql
 CREATE TRIGGER trg_point_movements_updated_at
@@ -1024,7 +1064,7 @@ END;
 A través de la funcionalidad nativa *Database Diagrams* de SSMS, se generó el diagrama de entidad-relación que consolida las 10 entidades y la totalidad de sus relaciones de clave foránea.
 
 ### Evidencia (imagen):
-![Diagrama de Base de Datos ER generado en SSMS](./evidencias_bitacora/ssms/13_diagrama_erd_ssms.png)
+![Diagrama de Base de Datos ER generado en SSMS](./evidencias_bitacora/ssms/23_diagrama_erd_ssms.png)
 
 **Resultado:** Diagrama relacional visual generado directamente por SQL Server Management Studio, verificando que la totalidad de relaciones 1:N y N:M se encuentran debidamente construidas y validadas por el motor.
 
