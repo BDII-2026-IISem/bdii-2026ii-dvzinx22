@@ -1707,7 +1707,11 @@ Una vez finalizada la creación de todas las tablas mediante la interfaz gráfic
 El diagrama permite visualizar gráficamente las tablas que conforman **TazaNorte** y las relaciones establecidas mediante claves foráneas a través de la herramienta integrada Data Modeler.
 
 ### Evidencia
-![Diagrama de la base de datos TazaNorte en Oracle SQL Developer](./evidencias_bitacora/sqldeveloper/12_diagrama_erd_oracle.png)
+#### Parte 1 — Entidades principales y catálogo (clientes, empleados, insumos y recetas):
+![Diagrama de la base de datos TazaNorte en Oracle SQL Developer - Parte 1](./evidencias_bitacora/sqldeveloper/12_diagrama_erd_oracle_1.png)
+
+#### Parte 2 — Transaccional y fidelización (turnos, órdenes, detalles, pagos y puntos):
+![Diagrama de la base de datos TazaNorte en Oracle SQL Developer - Parte 2](./evidencias_bitacora/sqldeveloper/12_diagrama_erd_oracle_2.png)
 
 ---
 
