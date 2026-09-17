@@ -549,6 +549,25 @@ GO
 
 ## 4.2 Creación de la tabla customers
 
+Se crea la tabla `customers`, destinada a: Almacena la información de los clientes registrados, datos de contacto y saldo acumulado en el programa de fidelización de la cafetería.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `phone` | VARCHAR(30) |  |
+| `current_points` | INT | NOT NULL, DEFAULT 0 |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
+
 ```sql
 CREATE TABLE customers (
  id BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -586,6 +605,24 @@ GO
 
 ## 4.3 Creación de la tabla employees
 
+Se crea la tabla `employees`, destinada a: Registra al personal operativo, baristas, administradores y cajeros de TazaNorte.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `role` | VARCHAR(50) | NOT NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
+
 ```sql
 CREATE TABLE employees (
  id BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -619,6 +656,23 @@ GO
 ---
 
 ## 4.4 Creación de la tabla supplies
+
+Se crea la tabla `supplies`, destinada a: Controla el catálogo de insumos y materias primas (café en grano, leche, jarabes, vasos) con su respectiva unidad de medida y stock mínimo.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `name` | VARCHAR(150) | NOT NULL |
+| `unit_of_measure` | VARCHAR(30) | NOT NULL |
+| `min_stock` | DECIMAL(15,3) | NOT NULL, DEFAULT 0 |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 
 ```sql
 CREATE TABLE supplies (
@@ -656,6 +710,23 @@ GO
 
 ## 4.5 Creación de la tabla products
 
+Se crea la tabla `products`, destinada a: Almacena los productos comerciales terminados (bebidas de especialidad, repostería y métodos filtrados) con sus precios de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `sku` | VARCHAR(100) | NOT NULL, UNIQUE |
+| `name` | VARCHAR(150) | NOT NULL |
+| `description` | VARCHAR(MAX) |  |
+| `price` | DECIMAL(15,2) | NOT NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
+
 ```sql
 CREATE TABLE products (
  id BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -692,6 +763,22 @@ GO
 
 ## 4.6 Creación de la tabla recipe_supplies
 
+Se crea la tabla `recipe_supplies`, destinada a: Entidad intermedia que modela la receta de preparación y escandallo (relación N:M entre productos e insumos) con la cantidad de insumo requerida.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `product_id` | BIGINT | NOT NULL, FK -> products(id) |
+| `supply_id` | BIGINT | NOT NULL, FK -> supplies(id) |
+| `quantity` | DECIMAL(15,3) | NOT NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
+
 ```sql
 CREATE TABLE recipe_supplies (
  id BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -727,6 +814,26 @@ GO
 ---
 
 ## 4.7 Creación de la tabla cash_shifts
+
+Se crea la tabla `cash_shifts`, destinada a: Gestiona los turnos y aperturas/cierres de caja en el punto de venta, registrando al empleado a cargo y los saldos inicial y final.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `employee_id` | BIGINT | NOT NULL, FK -> employees(id) |
+| `name` | VARCHAR(100) | NOT NULL |
+| `description` | VARCHAR(MAX) |  |
+| `opened_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `closed_at` | DATETIME | NULL |
+| `initial_balance` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `final_balance` | DECIMAL(15,2) | NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 
 ```sql
 CREATE TABLE cash_shifts (
@@ -767,6 +874,25 @@ GO
 
 ## 4.8 Creación de la tabla orders
 
+Se crea la tabla `orders`, destinada a: Registra las transacciones y comandas de venta emitidas a clientes, asociadas a un turno de caja específico.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `customer_id` | BIGINT | NOT NULL, FK -> customers(id) |
+| `cash_shift_id` | BIGINT | NOT NULL, FK -> cash_shifts(id) |
+| `channel` | VARCHAR(20) | NOT NULL, DEFAULT 'pos' |
+| `order_date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `subtotal` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `total` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'pending' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
+
 ```sql
 CREATE TABLE orders (
  id BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -805,6 +931,24 @@ GO
 
 ## 4.9 Creación de la tabla order_details
 
+Se crea la tabla `order_details`, destinada a: Detalla las líneas de producto, cantidades ordenadas y precios unitarios cobrados por cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `order_id` | BIGINT | NOT NULL, FK -> orders(id) |
+| `product_id` | BIGINT | NOT NULL, FK -> products(id) |
+| `quantity` | DECIMAL(10,2) | NOT NULL, DEFAULT 1 |
+| `unit_price` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `subtotal` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'active' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
+
 ```sql
 CREATE TABLE order_details (
  id BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -842,6 +986,23 @@ GO
 
 ## 4.10 Creación de la tabla payments
 
+Se crea la tabla `payments`, destinada a: Registra los métodos de pago (efectivo, tarjeta, transferencia) y montos transaccionados para liquidar cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `order_id` | BIGINT | NOT NULL, FK -> orders(id) |
+| `payment_method` | VARCHAR(30) | NOT NULL, DEFAULT 'cash' |
+| `amount` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `payment_date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'completed' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
+
 ```sql
 CREATE TABLE payments (
  id BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -877,6 +1038,27 @@ GO
 ---
 
 ## 4.11 Creación de la tabla point_movements
+
+Se crea la tabla `point_movements`, destinada a: Audita y registra cada transacción de puntos (acumulación por compra, redención o ajuste manual) del programa de lealtad.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `customer_id` | BIGINT | NOT NULL, FK -> customers(id) |
+| `order_id` | BIGINT | FK -> orders(id) (opcional) |
+| `reference_type` | VARCHAR(50) | NOT NULL |
+| `reference_id` | BIGINT | NOT NULL |
+| `movement_type` | VARCHAR(50) | NOT NULL |
+| `points` | INT | NOT NULL |
+| `movement_date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `observations` | VARCHAR(MAX) |  |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'active' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 
 ```sql
 CREATE TABLE point_movements (
@@ -956,6 +1138,25 @@ Se procedió con la creación de la base de datos `tazanorte_visual` mediante el
 ---
 
 ## 5.3 Creación de la tabla customers
+
+Se crea la tabla `customers`, destinada a: Almacena la información de los clientes registrados, datos de contacto y saldo acumulado en el programa de fidelización de la cafetería.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `phone` | VARCHAR(30) |  |
+| `current_points` | INT | NOT NULL, DEFAULT 0 |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual de la entidad en el Diseñador de tablas (*Table Designer*) de SSMS:
 - Clave primaria `id` de tipo `BIGINT` con propiedad `Identity Specification` habilitada (`Is Identity = Yes`).
 - Restricciones de unicidad `UNIQUE` sobre `code` y `email` configuradas a través del diálogo visual *"Índices o claves..."* (*Indexes/Keys*).
@@ -989,6 +1190,24 @@ END;
 ---
 
 ## 5.4 Creación de la tabla employees
+
+Se crea la tabla `employees`, destinada a: Registra al personal operativo, baristas, administradores y cajeros de TazaNorte.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `first_name` | VARCHAR(100) | NOT NULL |
+| `last_name` | VARCHAR(100) | NOT NULL |
+| `email` | VARCHAR(150) | NOT NULL, UNIQUE |
+| `role` | VARCHAR(50) | NOT NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración de la entidad de empleados y personal operativo mediante el diseñador gráfico:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Restricciones `UNIQUE` en `code` y `email` definidas en el diálogo *Índices o claves*.
@@ -1020,6 +1239,23 @@ END;
 ---
 
 ## 5.5 Creación de la tabla supplies
+
+Se crea la tabla `supplies`, destinada a: Controla el catálogo de insumos y materias primas (café en grano, leche, jarabes, vasos) con su respectiva unidad de medida y stock mínimo.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `code` | VARCHAR(50) | NOT NULL, UNIQUE |
+| `name` | VARCHAR(150) | NOT NULL |
+| `unit_of_measure` | VARCHAR(30) | NOT NULL |
+| `min_stock` | DECIMAL(15,3) | NOT NULL, DEFAULT 0 |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración en el diseñador de tablas de insumos y materia prima:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Restricción `UNIQUE` sobre `code` configurada en el diálogo de índices.
@@ -1052,6 +1288,23 @@ END;
 ---
 
 ## 5.6 Creación de la tabla products
+
+Se crea la tabla `products`, destinada a: Almacena los productos comerciales terminados (bebidas de especialidad, repostería y métodos filtrados) con sus precios de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `sku` | VARCHAR(100) | NOT NULL, UNIQUE |
+| `name` | VARCHAR(150) | NOT NULL |
+| `description` | VARCHAR(MAX) |  |
+| `price` | DECIMAL(15,2) | NOT NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual del catálogo de productos y bebidas de cafetería:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Índice único `UNIQUE` sobre `sku`.
@@ -1084,6 +1337,22 @@ END;
 ---
 
 ## 5.7 Creación de la tabla recipe_supplies
+
+Se crea la tabla `recipe_supplies`, destinada a: Entidad intermedia que modela la receta de preparación y escandallo (relación N:M entre productos e insumos) con la cantidad de insumo requerida.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `product_id` | BIGINT | NOT NULL, FK -> products(id) |
+| `supply_id` | BIGINT | NOT NULL, FK -> supplies(id) |
+| `quantity` | DECIMAL(15,3) | NOT NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual de la entidad intermedia de recetas y escandallos (relación N:M entre `products` y `supplies`):
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de dos Foreign Keys mediante el diálogo visual *"Relaciones de clave externa..."* (*Foreign Key Relationships*):
@@ -1118,6 +1387,26 @@ END;
 ---
 
 ## 5.8 Creación de la tabla cash_shifts
+
+Se crea la tabla `cash_shifts`, destinada a: Gestiona los turnos y aperturas/cierres de caja en el punto de venta, registrando al empleado a cargo y los saldos inicial y final.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `employee_id` | BIGINT | NOT NULL, FK -> employees(id) |
+| `name` | VARCHAR(100) | NOT NULL |
+| `description` | VARCHAR(MAX) |  |
+| `opened_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `closed_at` | DATETIME | NULL |
+| `initial_balance` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `final_balance` | DECIMAL(15,2) | NULL |
+| `is_active` | BIT | NOT NULL, DEFAULT 1 |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual del control de turnos de caja en cafetería:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de Foreign Key mediante el diálogo *Relaciones*: `FK_cash_shifts_employees` (`employee_id` -> `employees(id)`).
@@ -1150,6 +1439,25 @@ END;
 ---
 
 ## 5.9 Creación de la tabla orders
+
+Se crea la tabla `orders`, destinada a: Registra las transacciones y comandas de venta emitidas a clientes, asociadas a un turno de caja específico.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `customer_id` | BIGINT | NOT NULL, FK -> customers(id) |
+| `cash_shift_id` | BIGINT | NOT NULL, FK -> cash_shifts(id) |
+| `channel` | VARCHAR(20) | NOT NULL, DEFAULT 'pos' |
+| `order_date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `subtotal` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `total` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'pending' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual de la entidad de comandas y órdenes de venta:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de dos Foreign Keys en el diálogo *Relaciones*:
@@ -1183,6 +1491,24 @@ END;
 ---
 
 ## 5.10 Creación de la tabla order_details
+
+Se crea la tabla `order_details`, destinada a: Detalla las líneas de producto, cantidades ordenadas y precios unitarios cobrados por cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `order_id` | BIGINT | NOT NULL, FK -> orders(id) |
+| `product_id` | BIGINT | NOT NULL, FK -> products(id) |
+| `quantity` | DECIMAL(10,2) | NOT NULL, DEFAULT 1 |
+| `unit_price` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `subtotal` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'active' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual del detalle de comanda (ítems por orden):
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de dos Foreign Keys en el diálogo *Relaciones*:
@@ -1216,6 +1542,23 @@ END;
 ---
 
 ## 5.11 Creación de la tabla payments
+
+Se crea la tabla `payments`, destinada a: Registra los métodos de pago (efectivo, tarjeta, transferencia) y montos transaccionados para liquidar cada orden de venta.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `order_id` | BIGINT | NOT NULL, FK -> orders(id) |
+| `payment_method` | VARCHAR(30) | NOT NULL, DEFAULT 'cash' |
+| `amount` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 |
+| `payment_date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'completed' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual de transacciones y pagos de comanda:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de Foreign Key: `FK_payments_orders` (`order_id` -> `orders(id)`).
@@ -1247,6 +1590,27 @@ END;
 ---
 
 ## 5.12 Creación de la tabla point_movements
+
+Se crea la tabla `point_movements`, destinada a: Audita y registra cada transacción de puntos (acumulación por compra, redención o ajuste manual) del programa de lealtad.
+
+La tabla contiene los siguientes campos:
+
+| Campo | Tipo de dato | Restricciones |
+| :--- | :--- | :--- |
+| `id` | BIGINT | PK, NOT NULL, IDENTITY(1,1) |
+| `customer_id` | BIGINT | NOT NULL, FK -> customers(id) |
+| `order_id` | BIGINT | FK -> orders(id) (opcional) |
+| `reference_type` | VARCHAR(50) | NOT NULL |
+| `reference_id` | BIGINT | NOT NULL |
+| `movement_type` | VARCHAR(50) | NOT NULL |
+| `points` | INT | NOT NULL |
+| `movement_date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `observations` | VARCHAR(MAX) |  |
+| `status` | VARCHAR(30) | NOT NULL, DEFAULT 'active' |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `updated_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+
 Configuración visual de transacciones del programa de fidelización:
 - Clave primaria `id` (`BIGINT`, `IDENTITY(1,1)`).
 - Configuración de Foreign Keys:
