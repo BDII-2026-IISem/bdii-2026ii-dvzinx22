@@ -1536,7 +1536,7 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
 FROM tazanorte.customers c
 JOIN tazanorte.orders o ON c.id = o.customer_id
-JOIN tazanorte.payments pay ON pay.order_id = o.id
+JOIN tazanorte.payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
 WHERE pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-24 00:00:00'
 ORDER BY pay.payment_date ASC;
 ```
@@ -1566,7 +1566,7 @@ SELECT c.id, c.first_name || ' ' || c.last_name AS name,
        AVG(pay.amount) AS promedio_pago
 FROM tazanorte.customers c
 JOIN tazanorte.orders o ON c.id = o.customer_id
-JOIN tazanorte.payments pay ON pay.order_id = o.id
+JOIN tazanorte.payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
 WHERE pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-30 23:59:59'
 GROUP BY c.id, c.first_name, c.last_name
 HAVING SUM(pay.amount) >= 20000
