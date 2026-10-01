@@ -1243,23 +1243,90 @@ ORDER BY pay.payment_date ASC;
 
 ### 2.8 Consultas con agrupamiento GROUP BY y HAVING
 
+Se consideran este tipo de consultas cuando tenemos valores que se repiten en los registros y requerimos aplicar agregaciones analíticas (`COUNT`, `SUM`, `AVG`) junto con agrupamiento (`GROUP BY`) y filtros pos-agregación (`HAVING`).
+
+**Forma 1 con el WHERE (rango de fechas, SUM, COUNT y AVG):**
+
+**Hipótesis:** En la analítica financiera de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable mensual. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` en PostgreSQL 17 y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `ROUND(AVG(pay.amount), 2)` agrupadas por `GROUP BY c.id, c.name`, el optimizador generará un plan `HashAggregate` que condensará las operaciones en un resumen ejecutivo ordenado descendentemente por ingresos totales (`ORDER BY total_suma DESC`).
+
+```sql
+SELECT c.id, c.name, 
+       SUM(pay.amount) AS total_suma, 
+       COUNT(pay.id) AS cuenta_total, 
+       ROUND(AVG(pay.amount), 2) AS promedio 
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
+GROUP BY c.id, c.name
+ORDER BY total_suma DESC;
+```
+
+![](images/postgres_2_8_group_by_where.png)
+
+**Resultado:** la consulta en PostgreSQL agrupó satisfactoriamente los pagos por cliente, consolidando el volumen total facturado, el recuento de operaciones y el ticket promedio durante el mes de septiembre de 2026.
+
+**Forma 1 (Filtrado por status activo y pago con tarjeta):**
+
+**Hipótesis:** Con el objetivo de auditar las comisiones de adquirencia y el comportamiento de pago electrónico en barra, se plantea como hipótesis que la aplicación de filtros previos a la agrupación (`WHERE pay.status = 'active' AND pay.method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por cliente con `GROUP BY`, se espera obtener con exactitud la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado en PostgreSQL.
+
+```sql
+SELECT c.id, c.name, 
+       SUM(pay.amount) AS total_gasto, 
+       COUNT(pay.id) AS cantidad_pagos
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
+WHERE pay.status = 'active' AND pay.method = 'card'
+GROUP BY c.id, c.name
+ORDER BY total_gasto DESC;
+```
+
+![](images/postgres_2_8_group_by_condicion.png)
+
+**Resultado:** la consulta en PostgreSQL retornó las ventas abonadas con tarjeta de crédito/débito agrupadas por cliente, permitiendo aislar el ingreso bancario efectivo en el punto de venta de TazaNorte.
+
+**Forma 2 con el HAVING:**
+
 **Hipótesis:** Se plantea como hipótesis que el motor PostgreSQL ejecutará un plan de agregación por tabla de dispersión (`HashAggregate`) al procesar `GROUP BY c.id, c.name`, calculando simultáneamente la sumatoria, cuenta y media de pagos por cliente. La posterior aplicación del filtro `HAVING SUM(pay.amount) >= 20000` permitirá aislar de forma automática a los clientes con mayor valor financiero acumulado.
 
 ```sql
-SELECT c.id, c.name, SUM(p.amount) AS total_suma, 
-       COUNT(p.id) AS cuenta_total, 
-       AVG(p.amount) AS promedio  
+SELECT c.id, c.name, SUM(pay.amount) AS total_suma, 
+       COUNT(pay.id) AS cuenta_total, 
+       AVG(pay.amount) AS promedio  
 FROM customers AS c
 JOIN orders AS o ON c.id = o.customer_id
-JOIN payments AS p ON (p.reference_id = o.id AND p.reference_type = 'order')
-WHERE p.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
+JOIN payments AS pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
 GROUP BY c.id, c.name
+HAVING SUM(pay.amount) >= 20000
 ORDER BY total_suma DESC;
 ```
 
 ![](images/postgres_2_8_group_by.png)
 
 **Resultado:** la consulta agrupó los pagos por cliente en PostgreSQL, calculando `SUM`, `COUNT` y `AVG` y filtrando mediante `HAVING SUM(pay.amount) >= 20000`.
+
+**Forma 2 (Múltiples condiciones con HAVING y rango de fechas):**
+
+**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE`, permitirá al motor en PostgreSQL discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
+
+```sql
+SELECT c.id, c.name, c.email, 
+       SUM(pay.amount) AS total_periodo, 
+       COUNT(pay.id) AS total_pagos 
+FROM customers c 
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
+GROUP BY c.id, c.name, c.email
+HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000
+ORDER BY total_periodo DESC;
+```
+
+![](images/postgres_2_8_group_by_having_multiple.png)
+
+**Resultado:** la consulta en PostgreSQL filtró a los clientes con 1 o más visitas cuyo importe acumulado superó los 15.000 COP, proyectando su correo de contacto y monto facturado.
 
 ### 2.9 Subconsultas y teoría de conjuntos
 
@@ -1445,6 +1512,55 @@ ORDER BY pay.payment_date ASC;
 
 ### 3.8 Consultas con agrupamiento GROUP BY y HAVING
 
+Se consideran este tipo de consultas cuando tenemos valores que se repiten en los registros y requerimos aplicar agregaciones analíticas (`COUNT`, `SUM`, `AVG`) junto con agrupamiento (`GROUP BY`) y filtros pos-agregación (`HAVING`).
+
+**Forma 1 con el WHERE (rango de fechas, SUM, COUNT y AVG):**
+
+**Hipótesis:** En la analítica contable de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable mensual. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` en Microsoft SQL Server 2022 y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `AVG(pay.amount)` agrupadas por `GROUP BY c.id, c.name`, el optimizador de T-SQL condensará las operaciones en un resumen financiero ordenado descendentemente por ingresos totales (`ORDER BY TotalSuma DESC`).
+
+```sql
+USE tazanorte;
+
+SELECT c.id, c.name, 
+       SUM(pay.amount) AS TotalSuma, 
+       COUNT(pay.id) AS CuentaTotal, 
+       AVG(pay.amount) AS Promedio 
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON pay.order_id = o.id
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
+GROUP BY c.id, c.name
+ORDER BY TotalSuma DESC;
+```
+
+![](images/mssql_3_8_group_by_where.png)
+
+**Resultado:** la consulta en SQL Server agrupó satisfactoriamente los pagos por cliente, consolidando el volumen total facturado, el recuento de comprobantes y el ticket promedio durante el mes de septiembre de 2026.
+
+**Forma 1 (Filtrado por status activo y pago con tarjeta):**
+
+**Hipótesis:** Con el objetivo de auditar las comisiones de pasarela bancaria y el volumen transaccional captado vía datáfono en la cafetería, se plantea como hipótesis que el filtrado de pagos activos efectuados con tarjeta (`WHERE pay.status = 'active' AND pay.payment_method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por cliente con `GROUP BY`, se espera obtener con exactitud en SQL Server la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado.
+
+```sql
+USE tazanorte;
+
+SELECT c.id, c.name, 
+       SUM(pay.amount) AS TotalGasto, 
+       COUNT(pay.id) AS CantidadPagos
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON pay.order_id = o.id
+WHERE pay.status = 'active' AND pay.payment_method = 'card'
+GROUP BY c.id, c.name
+ORDER BY TotalGasto DESC;
+```
+
+![](images/mssql_3_8_group_by_condicion.png)
+
+**Resultado:** la consulta en SQL Server retornó las ventas abonadas con tarjeta de crédito/débito agrupadas por cliente, permitiendo aislar el ingreso bancario efectivo en el punto de venta de TazaNorte.
+
+**Forma 2 con el HAVING:**
+
 **Hipótesis:** Se plantea como hipótesis que el motor de SQL Server agrupará eficientemente los pagos por cliente mediante `GROUP BY c.id, c.name` y aplicará las métricas `SUM`, `COUNT` y `AVG`. La inclusión de la condición restrictiva `HAVING SUM(pay.amount) >= 20000` filtrará en una segunda fase del procesamiento a los comensales cuyo consumo supere el umbral establecido, entregando un reporte financiero consolidado.
 
 ```sql
@@ -1463,6 +1579,29 @@ ORDER BY TotalSuma DESC;
 ![](images/mssql_3_8_group_by.png)
 
 **Resultado:** la consulta agrupó y consolidó la facturación por cliente en SQL Server aplicando `SUM`, `COUNT` y `AVG` con filtro `HAVING SUM(pay.amount) >= 20000`.
+
+**Forma 2 (Múltiples condiciones con HAVING y rango de fechas):**
+
+**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE`, permitirá al motor en SQL Server discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
+
+```sql
+USE tazanorte;
+
+SELECT c.id, c.name, c.email, 
+       SUM(pay.amount) AS TotalPeriodo, 
+       COUNT(pay.id) AS TotalPagos 
+FROM customers c 
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON pay.order_id = o.id
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
+GROUP BY c.id, c.name, c.email
+HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000
+ORDER BY TotalPeriodo DESC;
+```
+
+![](images/mssql_3_8_group_by_having_multiple.png)
+
+**Resultado:** la consulta en SQL Server filtró a los clientes con 1 o más visitas cuyo importe acumulado superó los 15.000 COP, proyectando su correo de contacto y monto facturado.
 
 ### 3.9 Subconsultas y teoría de conjuntos
 
