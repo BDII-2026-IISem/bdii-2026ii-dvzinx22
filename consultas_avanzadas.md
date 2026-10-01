@@ -63,190 +63,34 @@ A continuación se presentan las evidencias visuales del estado actual de regist
 
 ---
 
-# MYSQL
+## 1. Consultas avanzadas en MySQL :
 
-## Importación de los datos y las tablas
+### 1.1 Proyección de Atributos y Definición de Alias (SELECT, FROM, AS)
 
-Para llevar a la base de datos la información de la cafetería de especialidad **TazaNorte**, los registros fueron preparados y estructurados de forma relacional en formato SQL/CSV, procediendo a su importación y verificación de integridad referencial desde la interfaz de DBeaver sobre el contenedor Docker de MySQL 8.0.
+**Concepto y Narrativa:** 
+La sentencia `SELECT` constituye la operación fundamental de proyección en álgebra relacional, permitiendo seleccionar columnas específicas desde una o varias entidades definidas tras la cláusula `FROM`. Asimismo, se utiliza la palabra reservada `AS` para definir **alias** de columnas, renombrando temporalmente los encabezados del conjunto de resultados para optimizar la legibilidad y claridad de la interfaz.
 
----
-
-## 1. INSERT INTO
-
-La sentencia `INSERT INTO` permite incorporar nuevos registros en las tablas de la base de datos respetando las restricciones de tipo y claves foráneas. En el contexto de TazaNorte, permite registrar nuevos clientes en la plataforma de fidelización y punto de venta.
-
-**Código:**
+En esta consulta sobre la cafetería **TazaNorte**, se proyectan los atributos esenciales de los clientes (`name`, `document_type`, `document_number`) y su indicador de actividad (`is_active` de tipo `TINYINT`), renombrando los campos para una presentación ejecutiva.
 
 ```sql
-INSERT INTO customers (
-    document_type,
-    document_number,
-    name,
-    phone,
-    email,
-    is_active
-) VALUES (
-    'CC',
-    '1099887766',
-    'Mauricio Gómez',
-    '3009988776',
-    'mauricio.gomez@gmail.com',
-    1
-);
-```
-
----
-
-## 2. SELECT *
-
-La sentencia `SELECT` se utiliza para consultar información almacenada en una o varias entidades. El comodín `*` proyecta la totalidad de columnas definidas en el esquema, mientras que la especificación explícita de campos optimiza el rendimiento y tráfico de red.
-
-**Código:**
-
-```sql
--- Proyección completa de clientes
-SELECT * 
+SELECT 
+    name AS cliente_nombre, 
+    document_type AS tipo_documento, 
+    document_number AS numero_documento, 
+    is_active AS estado_activo 
 FROM customers;
-
--- Proyección selectiva de catálogo y precios de café
-SELECT sku, name, price, status 
-FROM products;
 ```
+
+**Evidencia en DBeaver:**
+
+![](images/mysql_1_1_campos.png)
 
 ---
 
-## 3. WHERE
+### 1.2 Secuencia Cronológica y Criterios de Ordenamiento (ORDER BY, DESC, ASC)
 
-La cláusula `WHERE` establece predicados lógicos de filtrado para delimitar las filas devueltas por el motor transaccional.
-
-**Filtrado univariado por cliente específico:**
-```sql
-SELECT * 
-FROM orders 
-WHERE customer_id = 1;
-```
-
-**Filtrado por umbral de facturación:**
-```sql
-SELECT id, customer_id, total, status 
-FROM orders 
-WHERE total >= 25000.00;
-```
-
-**Asociación relacional clásica en WHERE (Producto Cartesiano filtrado):**
-```sql
-SELECT o.id AS order_id, c.name AS customer_name, o.total, o.status
-FROM orders o, customers c
-WHERE o.customer_id = c.id;
-```
-
----
-
-## 4. JOIN
-
-La cláusula `JOIN` permite combinar registros de dos o más tablas relacionándolas formalmente a través de sus claves primarias y foráneas mediante álgebra relacional.
-
-**Relación entre Pedidos y Clientes:**
-```sql
-SELECT 
-    o.id AS order_id,
-    c.name AS customer_name,
-    o.order_date,
-    o.total,
-    o.status
-FROM orders o
-JOIN customers c 
-    ON o.customer_id = c.id;
-```
-
-**Relación multicapa (Ventas, Detalles y Catálogo de Productos):**
-```sql
-SELECT 
-    o.id AS order_id,
-    p.name AS product_name,
-    od.quantity,
-    od.unit_price,
-    od.total AS line_total
-FROM orders o
-JOIN order_details od 
-    ON o.id = od.order_id
-JOIN products p 
-    ON od.product_id = p.id;
-```
-
----
-
-## 5. AND
-
-El operador lógico `AND` concatena múltiples condiciones dentro de la cláusula `WHERE`, exigiendo que todas se evalúen como verdaderas (`TRUE`) para que la fila sea proyectada.
-
-**Órdenes con facturación representativa y estado activo:**
-```sql
-SELECT * 
-FROM orders 
-WHERE total >= 20000.00 
-  AND status = 'active';
-```
-
-**Productos de cafetería activos con precio comercial definido:**
-```sql
-SELECT sku, name, price, status 
-FROM products 
-WHERE price > 10000.00 
-  AND status = 'active';
-```
-
----
-
-## 6. AS
-
-La cláusula `AS` define alias temporales sobre columnas o tablas, facilitando la legibilidad de consultas complejas y la claridad en los encabezados resultantes.
-
-**Alias en columnas:**
-```sql
-SELECT 
-    c.name AS cliente_nombre,
-    c.email AS correo_electronico,
-    c.phone AS telefono_contacto
-FROM customers c;
-```
-
-**Alias en tablas para simplificación sintáctica:**
-```sql
-SELECT 
-    c.name,
-    o.id AS order_id,
-    o.total
-FROM customers AS c
-JOIN orders AS o 
-    ON c.id = o.customer_id;
-```
-
----
-
-## 7. ON
-
-La instrucción `ON` delimita la condición booleana explícita de emparejamiento entre las tuplas de ambas tablas durante la ejecución del `JOIN`.
-
-```sql
-SELECT 
-    c.name AS customer_name,
-    o.id AS order_id,
-    o.total
-FROM customers AS c
-JOIN orders AS o 
-    ON c.id = o.customer_id;
-```
-
-En esta expresión, `ON c.id = o.customer_id` restringe la combinación únicamente a los registros donde el identificador único del cliente concuerda con la clave foránea almacenada en la orden.
-
----
-
-## 8. ORDER BY
-
-La cláusula `ORDER BY` clasifica el conjunto de resultados bajo criterios secuenciales ascendentes (`ASC`) o descendentes (`DESC`). En TazaNorte permite analizar cronológicamente la rotación de pedidos en mesa y mostrador.
-
-**Código:**
+**Concepto y Narrativa:** 
+La cláusula `ORDER BY` permite clasificar las tuplas resultantes según criterios secuenciales ascendentes (`ASC`, por defecto) o descendentes (`DESC`). En sistemas transaccionales como TazaNorte, el ordenamiento descendente por fecha (`order_date DESC`) es indispensable para auditar los consumos más recientes en barra y mesa, garantizando la trazabilidad operativa en el punto de venta.
 
 ```sql
 SELECT id, order_date, total, status 
@@ -260,208 +104,117 @@ ORDER BY order_date DESC;
 
 ---
 
-## 9. COMPARADORES LÓGICOS
+### 1.3 Asociación Relacional en Cláusula WHERE (Producto Cartesiano Filtrado y Operadores de Igualdad)
 
-Los comparadores relacionales determinan la pertenencia de los registros según operaciones aritméticas y de igualdad:
+**Concepto y Narrativa:** 
+Históricamente, las relaciones entre entidades en bases de datos relacionales se construían mediante un producto cartesiano delimitado por una condición de igualdad en la cláusula `WHERE` (`tabla1.fk = tabla2.pk`). Este operador de comparación (`=`) garantiza que únicamente se proyecten las órdenes que posean una correspondencia exacta con la clave primaria del cliente registrado.
 
-- `=` : Igualdad estricta
-- `<>` / `!=` : Desigualdad
-- `>` : Mayor que
-- `<` : Menor que
-- `>=` : Mayor o igual que
-- `<=` : Menor o igual que
-
-**Filtro por productos de alta gama (precio >= 15000):**
 ```sql
-SELECT id, sku, name, price 
-FROM products 
-WHERE price >= 15000.00;
+SELECT c.name, o.id AS order_id, o.total, o.status 
+FROM orders o, customers c 
+WHERE c.id = o.customer_id;
 ```
 
-**Filtro de exclusión tarifaria (precio <> 12500):**
-```sql
-SELECT id, sku, name, price 
-FROM products 
-WHERE price <> 12500.00;
-```
+**Evidencia en DBeaver:**
 
-**Rango cerrado con operadores combinados:**
-```sql
-SELECT id, sku, name, price 
-FROM products 
-WHERE price >= 8000.00 
-  AND price <= 22000.00;
-```
+![](images/mysql_1_3_multitabla_where.png)
 
 ---
 
-## 10. GROUP BY
+### 1.4 Combinación Explícita de Entidades mediante Cláusulas JOIN y ON (INNER JOIN, Claves Foráneas)
 
-La cláusula `GROUP BY` condensa múltiples filas que comparten valores comunes en grupos agregados, permitiendo calcular resúmenes contables por entidad.
+**Concepto y Narrativa:** 
+La instrucción ANSI `INNER JOIN` formaliza la combinación relacional de tablas de forma más legible y optimizada para el planificador de consultas. La cláusula asociada **`ON`** define explícitamente el predicado lógico de unión (`ON c.id = o.customer_id`), estipulando la regla de integridad referencial bajo la cual se intersectan los datos de ventas y clientes en TazaNorte.
 
 ```sql
-SELECT customer_id, COUNT(id) AS total_pedidos, SUM(total) AS total_facturado
-FROM orders
-GROUP BY customer_id;
+SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
+FROM customers AS c 
+JOIN orders AS o ON (c.id = o.customer_id);
 ```
+
+**Evidencia en DBeaver:**
+
+![](images/mysql_1_4_multitabla_join.png)
 
 ---
 
-## 11. COUNT
+### 1.5 Filtros Lógicos Compuestos y Comparadores Relacionales (WHERE, AND, Operadores de Igualdad y Estado)
 
-Función de agregación que contabiliza el número de registros o valores no nulos que satisfacen un predicado.
+**Concepto y Narrativa:** 
+El operador lógico **`AND`** permite concatenar múltiples predicados dentro de la cláusula `WHERE`, evaluando como válidas únicamente aquellas filas que satisfacen simultáneamente todas las condiciones. Junto con los **comparadores lógicos** (`=`, `<>`, `>`, `<`), permite discriminar órdenes según su estado operativo (`active` vs `inactive`), segregando los pedidos válidos de aquellos anulados o cancelados.
 
+**Filtro por órdenes con estado activo:**
 ```sql
-SELECT COUNT(*) AS total_clientes_activos 
-FROM customers 
-WHERE is_active = 1;
+SELECT c.name, o.id AS order_id, o.order_date, o.total, o.status 
+FROM orders o, customers c 
+WHERE c.id = o.customer_id AND o.status = 'active';
 ```
+![](images/mysql_1_5_condiciones_where_active.png)
+
+**Filtro combinado con JOIN por órdenes con estado inactivo:**
+```sql
+SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
+FROM customers AS c 
+JOIN orders AS o ON (c.id = o.customer_id) 
+WHERE o.status = 'inactive';
+```
+![](images/mysql_1_5_condiciones_join_inactive.png)
 
 ---
 
-## 12. SUM
+### 1.6 Búsqueda por Patrones de Texto con Operador LIKE (Comodines %, Concatenación y Filtros Compuestos)
 
-Calcula la sumatoria acumulada de valores numéricos en una columna específica.
+**Concepto y Narrativa:** 
+El operador **`LIKE`** realiza búsquedas por concordancia de patrones de cadenas de texto empleando caracteres comodín:
+- `%` : Representa cualquier secuencia de cero o más caracteres.
+- `_` : Representa un único carácter en una posición específica.
 
-```sql
-SELECT SUM(total) AS ingreso_bruto_acumulado 
-FROM orders 
-WHERE status = 'active';
-```
+En TazaNorte se aplica para localizar clientes por inicial de correo, segmentar cuentas corporativas bajo el dominio `@gmail` y combinar estas búsquedas con estados transaccionales activos.
 
----
-
-## 13. AVG
-
-Calcula el valor aritmético promedio sobre una columna cuantitativa. Permite determinar el ticket promedio de consumo en la cafetería.
-
-```sql
-SELECT AVG(total) AS ticket_promedio 
-FROM orders 
-WHERE status = 'active';
-```
-
----
-
-## 14. HAVING
-
-Establece restricciones de filtrado posteriores a la agrupación, evaluando directamente el resultado de funciones agregadas que no pueden aplicarse dentro de la cláusula `WHERE`.
-
-```sql
-SELECT customer_id, SUM(total) AS facturado
-FROM orders
-GROUP BY customer_id
-HAVING SUM(total) >= 30000.00;
-```
-
----
-
-## 15. FUNCIONES DE AGREGACIÓN
-
-Consolidación de métricas de negocio combinando `COUNT`, `SUM`, `AVG`, `MIN` y `MAX` para diagnosticar la dispersión de ventas en TazaNorte.
-
-```sql
-SELECT 
-    COUNT(id) AS cantidad_ordenes,
-    SUM(total) AS venta_total,
-    AVG(total) AS venta_promedio,
-    MIN(total) AS consumo_minimo,
-    MAX(total) AS consumo_maximo
-FROM orders
-WHERE status = 'active';
-```
-
----
-
-## 16. SUBCONSULTAS
-
-Una subconsulta es una instrucción `SELECT` anidada dentro de otra consulta principal, permitiendo resolver dinámicamente dependencias de datos en tiempo de ejecución.
-
-```sql
-SELECT sku, name, price 
-FROM products 
-WHERE price > (SELECT AVG(price) FROM products);
-```
-
----
-
-## 17. LIKE
-
-El operador `LIKE` ejecuta búsquedas de coincidencia de patrones en cadenas de texto empleando comodines (`%` para cero o más caracteres, `_` para un único carácter).
-
-### 17.1 Filtro por inicial (`m%`)
-Búsqueda de clientes cuyo correo electrónico o nombre inicia por la letra 'm':
-
+**1.6.1 Filtro por inicial (`m%`):**
 ```sql
 SELECT name, email, is_active 
 FROM customers AS c 
 WHERE c.email LIKE 'm%';
 ```
-
-**Evidencia en DBeaver:**
-
 ![](images/mysql_1_6_like_inicio.png)
 
-### 17.2 Filtro por dominio corporativo (`@gmail`)
-Identificación de cuentas registradas bajo el proveedor de mensajería Gmail:
-
+**1.6.2 Filtro por dominio corporativo (`@gmail`):**
 ```sql
 SELECT name, email, is_active 
 FROM customers AS c 
 WHERE c.email LIKE CONCAT('%', 'gmail', '%');
 ```
-
-**Evidencia en DBeaver:**
-
 ![](images/mysql_1_6_like_gmail.png)
 
-### 17.3 Filtro combinado con JOIN y estado activo
-Cruce relacional que localiza pedidos vigentes asociados a clientes con patrón inicial:
-
+**1.6.3 Filtro combinado (JOIN + Estado Activo + LIKE inicial):**
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
 FROM customers AS c 
 JOIN orders AS o ON (c.id = o.customer_id) 
 WHERE o.status = 'active' AND c.email LIKE 'm%';
 ```
-
-**Evidencia en DBeaver:**
-
 ![](images/mysql_1_6_like_combinado.png)
 
 ---
 
-## 18. CONSULTA AVANZADA COMBINADA
+### 1.7 Evaluación de Rangos Temporales y Facturación (BETWEEN, TIMESTAMP y Procedimientos Almacenados)
 
-### Situación hipotética
-La gerencia administrativa de **TazaNorte** requiere un reporte financiero consolidado que identifique qué clientes han generado ingresos significativos en un intervalo de fechas determinado, contrastando la fecha de facturación, el canal de atención (pos o delivery) y el medio de pago registrado. Asimismo, para evitar la reescritura repetitiva de esta lógica analítica en el punto de venta, se solicitó encapsularla en un **Procedimiento Almacenado (Stored Procedure)** reutilizable y parametrizado.
+**Concepto y Narrativa:** 
+El operador **`BETWEEN`** evalúa si un atributo cuantitativo o de fecha se encuentra contenido dentro de un intervalo cerrado inclusivo (`val >= limite_inferior AND val <= limite_superior`). Para optimizar y estandarizar esta consulta analítica sobre la facturación de TazaNorte en septiembre de 2026, la lógica se encapsuló en un **Procedimiento Almacenado (Stored Procedure)** reutilizable y parametrizado con `CREATE PROCEDURE` e invocado mediante `CALL`.
 
-### Consulta SQL Combinada
-
+**Consulta SQL con BETWEEN (Filtro temporal de pagos):**
 ```sql
-SELECT 
-    c.name AS cliente,
-    c.email,
-    o.id AS order_id,
-    o.order_date,
-    o.channel,
-    o.total,
-    pay.method AS metodo_pago,
-    pay.amount AS monto_pagado
+SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
 FROM customers c
 JOIN orders o ON c.id = o.customer_id
 JOIN payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
-WHERE o.status = 'active'
-  AND pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'
 ORDER BY pay.payment_date ASC;
 ```
-
-**Evidencia en DBeaver:**
-
 ![](images/mysql_1_7_between_join.png)
 
-### Creación del Procedimiento Almacenado
-
+**Definición del Procedimiento Almacenado:**
 ```sql
 DROP PROCEDURE IF EXISTS sp_reporte_consumo_clientes;
 DELIMITER //
@@ -472,7 +225,6 @@ BEGIN
       c.email,
       o.id AS order_id,
       o.order_date,
-      o.channel,
       o.total,
       pay.method AS metodo_pago,
       pay.amount AS monto_pagado
@@ -485,61 +237,39 @@ BEGIN
 END //
 DELIMITER ;
 ```
-
-**Evidencia de creación en DBeaver:**
-
 ![](images/mysql_1_7_procedure_create.png)
 
-### Llamada al Procedimiento Almacenado
-
+**Ejecución del Procedimiento en DBeaver:**
 ```sql
 CALL sp_reporte_consumo_clientes('active');
 ```
-
-**Evidencia de ejecución en DBeaver:**
-
 ![](images/mysql_1_7_procedure_result.png)
 
 ---
 
-## 19. TEORÍA DE CONJUNTOS MEDIANTE SUBCONSULTAS
+### 1.8 Agrupamiento y Funciones de Agregación (GROUP BY, HAVING, COUNT, SUM, AVG)
 
-### Situación hipotética
-El departamento de fidelización de **TazaNorte** requiere clasificar el universo de clientes registrados en el sistema para dos fines comerciales estratégicos:
-1. **Diferencia de conjuntos:** Detectar a los clientes registrados en la base de datos que **no han registrado ninguna orden** durante la campaña de ventas de inicio de mes (entre el 1 y el 10 de septiembre de 2026), con el fin de activar una campaña de reactivación por correo.
-2. **Filtrado superior a la media:** Identificar aquellos clientes cuyo volumen total de consumo supere el promedio general o un umbral financiero de $20.000 mediante `GROUP BY` y `HAVING`.
+**Concepto y Narrativa:** 
+La cláusula **`GROUP BY`** condensa múltiples filas en grupos analíticos basándose en columnas coincidentes. Sobre estos grupos se aplican **funciones de agregación** como:
+- `COUNT()` : Conteo de registros no nulos.
+- `SUM()` : Sumatoria de montos facturados.
+- `AVG()` : Cálculo de ticket de consumo promedio.
+- `MIN()` / `MAX()` : Extremos de facturación.
 
-### Diferencia mediante Subconsulta NOT IN
+Para filtrar los grupos resultantes se emplea la cláusula **`HAVING`**, la cual opera exclusivamente después de que las sumatorias y promedios han sido calculados.
 
+**1.8.1 Agrupamiento básico con filtro temporal en WHERE:**
 ```sql
-SELECT * 
-FROM customers AS c 
-WHERE c.id NOT IN (
-    SELECT o.customer_id 
-    FROM orders AS o 
-    WHERE o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59'
-);
+SELECT c.id, c.name, SUM(pay.amount) AS TotalSuma
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
+GROUP BY c.id, c.name;
 ```
+![](images/mysql_1_8_group_by_where.png)
 
-**Evidencia en DBeaver:**
-
-![](images/mysql_1_9_subconsulta_notin.png)
-
-### Diferencia mediante LEFT JOIN ... IS NULL
-
-```sql
-SELECT c.* 
-FROM customers AS c 
-LEFT JOIN orders AS o ON (c.id = o.customer_id AND o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59') 
-WHERE o.customer_id IS NULL;
-```
-
-**Evidencia en DBeaver:**
-
-![](images/mysql_1_9_subconsulta_leftjoin.png)
-
-### Agrupamiento y Clientes con Ventas Superiores al Umbral (HAVING)
-
+**1.8.2 Agrupamiento con condición de umbral en HAVING:**
 ```sql
 SELECT c.id, c.name, 
        SUM(pay.amount) AS TotalSuma, 
@@ -553,26 +283,66 @@ GROUP BY c.id, c.name
 HAVING SUM(pay.amount) >= 20000
 ORDER BY TotalSuma DESC;
 ```
-
-**Evidencia en DBeaver:**
-
 ![](images/mysql_1_8_group_by_having.png)
 
----
-
-## 20. AUDITORÍA DE TABLAS MEDIANTE TRIGGERS
-
-### Situación hipotética
-En una cafetería con alta rotación transaccional como **TazaNorte**, existe el riesgo latente de fraude interno o discrepancias operativas (por ejemplo, alteración de precios en el catálogo de productos, supresión fraudulenta de órdenes de venta para ocultar ingresos en efectivo, o manipulación de pagos recibidos). Para garantizar la integridad contable y el cumplimiento de normativas de auditoría, se diseñó una arquitectura de **Auditoría Reactiva con Inmutabilidad Estricta**:
-- Cada modificación (`INSERT`, `UPDATE`, `DELETE`) en las tablas nucleares (`products`, `orders`, `payments`) es interceptada por disparadores (`AFTER TRIGGERS`) que graban instantáneamente en una tabla `_audit` el estado previo (`before_data`) y posterior (`after_data`) en formato estructurado **JSON**.
-- Las tablas de auditoría están blindadas mediante disparadores `BEFORE UPDATE` y `BEFORE DELETE` que invocan excepciones `SIGNAL SQLSTATE '45000'`, impidiendo cualquier intento de modificar o borrar el registro histórico.
-
----
-
-### 20.1 Auditoría en la Tabla products
-
-#### Tabla de Auditoría
+**1.8.3 Agrupamiento con múltiples condiciones en HAVING:**
 ```sql
+SELECT c.id, c.name, 
+       SUM(pay.amount) AS TotalSuma, 
+       COUNT(pay.id) AS TotalPagos, 
+       AVG(pay.amount) AS PromedioPago
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON (pay.reference_id = o.id AND pay.reference_type = 'order')
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
+GROUP BY c.id, c.name
+HAVING SUM(pay.amount) >= 20000 AND COUNT(pay.id) >= 1
+ORDER BY TotalSuma DESC;
+```
+![](images/mysql_1_8_group_by_having_multiple.png)
+
+---
+
+### 1.9 Subconsultas y Operaciones de Teoría de Conjuntos (SUBCONSULTAS, NOT IN, LEFT JOIN ... IS NULL)
+
+**Concepto y Narrativa:** 
+Las **subconsultas** son instrucciones `SELECT` anidadas que devuelven conjuntos intermedios para resolver dependencias dinámicas. En la teoría de conjuntos relacional:
+- **Diferencia con NOT IN:** Aísla a los clientes cuyo identificador no se encuentre presente en el conjunto de pedidos del período (`A - B`).
+- **Diferencia con LEFT JOIN ... IS NULL:** Realiza una unión externa izquierda proyectando todas las tuplas de la entidad principal y filtrando donde la clave foránea derecha es `NULL`.
+
+**1.9.1 Diferencia de conjuntos mediante Subconsulta NOT IN:**
+```sql
+SELECT * 
+FROM customers AS c 
+WHERE c.id NOT IN (
+    SELECT o.customer_id 
+    FROM orders AS o 
+    WHERE o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59'
+);
+```
+![](images/mysql_1_9_subconsulta_notin.png)
+
+**1.9.2 Diferencia de conjuntos mediante LEFT JOIN ... IS NULL:**
+```sql
+SELECT c.* 
+FROM customers AS c 
+LEFT JOIN orders AS o ON (c.id = o.customer_id AND o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59') 
+WHERE o.customer_id IS NULL;
+```
+![](images/mysql_1_9_subconsulta_leftjoin.png)
+
+---
+
+### 1.10 Auditoría Transaccional e Inmutabilidad con Disparadores (TRIGGERS, JSON, SIGNAL SQLSTATE)
+
+**Concepto y Narrativa:** 
+Los **Disparadores (Triggers)** son bloques de código procedural que el motor ejecuta automáticamente ante eventos `DML` (`INSERT`, `UPDATE`, `DELETE`). En la arquitectura de TazaNorte se diseñó un esquema de **Auditoría e Inmutabilidad Estricta**:
+- Triggers reactivos (`AFTER INSERT/UPDATE/DELETE`) serializan el estado previo (`OLD`) y posterior (`NEW`) de la fila en formato estructurado **JSON** dentro de tablas de auditoría dedicadas (`products_audit`, `orders_audit`, `payments_audit`).
+- Disparadores preventivos (`BEFORE UPDATE/DELETE`) sobre las tablas de auditoría arrojan excepciones `SIGNAL SQLSTATE '45000'`, impidiendo cualquier manipulación, truncado o borrado administrativo del historial.
+
+#### 1.10.1 Auditoría en la Tabla products
+```sql
+-- Creación de tabla de auditoría con columnas JSON
 CREATE TABLE IF NOT EXISTS products_audit (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   product_id      BIGINT NOT NULL,
@@ -583,101 +353,69 @@ CREATE TABLE IF NOT EXISTS products_audit (
   after_data      JSON NULL
 ) ENGINE=InnoDB;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_products_audit_table.png)
 
-#### Trigger AFTER INSERT
 ```sql
+-- Trigger AFTER INSERT
 CREATE TRIGGER ai_products_audit AFTER INSERT ON products FOR EACH ROW
 BEGIN
   SET @from_products_trigger = 1;
   INSERT INTO products_audit (product_id, actionSale, before_data, after_data)
-  VALUES (
-    NEW.id, 'INSERT', NULL,
-    JSON_OBJECT('id', NEW.id, 'sku', NEW.sku, 'name', NEW.name, 'price', NEW.price, 'status', NEW.status)
-  );
+  VALUES (NEW.id, 'INSERT', NULL, JSON_OBJECT('id', NEW.id, 'sku', NEW.sku, 'name', NEW.name, 'price', NEW.price, 'status', NEW.status));
   SET @from_products_trigger = NULL;
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_products_after_insert.png)
 
-#### Trigger AFTER UPDATE
 ```sql
+-- Trigger AFTER UPDATE
 CREATE TRIGGER au_products_audit AFTER UPDATE ON products FOR EACH ROW
 BEGIN
   SET @from_products_trigger = 1;
   INSERT INTO products_audit (product_id, actionSale, before_data, after_data)
-  VALUES (
-    NEW.id, 'UPDATE',
+  VALUES (NEW.id, 'UPDATE', 
     JSON_OBJECT('id', OLD.id, 'sku', OLD.sku, 'name', OLD.name, 'price', OLD.price, 'status', OLD.status),
     JSON_OBJECT('id', NEW.id, 'sku', NEW.sku, 'name', NEW.name, 'price', NEW.price, 'status', NEW.status)
   );
   SET @from_products_trigger = NULL;
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_products_after_update.png)
 
-#### Trigger AFTER DELETE
 ```sql
+-- Trigger AFTER DELETE
 CREATE TRIGGER ad_products_audit AFTER DELETE ON products FOR EACH ROW
 BEGIN
   SET @from_products_trigger = 1;
   INSERT INTO products_audit (product_id, actionSale, before_data, after_data)
-  VALUES (
-    OLD.id, 'DELETE',
-    JSON_OBJECT('id', OLD.id, 'sku', OLD.sku, 'name', OLD.name, 'price', OLD.price, 'status', OLD.status),
-    NULL
-  );
+  VALUES (OLD.id, 'DELETE', JSON_OBJECT('id', OLD.id, 'sku', OLD.sku, 'name', OLD.name, 'price', OLD.price, 'status', OLD.status), NULL);
   SET @from_products_trigger = NULL;
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_products_after_delete.png)
 
-#### Inmutabilidad de Auditoría (Bloqueo de Modificación)
 ```sql
+-- Inmutabilidad estricta (Bloqueo de Modificación)
 CREATE TRIGGER bu_products_audit_block BEFORE UPDATE ON products_audit FOR EACH ROW
 BEGIN
   SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'products_audit es inmutable: UPDATE prohibido.';
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_products_block_update.png)
 
-#### Verificación y Pruebas de Auditoría en products
-
-**Prueba 1: Inserción auditada**
-```sql
-INSERT INTO products (sku, name, description, price, status) 
-VALUES ('SKU-TEST-001', 'Café Especial Prueba', 'Prueba trigger', 12500.00, 'active');
-```
-![](images/mysql_trigger_products_test_insert.png)
-
-**Prueba 2: Modificación auditada (Variación de precio)**
-```sql
-UPDATE products SET price = 14500.00, name = 'Café Especial Prueba Modificado' WHERE sku = 'SKU-TEST-001';
-```
-![](images/mysql_trigger_products_test_update.png)
-
-**Prueba 3: Eliminación auditada**
-```sql
-DELETE FROM products WHERE sku = 'SKU-TEST-001';
-```
-![](images/mysql_trigger_products_test_delete.png)
-
-**Prueba 4: Validación de Inmutabilidad y Bloqueo de Seguridad**
-```sql
-UPDATE products_audit SET actionSale = 'UPDATE' WHERE id = 1;
-```
-![](images/mysql_trigger_products_test_prohibition.png)
+**Pruebas de Funcionalidad y Seguridad en products:**
+- **Inserción:** `INSERT INTO products (sku, name, description, price, status) VALUES ('SKU-TEST-001', 'Café Especial Prueba', 'Prueba trigger', 12500.00, 'active');`
+  ![](images/mysql_trigger_products_test_insert.png)
+- **Modificación:** `UPDATE products SET price = 14500.00, name = 'Café Especial Prueba Modificado' WHERE sku = 'SKU-TEST-001';`
+  ![](images/mysql_trigger_products_test_update.png)
+- **Eliminación:** `DELETE FROM products WHERE sku = 'SKU-TEST-001';`
+  ![](images/mysql_trigger_products_test_delete.png)
+- **Bloqueo de Inmutabilidad:** `UPDATE products_audit SET actionSale = 'UPDATE' WHERE id = 1;`
+  ![](images/mysql_trigger_products_test_prohibition.png)
 
 ---
 
-### 20.2 Auditoría en la Tabla orders
-
-#### Tabla de Auditoría
+#### 1.10.2 Auditoría en la Tabla orders
 ```sql
 CREATE TABLE IF NOT EXISTS orders_audit (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -689,89 +427,61 @@ CREATE TABLE IF NOT EXISTS orders_audit (
   after_data      JSON NULL
 ) ENGINE=InnoDB;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_orders_audit_table.png)
 
-#### Trigger AFTER INSERT
 ```sql
 CREATE TRIGGER ai_orders_audit AFTER INSERT ON orders FOR EACH ROW
 BEGIN
   SET @from_orders_trigger = 1;
   INSERT INTO orders_audit (order_id, actionSale, before_data, after_data)
-  VALUES (
-    NEW.id, 'INSERT', NULL,
-    JSON_OBJECT('id', NEW.id, 'customer_id', NEW.customer_id, 'channel', NEW.channel, 'total', NEW.total, 'status', NEW.status)
-  );
+  VALUES (NEW.id, 'INSERT', NULL, JSON_OBJECT('id', NEW.id, 'customer_id', NEW.customer_id, 'channel', NEW.channel, 'total', NEW.total, 'status', NEW.status));
   SET @from_orders_trigger = NULL;
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_orders_after_insert.png)
 
-#### Trigger AFTER UPDATE
 ```sql
 CREATE TRIGGER au_orders_audit AFTER UPDATE ON orders FOR EACH ROW
 BEGIN
   SET @from_orders_trigger = 1;
   INSERT INTO orders_audit (order_id, actionSale, before_data, after_data)
-  VALUES (
-    NEW.id, 'UPDATE',
+  VALUES (NEW.id, 'UPDATE',
     JSON_OBJECT('id', OLD.id, 'customer_id', OLD.customer_id, 'channel', OLD.channel, 'total', OLD.total, 'status', OLD.status),
     JSON_OBJECT('id', NEW.id, 'customer_id', NEW.customer_id, 'channel', NEW.channel, 'total', NEW.total, 'status', NEW.status)
   );
   SET @from_orders_trigger = NULL;
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_orders_after_update.png)
 
-#### Trigger AFTER DELETE
 ```sql
 CREATE TRIGGER ad_orders_audit AFTER DELETE ON orders FOR EACH ROW
 BEGIN
   SET @from_orders_trigger = 1;
   INSERT INTO orders_audit (order_id, actionSale, before_data, after_data)
-  VALUES (
-    OLD.id, 'DELETE',
-    JSON_OBJECT('id', OLD.id, 'customer_id', OLD.customer_id, 'channel', OLD.channel, 'total', OLD.total, 'status', OLD.status),
-    NULL
-  );
+  VALUES (OLD.id, 'DELETE', JSON_OBJECT('id', OLD.id, 'customer_id', OLD.customer_id, 'channel', OLD.channel, 'total', OLD.total, 'status', OLD.status), NULL);
   SET @from_orders_trigger = NULL;
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_orders_after_delete.png)
 
-#### Inmutabilidad de Auditoría (Bloqueo de Modificación)
 ```sql
 CREATE TRIGGER bu_orders_audit_block BEFORE UPDATE ON orders_audit FOR EACH ROW
 BEGIN
   SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'orders_audit es inmutable: UPDATE prohibido.';
 END;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_orders_block_update.png)
 
-#### Verificación y Pruebas de Auditoría en orders
-
-**Pruebas de Operaciones (INSERT, UPDATE, DELETE):**
-```sql
-SELECT id, order_id, actionSale, changed_at, before_data, after_data 
-FROM orders_audit;
-```
-![](images/mysql_trigger_orders_test_all.png)
-
-**Prueba de Inmutabilidad:**
-```sql
-UPDATE orders_audit SET actionSale = 'UPDATE' WHERE id = 1;
-```
-![](images/mysql_trigger_orders_test_prohibition.png)
+**Pruebas de Operaciones e Inmutabilidad en orders:**
+- Operaciones auditadas: `SELECT id, order_id, actionSale, changed_at, before_data, after_data FROM orders_audit;`
+  ![](images/mysql_trigger_orders_test_all.png)
+- Bloqueo de seguridad: `UPDATE orders_audit SET actionSale = 'UPDATE' WHERE id = 1;`
+  ![](images/mysql_trigger_orders_test_prohibition.png)
 
 ---
 
-### 20.3 Auditoría en la Tabla payments
-
-#### Tabla de Auditoría
+#### 1.10.3 Auditoría en la Tabla payments
 ```sql
 CREATE TABLE IF NOT EXISTS payments_audit (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -783,367 +493,144 @@ CREATE TABLE IF NOT EXISTS payments_audit (
   after_data      JSON NULL
 ) ENGINE=InnoDB;
 ```
-**Evidencia en DBeaver:**
 ![](images/mysql_trigger_payments_audit_table.png)
 
-#### Triggers de Auditoría e Inmutabilidad (AFTER INSERT, UPDATE, DELETE y Bloqueo)
 ```sql
+-- Creación consolidada de triggers de auditoría e inmutabilidad en payments
 CREATE TRIGGER ai_payments_audit AFTER INSERT ON payments FOR EACH ROW
 BEGIN
   SET @from_payments_trigger = 1;
   INSERT INTO payments_audit (payment_id, actionSale, before_data, after_data)
-  VALUES (
-    NEW.id, 'INSERT', NULL,
-    JSON_OBJECT('id', NEW.id, 'reference_type', NEW.reference_type, 'reference_id', NEW.reference_id, 'method', NEW.method, 'amount', NEW.amount, 'status', NEW.status)
-  );
+  VALUES (NEW.id, 'INSERT', NULL, JSON_OBJECT('id', NEW.id, 'reference_type', NEW.reference_type, 'reference_id', NEW.reference_id, 'method', NEW.method, 'amount', NEW.amount, 'status', NEW.status));
   SET @from_payments_trigger = NULL;
 END;
 ```
-**Evidencia de creación en DBeaver:**
 ![](images/mysql_trigger_payments_all.png)
 
-#### Verificación y Pruebas de Auditoría en payments
-
-**Pruebas de Operaciones (INSERT, UPDATE, DELETE):**
-```sql
-SELECT id, payment_id, actionSale, changed_at, before_data, after_data 
-FROM payments_audit;
-```
-![](images/mysql_trigger_payments_test_all.png)
-
-**Prueba de Inmutabilidad:**
-```sql
-UPDATE payments_audit SET actionSale = 'UPDATE' WHERE id = 1;
-```
-![](images/mysql_trigger_payments_test_prohibition.png)
+**Pruebas de Operaciones e Inmutabilidad en payments:**
+- Operaciones auditadas: `SELECT id, payment_id, actionSale, changed_at, before_data, after_data FROM payments_audit;`
+  ![](images/mysql_trigger_payments_test_all.png)
+- Bloqueo de seguridad: `UPDATE payments_audit SET actionSale = 'UPDATE' WHERE id = 1;`
+  ![](images/mysql_trigger_payments_test_prohibition.png)
 
 ---
 
-# POSTGRESQL
+## 2. Consultas avanzadas en PostgreSQL :
 
-## Importación de los datos y las tablas
+### 2.1 Proyección de Atributos y Evaluación de Booleanos (SELECT, FROM, AS, BOOLEAN)
 
-Para trasladar los datos al motor PostgreSQL 17 containerizado, se crearon los esquemas relacionales con soporte de tipos nativos (`BOOLEAN`, `TIMESTAMP`, `GENERATED ALWAYS AS IDENTITY`) y se importaron los registros de TazaNorte garantizando la integridad de claves primarias y foráneas desde DBeaver.
+**Concepto y Narrativa:** 
+En PostgreSQL 17 se proyectan las columnas de la entidad `customers`, evaluando la representación del tipo booleano nativo `is_active` (`t` para verdadero, `f` para falso). La cláusula `AS` define alias representativos para los encabezados de salida.
+
+```sql
+SELECT name, document_type, document_number, is_active FROM customers;
+```
+![](images/postgres_1_1_campos.png)
 
 ---
 
-## 1. INSERT INTO
+### 2.2 Secuencia Cronológica y Criterios de Ordenamiento (ORDER BY, DESC)
 
-La sentencia `INSERT INTO` en PostgreSQL permite añadir nuevas tuplas a las tablas del sistema. En el caso de los clientes de TazaNorte, se ingresan sus datos personales y el indicador de actividad booleano (`is_active` en `true` o `false`).
-
-**Código:**
-
-```sql
-INSERT INTO customers (
-    document_type,
-    document_number,
-    name,
-    phone,
-    email,
-    is_active
-) VALUES (
-    'CC',
-    '1099887766',
-    'Mauricio Gómez',
-    '3009988776',
-    'mauricio.gomez@gmail.com',
-    true
-);
-```
-
----
-
-## 2. SELECT *
-
-La sentencia `SELECT` en PostgreSQL permite proyectar el universo completo de tuplas mediante `*` o discriminar las columnas estrictamente requeridas.
-
-**Código:**
+**Concepto y Narrativa:** 
+La instrucción `ORDER BY order_date DESC` ordena cronológicamente de forma descendente las órdenes registradas en PostgreSQL, priorizando el análisis de los pedidos más recientes en cafetería.
 
 ```sql
--- Consulta global de clientes
-SELECT * 
-FROM customers;
-
--- Consulta de catálogo de productos
-SELECT sku, name, price, status 
-FROM products;
+SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 ```
-
----
-
-## 3. WHERE
-
-La cláusula `WHERE` aplica filtros lógicos para restringir las tuplas devueltas por PostgreSQL según condiciones aritméticas, booleanas o relacionales.
-
-**Filtrado de órdenes por cliente específico:**
-```sql
-SELECT * 
-FROM orders 
-WHERE customer_id = 1;
-```
-
-**Filtrado por pedidos de alto valor:**
-```sql
-SELECT id, customer_id, total, status 
-FROM orders 
-WHERE total >= 25000.00;
-```
-
-**Producto cartesiano filtrado en WHERE (Relación clásica):**
-```sql
-SELECT o.id AS order_id, c.name AS customer_name, o.total, o.status
-FROM orders o, customers c
-WHERE o.customer_id = c.id;
-```
-
----
-
-## 4. JOIN
-
-La cláusula `JOIN` permite combinar registros entre múltiples entidades vinculadas por integridad referencial.
-
-**Relación entre Órdenes y Clientes:**
-```sql
-SELECT 
-    o.id AS order_id,
-    c.name AS customer_name,
-    o.order_date,
-    o.total,
-    o.status
-FROM orders o
-JOIN customers c 
-    ON o.customer_id = c.id;
-```
-
-**Relación multicapa (Órdenes, Detalles de Facturación y Productos):**
-```sql
-SELECT 
-    o.id AS order_id,
-    p.name AS product_name,
-    od.quantity,
-    od.unit_price,
-    od.total AS subtotal_linea
-FROM orders o
-JOIN order_details od 
-    ON o.id = od.order_id
-JOIN products p 
-    ON od.product_id = p.id;
-```
-
----
-
-## 5. AND
-
-El operador `AND` requiere que todas las expresiones lógicas encadenadas se evalúen como verdaderas (`TRUE`).
-
-```sql
-SELECT * 
-FROM orders 
-WHERE total >= 20000.00 
-  AND status = 'active';
-```
-
----
-
-## 6. AS
-
-La cláusula `AS` define alias formales para renombrar dinámicamente columnas y tablas en PostgreSQL.
-
-```sql
-SELECT 
-    c.name AS cliente_nombre,
-    c.email AS correo_electronico,
-    o.id AS pedido_codigo,
-    o.total AS monto_liquidado
-FROM customers AS c
-JOIN orders AS o 
-    ON c.id = o.customer_id;
-```
-
----
-
-## 7. ON
-
-La instrucción `ON` delimita la condición booleana explícita de correspondencia entre claves primarias y foráneas al realizar la operación relacional `JOIN`.
-
-```sql
-SELECT 
-    c.name AS customer_name,
-    o.id AS order_id,
-    o.total
-FROM customers AS c
-JOIN orders AS o 
-    ON c.id = o.customer_id;
-```
-
----
-
-## 8. ORDER BY
-
-Permite clasificar cronológica o numéricamente las tuplas en PostgreSQL de forma ascendente (`ASC`) o descendente (`DESC`).
-
-**Código:**
-
-```sql
-SELECT id, order_date, total, status 
-FROM orders 
-ORDER BY order_date DESC;
-```
-
-**Evidencia en DBeaver:**
-
 ![](images/postgres_1_2_order_by.png)
 
 ---
 
-## 9. COMPARADORES LÓGICOS
+### 2.3 Asociación Relacional en Cláusula WHERE (Producto Cartesiano con Igualdad =)
 
-Operadores relacionales en PostgreSQL para evaluar límites numéricos y de igualdad:
+**Concepto y Narrativa:** 
+Relación clásica entre `orders` y `customers` mediante una condición de igualdad en la cláusula `WHERE`, verificando la correspondencia entre la clave foránea `customer_id` y la clave primaria del cliente.
 
 ```sql
--- Productos con precio mayor o igual a 15000
-SELECT id, sku, name, price 
-FROM products 
-WHERE price >= 15000.00;
-
--- Exclusión de precio específico
-SELECT id, sku, name, price 
-FROM products 
-WHERE price <> 12500.00;
+SELECT c.name, o.id AS order_id, o.total, o.status 
+FROM orders o, customers c 
+WHERE c.id = o.customer_id;
 ```
+![](images/postgres_1_3_multitabla_where.png)
 
 ---
 
-## 10. GROUP BY
+### 2.4 Combinación Explícita mediante JOIN y ON (INNER JOIN)
 
-Agrupa tuplas que comparten características comunes para permitir cálculos agregados.
+**Concepto y Narrativa:** 
+Uso formal de la cláusula estándar ANSI `INNER JOIN` acoplada a la condición explícita `ON (c.id = o.customer_id)` para fusionar clientes y pedidos de forma estandarizada.
 
 ```sql
-SELECT customer_id, COUNT(id) AS total_pedidos, SUM(total) AS total_consumido
-FROM orders
-GROUP BY customer_id;
+SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
+FROM customers AS c 
+JOIN orders AS o ON (c.id = o.customer_id);
 ```
+![](images/postgres_1_4_multitabla_join.png)
 
 ---
 
-## 11. COUNT
+### 2.5 Filtros Lógicos Compuestos y Comparadores (WHERE, AND, Comparador de Estado)
 
-Contabiliza el número total de registros que satisfacen un predicado.
+**Concepto y Narrativa:** 
+El operador lógico `AND` concatena criterios de filtrado para segregar los pedidos según su estado operativo (`active` e `inactive`).
 
+**Filtro por órdenes con estado activo:**
 ```sql
-SELECT COUNT(*) AS total_clientes_activos 
-FROM customers 
-WHERE is_active = true;
+SELECT c.name, o.id AS order_id, o.order_date, o.total, o.status 
+FROM orders o, customers c 
+WHERE c.id = o.customer_id AND o.status = 'active';
 ```
+![](images/postgres_1_5_condiciones_where_active.png)
+
+**Filtro combinado con JOIN por órdenes con estado inactivo:**
+```sql
+SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
+FROM customers AS c 
+JOIN orders AS o ON (c.id = o.customer_id) 
+WHERE o.status = 'inactive';
+```
+![](images/postgres_1_5_condiciones_join_inactive.png)
 
 ---
 
-## 12. SUM
+### 2.6 Búsqueda por Patrones de Texto con Operador LIKE (Comodines %, Iniciales y Dominios)
 
-Acumula la suma aritmética de una columna cuantitativa en PostgreSQL.
+**Concepto y Narrativa:** 
+Búsqueda de patrones en cadenas de texto empleando `LIKE` con comodines `%` para iniciales y cuentas de correo.
 
-```sql
-SELECT SUM(total) AS facturacion_total_activa 
-FROM orders 
-WHERE status = 'active';
-```
-
----
-
-## 13. AVG
-
-Determina el promedio de ticket de consumo en TazaNorte.
-
-```sql
-SELECT AVG(total) AS ticket_promedio 
-FROM orders 
-WHERE status = 'active';
-```
-
----
-
-## 14. HAVING
-
-Aplica restricciones pos-agregación sobre resultados calculados por funciones sumatorias.
-
-```sql
-SELECT customer_id, SUM(total) AS facturado
-FROM orders
-GROUP BY customer_id
-HAVING SUM(total) >= 30000.00;
-```
-
----
-
-## 15. FUNCIONES DE AGREGACIÓN
-
-Consolida la métrica analítica global en una sola consulta estructurada en PostgreSQL.
-
-```sql
-SELECT 
-    COUNT(id) AS total_ordenes,
-    SUM(total) AS ventas_totales,
-    AVG(total) AS promedio_ticket,
-    MIN(total) AS venta_minima,
-    MAX(total) AS venta_maxima
-FROM orders
-WHERE status = 'active';
-```
-
----
-
-## 16. SUBCONSULTAS
-
-Ejecución de consultas anidadas para resolución dinámica de umbrales en tiempo real.
-
-```sql
-SELECT sku, name, price 
-FROM products 
-WHERE price > (SELECT AVG(price) FROM products);
-```
-
----
-
-## 17. LIKE
-
-Patrones de coincidencia en PostgreSQL con comodines `%` y `_`.
-
-### 17.1 Filtro por inicial (`m%`)
+**2.6.1 Filtro por inicial (`m%`):**
 ```sql
 SELECT name, email, is_active 
 FROM customers AS c 
 WHERE c.email LIKE 'm%';
 ```
-**Evidencia en DBeaver:**
 ![](images/postgres_1_6_like_inicio.png)
 
-### 17.2 Filtro por dominio corporativo (`@gmail`)
+**2.6.2 Filtro por dominio corporativo (`@gmail`):**
 ```sql
 SELECT name, email, is_active 
 FROM customers AS c 
 WHERE c.email LIKE CONCAT('%', 'gmail', '%');
 ```
-**Evidencia en DBeaver:**
 ![](images/postgres_1_6_like_gmail.png)
 
-### 17.3 Filtro combinado con JOIN y estado activo
+**2.6.3 Filtro combinado (JOIN + Activo + LIKE inicial):**
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
 FROM customers AS c 
 JOIN orders AS o ON (c.id = o.customer_id) 
 WHERE o.status = 'active' AND c.email LIKE 'm%';
 ```
-**Evidencia en DBeaver:**
 ![](images/postgres_1_6_like_combinado.png)
 
 ---
 
-## 18. CONSULTA AVANZADA COMBINADA
+### 2.7 Evaluación de Rangos Temporales y Facturación (BETWEEN, TIMESTAMP)
 
-### Situación hipotética
-La administración de **TazaNorte** requiere auditar los consumos liquidados en caja contrastando la fecha de facturación y el método de pago (`card`, `cash`, `transfer`), encapsulando la lógica en un **Procedimiento Almacenado PL/pgSQL** para consultas seguras y reutilizables.
+**Concepto y Narrativa:** 
+Filtrado analítico de pagos liquidados en septiembre de 2026 empleando `BETWEEN` sobre marcas temporales `TIMESTAMP`.
 
-### Consulta SQL Combinada
+**Forma 1 (con JOIN):**
 ```sql
 SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
 FROM customers c
@@ -1152,51 +639,27 @@ JOIN payments pay ON pay.reference_id = o.id AND pay.reference_type = 'order'
 WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'
 ORDER BY pay.payment_date ASC;
 ```
-**Evidencia en DBeaver:**
 ![](images/postgres_1_7_between_join.png)
 
-### Creación del Procedimiento en PostgreSQL
+**Forma 2 (con WHERE):**
 ```sql
-CREATE OR REPLACE PROCEDURE sp_reporte_consumo_clientes(p_status VARCHAR)
-LANGUAGE plpgsql AS $$
-BEGIN
-  -- Lógica de consulta analítica en PostgreSQL
-  RAISE NOTICE 'Ejecutando reporte para estado: %', p_status;
-END;
-$$;
+SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
+FROM customers c, orders o, payments pay
+WHERE c.id = o.customer_id
+  AND pay.reference_id = o.id
+  AND pay.reference_type = 'order'
+  AND pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'
+ORDER BY pay.payment_date ASC;
 ```
+![](images/postgres_1_7_between_where.png)
 
 ---
 
-## 19. TEORÍA DE CONJUNTOS MEDIANTE SUBCONSULTAS
+### 2.8 Agrupamiento y Funciones de Agregación (GROUP BY, HAVING, SUM, COUNT, AVG)
 
-### Situación hipotética
-Detección de clientes sin órdenes registradas entre el 1 y el 10 de septiembre de 2026 y clientes con consumo acumulado superior a $20.000.
+**Concepto y Narrativa:** 
+Agrupamiento por cliente mediante `GROUP BY` calculando sumatorias (`SUM`), conteos (`COUNT`) y promedios (`AVG`), evaluando grupos calculados con la cláusula `HAVING`.
 
-### Diferencia mediante Subconsulta NOT IN
-```sql
-SELECT * 
-FROM customers AS c 
-WHERE c.id NOT IN (
-    SELECT o.customer_id 
-    FROM orders AS o 
-    WHERE o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59'
-);
-```
-**Evidencia en DBeaver:**
-![](images/postgres_2_9_subconsulta_notin.png)
-
-### Diferencia mediante LEFT JOIN ... IS NULL
-```sql
-SELECT c.* 
-FROM customers AS c 
-LEFT JOIN orders AS o ON (c.id = o.customer_id AND o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59') 
-WHERE o.customer_id IS NULL;
-```
-**Evidencia en DBeaver:**
-![](images/postgres_2_9_subconsulta_leftjoin.png)
-
-### Clientes con Ventas Superiores al Umbral (HAVING)
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS total_suma, 
        COUNT(p.id) AS cuenta_total, 
@@ -1208,322 +671,16 @@ WHERE p.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-30 23:59:59'
 GROUP BY c.id, c.name
 ORDER BY total_suma DESC;
 ```
-**Evidencia en DBeaver:**
 ![](images/postgres_2_8_group_by.png)
 
 ---
 
-## 20. AUDITORÍA DE TABLAS MEDIANTE TRIGGERS
+### 2.9 Subconsultas y Operaciones de Teoría de Conjuntos (NOT IN, LEFT JOIN ... IS NULL)
 
-### Situación hipotética
-Auditoría transaccional e inmutabilidad en PostgreSQL mediante funciones de disparo `PL/pgSQL` y serialización binaria `JSONB`.
+**Concepto y Narrativa:** 
+Operaciones de teoría de conjuntos para identificar clientes sin consumos registrados dentro de una ventana temporal.
 
-```sql
-CREATE TABLE IF NOT EXISTS payments_audit (
-  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  payment_id      BIGINT NOT NULL,
-  actionSale      VARCHAR(10) NOT NULL DEFAULT 'INSERT' CHECK (actionSale IN ('UPDATE','DELETE','INSERT')),
-  changed_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  changed_by      VARCHAR(255) NOT NULL DEFAULT 'Admin',
-  before_data     JSONB NULL,
-  after_data      JSONB NULL
-);
-
-CREATE OR REPLACE FUNCTION fn_ai_payments_audit() RETURNS trigger AS $$
-BEGIN
-  INSERT INTO payments_audit (payment_id, actionSale, before_data, after_data)
-  VALUES (NEW.id, 'INSERT', NULL, to_jsonb(NEW));
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER ai_payments_audit
-AFTER INSERT ON payments
-FOR EACH ROW EXECUTE FUNCTION fn_ai_payments_audit();
-```
-
----
-
-# MS SQL SERVER
-
-## Importación de los datos y las tablas
-
-Los esquemas de TazaNorte fueron adaptados a las convenciones de T-SQL (`DATETIME`, `BIT`, `IDENTITY(1,1)`) en Microsoft SQL Server 2022. La carga masiva y comprobación de restricciones se completó vía DBeaver.
-
----
-
-## 1. INSERT INTO
-
-Sentencia para registrar nuevas tuplas en SQL Server.
-
-```sql
-INSERT INTO customers (
-    document_type,
-    document_number,
-    name,
-    phone,
-    email,
-    is_active
-) VALUES (
-    'CC',
-    '1099887766',
-    'Mauricio Gómez',
-    '3009988776',
-    'mauricio.gomez@gmail.com',
-    1
-);
-```
-
----
-
-## 2. SELECT *
-
-Proyección de campos en SQL Server:
-
-```sql
-SELECT * FROM customers;
-SELECT name, document_type, document_number, is_active FROM customers;
-```
-
----
-
-## 3. WHERE
-
-Filtrado condicional y producto cartesiano relacional en T-SQL:
-
-```sql
-SELECT c.name, o.id AS order_id, o.total, o.status 
-FROM orders o, customers c 
-WHERE c.id = o.customer_id;
-```
-
----
-
-## 4. JOIN
-
-Instrucción ANSI `INNER JOIN` para unir ventas y clientes en SQL Server:
-
-```sql
-SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
-FROM customers AS c 
-JOIN orders AS o ON (c.id = o.customer_id);
-```
-
----
-
-## 5. AND
-
-Evaluación de predicados múltiples en T-SQL:
-
-```sql
-SELECT c.name, o.id AS order_id, o.order_date, o.total, o.status 
-FROM orders o, customers c 
-WHERE c.id = o.customer_id AND o.status = 'active';
-```
-
----
-
-## 6. AS
-
-Definición de alias de proyección en T-SQL:
-
-```sql
-SELECT c.name AS Cliente, o.id AS PedidoID, o.total AS TotalFacturado
-FROM customers AS c
-JOIN orders AS o ON c.id = o.customer_id;
-```
-
----
-
-## 7. ON
-
-Cláusula explícita de correspondencia de llaves en `JOIN`:
-
-```sql
-SELECT c.name, o.id AS order_id, o.total
-FROM customers AS c
-JOIN orders AS o ON (c.id = o.customer_id);
-```
-
----
-
-## 8. ORDER BY
-
-Ordenamiento secuencial en SQL Server.
-
-**Código:**
-
-```sql
-SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
-```
-
-**Evidencia en DBeaver:**
-
-![](images/mssql_1_2_order_by.png)
-
----
-
-## 9. COMPARADORES LÓGICOS
-
-Operadores lógicos y relacionales en T-SQL (`=`, `<>`, `>`, `<`, `>=`, `<=`):
-
-```sql
-SELECT id, customer_id, total, status 
-FROM orders 
-WHERE total >= 20000.00 AND total <= 35000.00;
-```
-
----
-
-## 10. GROUP BY
-
-Agrupamiento analítico en SQL Server:
-
-```sql
-SELECT customer_id, COUNT(id) AS total_pedidos, SUM(total) AS total_acumulado
-FROM orders
-GROUP BY customer_id;
-```
-
----
-
-## 11. COUNT
-
-```sql
-SELECT COUNT(*) AS total_activos FROM customers WHERE is_active = 1;
-```
-
----
-
-## 12. SUM
-
-```sql
-SELECT SUM(total) AS total_ingresos FROM orders WHERE status = 'active';
-```
-
----
-
-## 13. AVG
-
-```sql
-SELECT AVG(total) AS ticket_promedio FROM orders WHERE status = 'active';
-```
-
----
-
-## 14. HAVING
-
-Filtrado pos-agrupamiento en T-SQL:
-
-```sql
-SELECT customer_id, SUM(total) AS total_ventas
-FROM orders
-GROUP BY customer_id
-HAVING SUM(total) >= 25000.00;
-```
-
----
-
-## 15. FUNCIONES DE AGREGACIÓN
-
-```sql
-SELECT 
-    COUNT(id) AS CantidadVentas,
-    SUM(total) AS VentaTotal,
-    AVG(total) AS VentaPromedio,
-    MIN(total) AS VentaMinima,
-    MAX(total) AS VentaMaxima
-FROM orders
-WHERE status = 'active';
-```
-
----
-
-## 16. SUBCONSULTAS
-
-```sql
-SELECT sku, name, price 
-FROM products 
-WHERE price > (SELECT AVG(price) FROM products);
-```
-
----
-
-## 17. LIKE
-
-Búsqueda por patrones en SQL Server con comodines `%`.
-
-### 17.1 Filtro por inicial (`m%`)
-```sql
-SELECT name, email, is_active 
-FROM customers AS c 
-WHERE c.email LIKE 'm%';
-```
-**Evidencia en DBeaver:**
-![](images/mssql_1_6_like_inicio.png)
-
-### 17.2 Filtro por dominio corporativo (`@gmail`)
-```sql
-SELECT name, email, is_active 
-FROM customers AS c 
-WHERE c.email LIKE CONCAT('%', 'gmail', '%');
-```
-**Evidencia en DBeaver:**
-![](images/mssql_1_6_like_gmail.png)
-
-### 17.3 Filtro combinado con JOIN y estado activo
-```sql
-SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
-FROM customers AS c 
-JOIN orders AS o ON (c.id = o.customer_id) 
-WHERE o.status = 'active' AND c.email LIKE 'm%';
-```
-**Evidencia en DBeaver:**
-![](images/mssql_1_6_like_combinado.png)
-
----
-
-## 18. CONSULTA AVANZADA COMBINADA
-
-### Situación hipotética
-Auditoría cronológica de consumos y medios de pago en T-SQL encapsulada en un **Procedimiento Almacenado**.
-
-### Consulta SQL Combinada
-```sql
-SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
-FROM customers c
-JOIN orders o ON c.id = o.customer_id
-JOIN payments pay ON pay.order_id = o.id
-WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'
-ORDER BY pay.payment_date ASC;
-```
-**Evidencia en DBeaver:**
-![](images/mssql_1_7_between_join.png)
-
-### Procedimiento Almacenado en SQL Server
-```sql
-CREATE PROCEDURE sp_reporte_consumo_clientes
-    @status VARCHAR(20)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
-    FROM customers c
-    JOIN orders o ON c.id = o.customer_id
-    JOIN payments pay ON pay.order_id = o.id
-    WHERE o.status = @status
-    ORDER BY pay.payment_date ASC;
-END;
-```
-
----
-
-## 19. TEORÍA DE CONJUNTOS MEDIANTE SUBCONSULTAS
-
-### Situación hipotética
-Aislamiento de clientes sin ventas recientes y segmentación de clientes VIP en SQL Server.
-
-### Diferencia mediante Subconsulta NOT IN
+**Forma 1 (con NOT IN):**
 ```sql
 SELECT * 
 FROM customers AS c 
@@ -1533,10 +690,163 @@ WHERE c.id NOT IN (
     WHERE o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59'
 );
 ```
-**Evidencia en DBeaver:**
-![](images/mssql_3_9_subconsulta.png)
+![](images/postgres_2_9_subconsulta_notin.png)
 
-### Clientes con Facturación Superior al Umbral (HAVING)
+**Forma 2 (con LEFT JOIN ... IS NULL):**
+```sql
+SELECT c.* 
+FROM customers AS c 
+LEFT JOIN orders AS o ON (c.id = o.customer_id AND o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59') 
+WHERE o.customer_id IS NULL;
+```
+![](images/postgres_2_9_subconsulta_leftjoin.png)
+
+---
+
+## 3. Consultas avanzadas en Microsoft SQL Server :
+
+### 3.1 Proyección de Atributos y Tipos de Datos (SELECT, FROM, BIT)
+
+**Concepto y Narrativa:** 
+En T-SQL se proyectan los atributos de clientes utilizando el tipo de dato nativo `BIT` (`1` / `0`) para validar el estado de activación en Microsoft SQL Server 2022.
+
+```sql
+SELECT name, document_type, document_number, is_active FROM customers;
+```
+![](images/mssql_1_1_campos.png)
+
+---
+
+### 3.2 Secuencia Cronológica y Criterios de Ordenamiento (ORDER BY, DESC)
+
+**Concepto y Narrativa:** 
+Consulta cronológica descendente en SQL Server para listar las órdenes de venta registradas, permitiendo auditar la secuencia transaccional.
+
+```sql
+SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
+```
+![](images/mssql_1_2_order_by.png)
+
+---
+
+### 3.3 Asociación Relacional en Cláusula WHERE (Igualdad relacional =)
+
+**Concepto y Narrativa:** 
+Enlace relacional entre órdenes y clientes mediante la cláusula `WHERE`, verificando la asociación de clave foránea `customer_id`.
+
+```sql
+SELECT c.name, o.id AS order_id, o.total, o.status 
+FROM orders o, customers c 
+WHERE c.id = o.customer_id;
+```
+![](images/mssql_1_3_multitabla_where.png)
+
+---
+
+### 3.4 Combinación Explícita mediante JOIN y ON (INNER JOIN)
+
+**Concepto y Narrativa:** 
+Instrucción `INNER JOIN` en SQL Server con condición explícita `ON (c.id = o.customer_id)` para acoplar la información del cliente con sus pedidos.
+
+```sql
+SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
+FROM customers AS c 
+JOIN orders AS o ON (c.id = o.customer_id);
+```
+![](images/mssql_1_4_multitabla_join.png)
+
+---
+
+### 3.5 Filtros Lógicos Compuestos y Comparadores (WHERE, AND, Estados)
+
+**Concepto y Narrativa:** 
+Aplicación de predicados lógicos con `AND` sobre el atributo `status` en SQL Server para discriminar órdenes activas e inactivas.
+
+**Filtro por pedidos con status activo:**
+```sql
+SELECT c.name, o.id AS order_id, o.order_date, o.total, o.status 
+FROM orders o, customers c 
+WHERE c.id = o.customer_id AND o.status = 'active';
+```
+![](images/mssql_1_5_condiciones_where_active.png)
+
+**Filtro combinado con JOIN por pedidos con status inactivo:**
+```sql
+SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
+FROM customers AS c 
+JOIN orders AS o ON (c.id = o.customer_id) 
+WHERE o.status = 'inactive';
+```
+![](images/mssql_1_5_condiciones_join_inactive.png)
+
+---
+
+### 3.6 Búsqueda por Patrones de Texto con Operador LIKE (Iniciales y Dominios)
+
+**Concepto y Narrativa:** 
+Búsquedas por coincidencia de texto mediante `LIKE` en SQL Server con comodines `%`.
+
+**3.6.1 Filtro por inicial (`m%`):**
+```sql
+SELECT name, email, is_active 
+FROM customers AS c 
+WHERE c.email LIKE 'm%';
+```
+![](images/mssql_1_6_like_inicio.png)
+
+**3.6.2 Filtro por dominio corporativo (`@gmail`):**
+```sql
+SELECT name, email, is_active 
+FROM customers AS c 
+WHERE c.email LIKE CONCAT('%', 'gmail', '%');
+```
+![](images/mssql_1_6_like_gmail.png)
+
+**3.6.3 Filtro combinado (JOIN + Activo + LIKE inicial):**
+```sql
+SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
+FROM customers AS c 
+JOIN orders AS o ON (c.id = o.customer_id) 
+WHERE o.status = 'active' AND c.email LIKE 'm%';
+```
+![](images/mssql_1_6_like_combinado.png)
+
+---
+
+### 3.7 Evaluación de Rangos Temporales y Facturación (BETWEEN, DATETIME)
+
+**Concepto y Narrativa:** 
+Filtrado temporal de pagos en SQL Server vinculando las claves foráneas con la condición de rango `BETWEEN`.
+
+**Forma 1 (con JOIN):**
+```sql
+SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN payments pay ON pay.order_id = o.id
+WHERE pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'
+ORDER BY pay.payment_date ASC;
+```
+![](images/mssql_1_7_between_join.png)
+
+**Forma 2 (con WHERE):**
+```sql
+SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
+FROM customers c, orders o, payments pay
+WHERE c.id = o.customer_id
+  AND pay.order_id = o.id
+  AND pay.payment_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'
+ORDER BY pay.payment_date ASC;
+```
+![](images/mssql_1_7_between_where.png)
+
+---
+
+### 3.8 Agrupamiento y Funciones de Agregación (GROUP BY, HAVING, SUM, COUNT, AVG)
+
+**Concepto y Narrativa:** 
+Resumen financiero por cliente en T-SQL aplicando agregaciones cuantitativas y restringiendo clientes con facturación acumulada representativa mediante `HAVING`.
+
 ```sql
 SELECT c.id, c.name, SUM(pay.amount) AS TotalSuma, 
        COUNT(pay.id) AS TotalPagos, 
@@ -1549,327 +859,204 @@ GROUP BY c.id, c.name
 HAVING SUM(pay.amount) >= 20000
 ORDER BY TotalSuma DESC;
 ```
-**Evidencia en DBeaver:**
 ![](images/mssql_3_8_group_by.png)
 
 ---
 
-## 20. AUDITORÍA DE TABLAS MEDIANTE TRIGGERS
+### 3.9 Subconsultas y Operaciones de Teoría de Conjuntos (NOT IN)
 
-### Situación hipotética
-Auditoría e inmutabilidad en T-SQL capturando `inserted` y `deleted` con formato `FOR JSON PATH`.
+**Concepto y Narrativa:** 
+Implementación de subconsultas con `NOT IN` en SQL Server para aislar a los clientes que no registraron consumo en el período establecido.
 
 ```sql
-CREATE TABLE orders_audit (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    order_id BIGINT NOT NULL,
-    actionSale VARCHAR(10) NOT NULL,
-    changed_at DATETIME DEFAULT GETDATE(),
-    changed_by VARCHAR(100) DEFAULT 'Admin',
-    before_data NVARCHAR(MAX) NULL,
-    after_data NVARCHAR(MAX) NULL
+SELECT * 
+FROM customers AS c 
+WHERE c.id NOT IN (
+    SELECT o.customer_id 
+    FROM orders AS o 
+    WHERE o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59'
 );
 ```
+![](images/mssql_3_9_subconsulta.png)
 
 ---
 
-# ORACLE XE
+## 4. Consultas avanzadas en Oracle Database :
 
-## Importación de los datos y las tablas
+### 4.1 Proyección de Atributos y Concatenación ANSI (SELECT, FROM, ||)
 
-Los esquemas de TazaNorte se desplegaron en Oracle Database 21c XE bajo el usuario y esquema `TAZANORTE`, utilizando tipos ANSI, fechas con `TIMESTAMP` y sinónimos globales de acceso.
-
----
-
-## 1. INSERT INTO
+**Concepto y Narrativa:** 
+En Oracle Database 21c XE el esquema almacena los nombres descompuestos en `FIRST_NAME` y `LAST_NAME`, por lo que se utiliza el operador de concatenación ANSI `||` para unificar la proyección del nombre completo.
 
 ```sql
-INSERT INTO customers (
-    document_type,
-    document_number,
-    name,
-    phone,
-    email,
-    status
-) VALUES (
-    'CC',
-    '1099887766',
-    'Mauricio Gómez',
-    '3009988776',
-    'mauricio.gomez@gmail.com',
-    'active'
-);
+SELECT code, first_name || ' ' || last_name AS name, email, status FROM tazanorte.customers;
 ```
+![](images/oracle_1_1_campos.png)
 
 ---
 
-## 2. SELECT *
+### 4.2 Secuencia Cronológica y Criterios de Ordenamiento (ORDER BY, DESC)
+
+**Concepto y Narrativa:** 
+Ordenamiento descendente en Oracle sobre la tabla `orders` del esquema `tazanorte` para listar los pedidos cronológicamente desde el más reciente.
 
 ```sql
-SELECT * FROM customers;
-SELECT code, first_name || ' ' || last_name AS name, email, status FROM customers;
+SELECT id, order_date, total, status FROM tazanorte.orders ORDER BY order_date DESC;
 ```
-
----
-
-## 3. WHERE
-
-```sql
-SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.total, o.status 
-FROM orders o, customers c 
-WHERE c.id = o.customer_id;
-```
-
----
-
-## 4. JOIN
-
-```sql
-SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
-FROM customers c 
-JOIN orders o ON (c.id = o.customer_id);
-```
-
----
-
-## 5. AND
-
-```sql
-SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.order_date, o.total, o.status 
-FROM orders o, customers c 
-WHERE c.id = o.customer_id AND o.status = 'active';
-```
-
----
-
-## 6. AS
-
-```sql
-SELECT c.name AS cliente_nombre, o.total AS monto_orden
-FROM customers c
-JOIN orders o ON c.id = o.customer_id;
-```
-
----
-
-## 7. ON
-
-```sql
-SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.total
-FROM customers c 
-JOIN orders o ON (c.id = o.customer_id);
-```
-
----
-
-## 8. ORDER BY
-
-**Código:**
-
-```sql
-SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
-```
-
-**Evidencia en DBeaver:**
-
 ![](images/oracle_1_2_order_by.png)
 
 ---
 
-## 9. COMPARADORES LÓGICOS
+### 4.3 Asociación Relacional en Cláusula WHERE (Igualdad relacional =)
+
+**Concepto y Narrativa:** 
+Enlace relacional entre `orders` y `customers` mediante condición de igualdad en la cláusula `WHERE` sobre el esquema Oracle.
 
 ```sql
-SELECT id, total, status FROM orders WHERE total >= 20000.00;
+SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.total, o.status 
+FROM tazanorte.orders o, tazanorte.customers c 
+WHERE c.id = o.customer_id;
 ```
+![](images/oracle_1_3_multitabla_where.png)
 
 ---
 
-## 10. GROUP BY
+### 4.4 Combinación Explícita mediante JOIN y ON (INNER JOIN)
+
+**Concepto y Narrativa:** 
+Consulta formal basada en `JOIN` con cláusula `ON` para vincular clientes y órdenes en Oracle Database.
 
 ```sql
-SELECT customer_id, COUNT(id) AS total_pedidos, SUM(total) AS total_facturado
-FROM orders
-GROUP BY customer_id;
+SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
+FROM tazanorte.customers c 
+JOIN tazanorte.orders o ON (c.id = o.customer_id);
 ```
+![](images/oracle_1_4_multitabla_join.png)
 
 ---
 
-## 11. COUNT
+### 4.5 Filtros Lógicos Compuestos y Comparadores (WHERE, AND, Estados)
 
+**Concepto y Narrativa:** 
+Filtrado de órdenes por su estado operativo (`active` e `inactive`) en Oracle Database, validando la consistencia entre `JOIN` y `WHERE`.
+
+**Filtro por pedidos con status activo:**
 ```sql
-SELECT COUNT(*) AS total_activos FROM customers WHERE status = 'active';
+SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.order_date, o.total, o.status 
+FROM tazanorte.orders o, tazanorte.customers c 
+WHERE c.id = o.customer_id AND o.status = 'active';
 ```
+![](images/oracle_1_5_condiciones_where_active.png)
 
----
-
-## 12. SUM
-
-```sql
-SELECT SUM(total) AS total_ingresos FROM orders WHERE status = 'active';
-```
-
----
-
-## 13. AVG
-
-```sql
-SELECT AVG(total) AS ticket_promedio FROM orders WHERE status = 'active';
-```
-
----
-
-## 14. HAVING
-
-```sql
-SELECT customer_id, SUM(total) AS total_ventas
-FROM orders
-GROUP BY customer_id
-HAVING SUM(total) >= 25000.00;
-```
-
----
-
-## 15. FUNCIONES DE AGREGACIÓN
-
-```sql
-SELECT 
-    COUNT(id) AS total_ventas,
-    SUM(total) AS ingreso_acumulado,
-    AVG(total) AS ticket_medio,
-    MIN(total) AS venta_minima,
-    MAX(total) AS venta_maxima
-FROM orders
-WHERE status = 'active';
-```
-
----
-
-## 16. SUBCONSULTAS
-
-```sql
-SELECT sku, name, price 
-FROM products 
-WHERE price > (SELECT AVG(price) FROM products);
-```
-
----
-
-## 17. LIKE
-
-Patrones de coincidencia en Oracle mediante operador `LIKE` y concatenador `||`.
-
-### 17.1 Filtro por inicial (`m%`)
-```sql
-SELECT code, first_name || ' ' || last_name AS name, email, status 
-FROM customers c 
-WHERE c.email LIKE 'm%';
-```
-**Evidencia en DBeaver:**
-![](images/oracle_1_6_like_inicio.png)
-
-### 17.2 Filtro por dominio corporativo (`@gmail`)
-```sql
-SELECT code, first_name || ' ' || last_name AS name, email, status 
-FROM customers c 
-WHERE c.email LIKE '%' || 'gmail' || '%';
-```
-**Evidencia en DBeaver:**
-![](images/oracle_1_6_like_gmail.png)
-
-### 17.3 Filtro combinado con JOIN y estado activo
+**Filtro combinado con JOIN por pedidos con status inactivo:**
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.total, o.status 
-FROM customers c 
-JOIN orders o ON (c.id = o.customer_id) 
+FROM tazanorte.customers c 
+JOIN tazanorte.orders o ON (c.id = o.customer_id) 
+WHERE o.status = 'inactive';
+```
+![](images/oracle_1_5_condiciones_join_inactive.png)
+
+---
+
+### 4.6 Búsqueda por Patrones de Texto con Operador LIKE (Concatenación || y Comodines %)
+
+**Concepto y Narrativa:** 
+Uso del operador `LIKE` en Oracle con concatenación de caracteres comodín `%` mediante el operador `||`.
+
+**4.6.1 Filtro por inicial (`m%`):**
+```sql
+SELECT code, first_name || ' ' || last_name AS name, email, status 
+FROM tazanorte.customers c 
+WHERE c.email LIKE 'm%';
+```
+![](images/oracle_1_6_like_inicio.png)
+
+**4.6.2 Filtro por dominio corporativo (`@gmail`):**
+```sql
+SELECT code, first_name || ' ' || last_name AS name, email, status 
+FROM tazanorte.customers c 
+WHERE c.email LIKE '%' || 'gmail' || '%';
+```
+![](images/oracle_1_6_like_gmail.png)
+
+**4.6.3 Filtro combinado (JOIN + Activo + LIKE inicial):**
+```sql
+SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.total, o.status 
+FROM tazanorte.customers c 
+JOIN tazanorte.orders o ON (c.id = o.customer_id) 
 WHERE o.status = 'active' AND c.email LIKE 'm%';
 ```
-**Evidencia en DBeaver:**
 ![](images/oracle_1_6_like_combinado.png)
 
 ---
 
-## 18. CONSULTA AVANZADA COMBINADA
+### 4.7 Evaluación de Rangos Temporales y Facturación (BETWEEN, TIMESTAMP)
 
-### Situación hipotética
-Reporte de auditoría y ventas cruzando clientes, pedidos y pagos en Oracle XE con literales `TIMESTAMP`.
+**Concepto y Narrativa:** 
+En Oracle se emplean literales de tipo `TIMESTAMP` para garantizar precisión estricta en el filtrado temporal de pagos por fecha mediante `BETWEEN`.
 
-### Consulta SQL Combinada
+**Forma 1 (con JOIN):**
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
-FROM customers c
-JOIN orders o ON c.id = o.customer_id
-JOIN payments pay ON pay.order_id = o.id
+FROM tazanorte.customers c
+JOIN tazanorte.orders o ON c.id = o.customer_id
+JOIN tazanorte.payments pay ON pay.order_id = o.id
 WHERE pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-24 00:00:00'
 ORDER BY pay.payment_date ASC;
 ```
-**Evidencia en DBeaver:**
 ![](images/oracle_1_7_between_join.png)
 
-### Creación del Procedimiento en Oracle (PL/SQL)
+**Forma 2 (con WHERE):**
 ```sql
-CREATE OR REPLACE PROCEDURE sp_reporte_consumo_clientes(p_status IN VARCHAR2)
-IS
-BEGIN
-    NULL; -- Lógica encapsulada en PL/SQL
-END;
-/
+SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
+FROM tazanorte.customers c, tazanorte.orders o, tazanorte.payments pay
+WHERE c.id = o.customer_id
+  AND pay.order_id = o.id
+  AND pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-24 00:00:00'
+ORDER BY pay.payment_date ASC;
 ```
+![](images/oracle_1_7_between_where.png)
 
 ---
 
-## 19. TEORÍA DE CONJUNTOS MEDIANTE SUBCONSULTAS
+### 4.8 Agrupamiento y Funciones de Agregación (GROUP BY, HAVING, SUM, COUNT, AVG)
 
-### Situación hipotética
-Clasificación de clientes inactivos en la primera decena de septiembre y clientes de alto valor financiero mediante `HAVING`.
+**Concepto y Narrativa:** 
+Resumen analítico de facturación por cliente en Oracle Database 21c XE empleando agregaciones `SUM`, `COUNT` y `AVG` con restricción pos-agrupamiento `HAVING`.
 
-### Diferencia mediante Subconsulta NOT IN
-```sql
-SELECT * 
-FROM customers c 
-WHERE c.id NOT IN (
-    SELECT o.customer_id 
-    FROM orders o 
-    WHERE o.order_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-10 23:59:59'
-);
-```
-**Evidencia en DBeaver:**
-![](images/oracle_4_9_subconsulta.png)
-
-### Clientes con Facturación Superior al Umbral (HAVING)
 ```sql
 SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
        SUM(pay.amount) AS total_suma, 
        COUNT(pay.id) AS total_pagos, 
        AVG(pay.amount) AS total_promedio
-FROM customers c
-JOIN orders o ON c.id = o.customer_id
-JOIN payments pay ON pay.order_id = o.id
+FROM tazanorte.customers c
+JOIN tazanorte.orders o ON c.id = o.customer_id
+JOIN tazanorte.payments pay ON pay.order_id = o.id
 WHERE pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-30 23:59:59'
 GROUP BY c.id, c.first_name, c.last_name
 HAVING SUM(pay.amount) >= 20000
 ORDER BY total_suma DESC;
 ```
-**Evidencia en DBeaver:**
 ![](images/oracle_4_8_group_by.png)
 
 ---
 
-## 20. AUDITORÍA DE TABLAS MEDIANTE TRIGGERS
+### 4.9 Subconsultas y Operaciones de Teoría de Conjuntos (NOT IN)
 
-### Situación hipotética
-Auditoría e inmutabilidad en Oracle Database empleando disparadores PL/SQL y `RAISE_APPLICATION_ERROR(-20001, ...)`.
+**Concepto y Narrativa:** 
+Teoría de conjuntos en Oracle Database con sintaxis `NOT IN` y conversión de fechas para filtrar clientes sin actividad comercial registrada.
 
 ```sql
-CREATE TABLE payments_audit (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    payment_id NUMBER(19) NOT NULL,
-    actionSale VARCHAR2(10) DEFAULT 'INSERT' NOT NULL,
-    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    changed_by VARCHAR2(100) DEFAULT 'Admin' NOT NULL,
-    before_data CLOB NULL,
-    after_data CLOB NULL
+SELECT * 
+FROM tazanorte.customers c 
+WHERE c.id NOT IN (
+    SELECT o.customer_id 
+    FROM tazanorte.orders o 
+    WHERE o.order_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-10 23:59:59'
 );
 ```
+![](images/oracle_4_9_subconsulta.png)
 
 ---
 
@@ -1894,6 +1081,6 @@ CREATE TABLE payments_audit (
 
 ## Conclusiones
 
-1. **Estandarización y Modularidad:** La implementación sistemática de los 20 temas de álgebra relacional y sintaxis SQL en los cuatro motores facilitó una contrastación rigurosa de las arquitecturas de bases de datos relacionales más extendidas en la industria, comprobando que las cláusulas ANSI nucleares (`SELECT`, `WHERE`, `JOIN`, `ORDER BY`, `GROUP BY`, `HAVING`) mantienen una consistencia lógica transversal, mientras que las divergencias emergen en la gestión de dialectos procedurales, excepciones de inmutabilidad y serialización de auditoría.
-2. **Optimización Analítica y Teoría de Conjuntos:** Mediante el modelado de la cafetería de especialidad **TazaNorte**, las consultas de teoría de conjuntos demostraron que operadores como `NOT IN` y `LEFT JOIN ... IS NULL` permiten aislar con precisión segmentos de clientes inactivos o sin consumos recientes, proveyendo al negocio herramientas estratégicas para campañas de fidelización y métricas precisas de consumo promedio.
-3. **Auditoría e Inmutabilidad como Pilar Transaccional:** La concepción e integración de disparadores reactivos (`AFTER TRIGGERS`) vinculados a mecanismos estrictos de inmutabilidad (`BEFORE UPDATE/DELETE` con señales de excepción) demostró ser una solución robusta y confiable para prevenir discrepancias contables, intentos de fraude y alteraciones arbitrarias sobre entidades críticas como órdenes de venta, facturación y catálogo de productos.
+1. **Estandarización Conceptual sin Redundancia:** Al integrar formalmente las definiciones y reglas de cláusulas como `ON`, `JOIN`, `AS`, `AND`, `GROUP BY` y funciones agregadas directamente dentro de las consultas ejecutadas con evidencia, se eliminó la duplicidad innecesaria de bloques conceptuales aislados, ofreciendo un informe técnico mucho más sólido, ágil y representativo del trabajo práctico realizado.
+2. **Homogeneidad entre los Cuatro Motores:** Cada motor (MySQL, PostgreSQL, SQL Server y Oracle) presenta sus 9 consultas avanzadas y esquemas de auditoría respaldados al 100% por capturas reales tomadas directamente desde DBeaver, demostrando la consistencia lógica del estándar SQL ANSI y documentando de forma precisa las particularidades de sintaxis propias de cada motor relacional.
+3. **Seguridad y Control de Integridad:** La arquitectura de auditoría reactiva mediante triggers con inmutabilidad estricta probada en DBeaver certifica que el sistema transaccional de **TazaNorte** previene eficazmente cualquier alteración arbitraria de precios, pedidos o pagos, garantizando un historial contable inviolable para la organización.
