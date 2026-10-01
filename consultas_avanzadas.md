@@ -1466,7 +1466,9 @@ ORDER BY TotalSuma DESC;
 
 ### 3.9 Subconsultas y teoría de conjuntos
 
-**Hipótesis:** Se postula la hipótesis de que tanto la subconsulta de exclusión con `NOT IN` como la combinación externa `LEFT JOIN` condicionada a nulidad en SQL Server identificarán de manera coincidente al grupo de clientes que no registraron compras en el lapso evaluado, demostrando la solidez y consistencia del álgebra conjuntista en T-SQL.
+**Forma 1 (subconsulta con NOT IN):**
+
+**Hipótesis:** Se postula la hipótesis de que la subconsulta anidada de exclusión con `NOT IN` en SQL Server identificará con precisión al grupo de clientes que no registraron compras en el lapso evaluado, demostrando la solidez y consistencia del álgebra conjuntista en T-SQL al sustraer del padrón de clientes a aquellos presentes en las órdenes de venta.
 
 ```sql
 SELECT * 
@@ -1481,6 +1483,22 @@ WHERE c.id NOT IN (
 ![](images/mssql_3_9_subconsulta.png)
 
 **Resultado:** la subconsulta con `NOT IN` en SQL Server identificó a los clientes que no tuvieron consumos registrados en el intervalo indicado.
+
+**Forma 2 (LEFT JOIN con IS NULL):**
+
+**Hipótesis:** Se plantea la hipótesis de que la combinación externa `LEFT JOIN` asociada a la condición de filtrado por nulidad `WHERE o.customer_id IS NULL` en Microsoft SQL Server producirá el mismo resultado cardinal que la subconsulta con `NOT IN`, permitiendo aislar a los clientes sin órdenes en la ventana de fechas mediante el plan de acceso más eficiente generado por el optimizador de T-SQL.
+
+```sql
+SELECT c.id, c.name, c.email 
+FROM customers AS c 
+LEFT JOIN orders AS o 
+  ON (c.id = o.customer_id AND o.order_date BETWEEN '2026-09-01 00:00:00' AND '2026-09-10 23:59:59') 
+WHERE o.customer_id IS NULL;
+```
+
+![](images/mssql_3_9_subconsulta_leftjoin.png)
+
+**Resultado:** la consulta con `LEFT JOIN ... WHERE o.customer_id IS NULL` en SQL Server confirmó la equivalencia de teoría de conjuntos, arrojando los clientes sin actividad en el intervalo establecido.
 
 ---
 
@@ -1637,7 +1655,52 @@ ORDER BY pay.payment_date ASC;
 
 ### 4.8 Consultas con agrupamiento GROUP BY y HAVING
 
-**Hipótesis:** Se postula como hipótesis que al agrupar por `GROUP BY c.id, c.first_name, c.last_name` en Oracle y aplicar las métricas `SUM`, `COUNT` y `AVG`, el motor generará un resumen financiero consolidado por cliente, y que la cláusula `HAVING SUM(pay.amount) >= 20000` restringirá el conjunto únicamente a aquellos usuarios cuyo consumo total supere el umbral establecido.
+Se consideran este tipo de consultas cuando tenemos valores que se repiten en los registros y requerimos aplicar agregaciones analíticas (`COUNT`, `SUM`, `AVG`) junto con agrupamiento (`GROUP BY`) y filtros pos-agregación (`HAVING`).
+
+**Forma 1 con el WHERE (rango de fechas, SUM, COUNT y AVG):**
+
+**Hipótesis:** En la analítica financiera de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable cerrado. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` con literales nativos `TIMESTAMP` y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `ROUND(AVG(pay.amount), 2)` agrupadas por `GROUP BY c.id, c.first_name, c.last_name`, el motor Oracle calculará el acumulado de recaudo y ticket promedio por usuario, proyectando una sábana ejecutiva ordenada descendentemente por ingresos totales (`ORDER BY total_suma DESC`).
+
+```sql
+SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
+       SUM(pay.amount) AS total_suma, 
+       COUNT(pay.id) AS cuenta_total, 
+       ROUND(AVG(pay.amount), 2) AS promedio 
+FROM tazanorte.customers c
+JOIN tazanorte.orders o ON c.id = o.customer_id
+JOIN tazanorte.payments pay ON pay.order_id = o.id
+WHERE pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-30 23:59:59'
+GROUP BY c.id, c.first_name, c.last_name
+ORDER BY total_suma DESC;
+```
+
+![](images/oracle_4_8_group_by_where.png)
+
+**Resultado:** la consulta agrupó satisfactoriamente los pagos por cliente en Oracle Database 21c XE, consolidando la facturación total acumulada, el recuento de comprobantes de pago y el promedio liquidado durante el mes de septiembre de 2026.
+
+**Forma 1 (Filtrado por status activo y pago con tarjeta):**
+
+**Hipótesis:** Con el objetivo de auditar las comisiones de pasarela bancaria y el volumen transaccional captado vía datáfono en la cafetería, se plantea como hipótesis que el filtrado de pagos activos efectuados con tarjeta (`WHERE pay.status = 'active' AND pay.payment_method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por comensal con `GROUP BY`, se espera obtener con exactitud la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado.
+
+```sql
+SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
+       SUM(pay.amount) AS total_gasto, 
+       COUNT(pay.id) AS cantidad_pagos
+FROM tazanorte.customers c
+JOIN tazanorte.orders o ON c.id = o.customer_id
+JOIN tazanorte.payments pay ON pay.order_id = o.id
+WHERE pay.status = 'active' AND pay.payment_method = 'card'
+GROUP BY c.id, c.first_name, c.last_name
+ORDER BY total_gasto DESC;
+```
+
+![](images/oracle_4_8_group_by_condicion.png)
+
+**Resultado:** la consulta en Oracle retornó las ventas abonadas con tarjeta de crédito/débito agrupadas por cliente, permitiendo aislar el ingreso bancario efectivo en el punto de venta de TazaNorte.
+
+**Forma 2 con el HAVING:**
+
+**Hipótesis:** Se postula como hipótesis que al agrupar por `GROUP BY c.id, c.first_name, c.last_name` en Oracle y aplicar las métricas `SUM`, `COUNT` y `AVG`, el motor generará un resumen financiero consolidado por cliente, y que la cláusula `HAVING SUM(pay.amount) >= 20000` restringirá el conjunto únicamente a aquellos usuarios cuyo consumo total supere el umbral establecido, clasificando a los clientes preferenciales del negocio.
 
 ```sql
 SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
@@ -1657,7 +1720,32 @@ ORDER BY total_suma DESC;
 
 **Resultado:** la consulta analítica en Oracle agrupó las transacciones por cliente con `GROUP BY`, calculó `SUM`, `COUNT`, `AVG` y filtró con `HAVING SUM(pay.amount) >= 20000`.
 
+**Forma 2 (Múltiples condiciones con HAVING y rango de fechas):**
+
+**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE` con literales `TIMESTAMP`, permitirá al motor discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
+
+```sql
+SELECT c.id, c.first_name || ' ' || c.last_name AS name, c.email, 
+       SUM(pay.amount) AS total_periodo, 
+       COUNT(pay.id) AS total_pagos 
+FROM tazanorte.customers c 
+JOIN tazanorte.orders o ON c.id = o.customer_id
+JOIN tazanorte.payments pay ON pay.order_id = o.id
+WHERE pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-30 23:59:59'
+GROUP BY c.id, c.first_name, c.last_name, c.email
+HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000
+ORDER BY total_periodo DESC;
+```
+
+![](images/oracle_4_8_group_by_having_multiple.png)
+
+**Resultado:** la consulta en Oracle filtró a los clientes con 1 o más visitas cuyo importe acumulado superó los 15.000 COP, proyectando su correo de contacto y monto facturado.
+
+---
+
 ### 4.9 Subconsultas y teoría de conjuntos
+
+**Forma 1 (subconsulta con NOT IN):**
 
 **Hipótesis:** Se formula la hipótesis de que la exclusión conjuntista mediante `NOT IN` con subconsulta anidada sobre órdenes de compra en Oracle Database sustraerá de forma confiable a los clientes con actividad en el rango indicado, aislando a aquellos usuarios registrados que no registraron consumos en el período analizado.
 
@@ -1674,6 +1762,22 @@ WHERE c.id NOT IN (
 ![](images/oracle_4_9_subconsulta.png)
 
 **Resultado:** la subconsulta con `NOT IN` y literales `TIMESTAMP` en Oracle aisló a los clientes que no tuvieron órdenes registradas durante el rango analizado.
+
+**Forma 2 (LEFT JOIN con IS NULL):**
+
+**Hipótesis:** Se postula como hipótesis que la técnica de diferencia de conjuntos modelada mediante combinación externa `LEFT JOIN` unida al predicado de nulidad `WHERE o.customer_id IS NULL` producirá un conjunto de resultados idéntico al de la subconsulta `NOT IN`. En Oracle Database, el optimizador de costos procesará la unión externa aprovechando los índices de clave foránea, garantizando la identificación de comensales inactivos con óptimo consumo de recursos en el servidor.
+
+```sql
+SELECT c.id, c.code, c.first_name || ' ' || c.last_name AS name, c.email 
+FROM tazanorte.customers c 
+LEFT JOIN tazanorte.orders o 
+  ON (c.id = o.customer_id AND o.order_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-10 23:59:59') 
+WHERE o.customer_id IS NULL;
+```
+
+![](images/oracle_4_9_subconsulta_leftjoin.png)
+
+**Resultado:** la consulta con `LEFT JOIN ... WHERE o.customer_id IS NULL` en Oracle devolvió exactamente los mismos 41 clientes inactivos sin transacciones en la primera decena de septiembre, comprobando la equivalencia de álgebra relacional frente a la cláusula `NOT IN`.
 
 ---
 
