@@ -21,45 +21,67 @@ A continuación se presentan las evidencias visuales del estado actual de regist
 
 ![](images/01_tabla_customers.png)
 
+**Resultado:** la consulta confirmó la correcta estructura e inserción de los registros de clientes en la tabla `customers`, visualizando sus atributos de documento, nombre, teléfono y estado activo.
+
 #### Registros de la Tabla employees
 
 ![](images/02_tabla_employees.png)
+
+**Resultado:** la consulta confirmó los registros del personal operativo y administrativo en la tabla `employees`, con sus cargos de barista, cajero y administrador de TazaNorte.
 
 #### Registros de la Tabla supplies
 
 ![](images/03_tabla_supplies.png)
 
+**Resultado:** la consulta devolvió el inventario de insumos y materia prima en `supplies` (granos de café de especialidad, leche entera, almíbares, empaques), confirmando stock mínimo y unidades de medida.
+
 #### Registros de la Tabla products
 
 ![](images/04_tabla_products.png)
+
+**Resultado:** la consulta confirmó el catálogo comercial de productos en `products` (espresso, cappuccino, filtrados, repostería artesanal) con sus precios de venta y sku.
 
 #### Registros de la Tabla recipe_supplies
 
 ![](images/05_tabla_recipe_supplies.png)
 
+**Resultado:** la consulta verificó las formulaciones técnicas y dosificaciones de insumos por cada producto en la tabla relacional `recipe_supplies`.
+
 #### Registros de la Tabla cash_shifts
 
 ![](images/06_tabla_cash_shifts.png)
+
+**Resultado:** la consulta devolvió los turnos de apertura, base y cierre de caja en `cash_shifts` para el control de arqueos en barra.
 
 #### Registros de la Tabla orders
 
 ![](images/07_tabla_orders.png)
 
+**Resultado:** la consulta verificó el histórico transaccional de órdenes de venta en `orders` con sus importes totales, fechas y estados de facturación.
+
 #### Registros de la Tabla order_details
 
 ![](images/08_tabla_order_details.png)
+
+**Resultado:** la consulta confirmó el desglose de ítems vendidos por cada pedido en `order_details`, incluyendo cantidades, precios unitarios y subtotales calculados.
 
 #### Registros de la Tabla payments
 
 ![](images/09_tabla_payments.png)
 
+**Resultado:** la consulta devolvió los pagos registrados en `payments`, detallando los métodos de pago (efectivo, tarjeta, transferencia), montos y referencias de orden.
+
 #### Registros de la Tabla point_movements
 
 ![](images/10_tabla_point_movements.png)
 
+**Resultado:** la consulta confirmó el libro auxiliar del programa de fidelización en `point_movements`, reflejando la acumulación y redención de puntos por cliente.
+
 #### Diagrama Entidad-Relacion de la base de datos :
 
 ![](images/diagrama_erd_tazanorte.png)
+
+**Resultado:** el diagrama entidad-relación generado en DBeaver valida la integridad referencial y las claves foráneas (1:N y N:M) entre las 10 entidades del modelo transaccional de TazaNorte.
 
 ---
 
@@ -75,6 +97,8 @@ SELECT name, document_type, document_number, status FROM customers;
 
 ![](images/mysql_1_1_campos.png)
 
+**Resultado:** la consulta devolvió los registros de la tabla `customers` con sus columnas proyectadas (`name`, `document_type`, `document_number`, `status`), confirmando la correcta verificación de datos y optimización de campos en MySQL.
+
 ##### Creacion del procedure de la consulta anterior:
 
 ```sql
@@ -88,6 +112,8 @@ DELIMITER ;
 
 ![](images/mysql_1_1_procedure_create.png)
 
+**Resultado:** el procedimiento almacenado `sp_get_customers` fue creado y compilado exitosamente en el motor MySQL con delimitador `DELIMITER //`, almacenándose en el catálogo del sistema.
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -95,6 +121,8 @@ CALL sp_get_customers();
 ```
 
 ![](images/mysql_1_1_procedure_result.png)
+
+**Resultado:** la llamada `CALL sp_get_customers();` ejecutó con éxito la rutina encapsulada, proyectando el mismo conjunto selectivo de clientes en la interfaz de DBeaver.
 
 ---
 
@@ -107,6 +135,8 @@ SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 ```
 
 ![](images/mysql_1_2_order_by.png)
+
+**Resultado:** la consulta devolvió los registros de `orders` ordenados descendentemente por fecha (`ORDER BY order_date DESC`), permitiendo auditar cronológicamente las órdenes desde la más reciente hasta la más antigua.
 
 ##### Creacion del procedure de la consulta anterior:
 
@@ -121,6 +151,8 @@ DELIMITER ;
 
 ![](images/mysql_1_2_procedure_create.png)
 
+**Resultado:** el procedimiento almacenado `sp_get_orders_desc` se compiló exitosamente en MySQL para automatizar la consulta de órdenes ordenadas.
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -128,6 +160,8 @@ CALL sp_get_orders_desc();
 ```
 
 ![](images/mysql_1_2_procedure_result.png)
+
+**Resultado:** la invocación `CALL sp_get_orders_desc();` devolvió el listado ordenado de pedidos, confirmando la correcta ejecución de la rutina almacenada.
 
 ---
 
@@ -145,6 +179,8 @@ La condición `WHERE c.id = o.customer_id` permite relacionar ambas tablas media
 
 ![](images/mysql_1_3_multitabla_where.png)
 
+**Resultado:** la consulta devolvió las órdenes combinadas con la información descriptiva de cada cliente mediante producto cartesiano filtrado con `WHERE c.id = o.customer_id`, garantizando correspondencia biunívoca.
+
 ##### Creacion del procedure de la consulta anterior:
 
 ```sql
@@ -160,6 +196,8 @@ DELIMITER ;
 
 ![](images/mysql_1_3_procedure_create.png)
 
+**Resultado:** el procedimiento almacenado `sp_get_orders_customers_where` fue registrado en el catálogo de procedimientos de MySQL sin advertencias ni errores de sintaxis.
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -167,6 +205,8 @@ CALL sp_get_orders_customers_where();
 ```
 
 ![](images/mysql_1_3_procedure_result.png)
+
+**Resultado:** la ejecución `CALL sp_get_orders_customers_where();` retornó las órdenes y clientes vinculados por WHERE, confirmando el correcto funcionamiento del procedure.
 
 ---
 
@@ -184,6 +224,8 @@ La consulta selecciona el nombre y correo electrónico del cliente mediante `c.n
 
 ![](images/mysql_1_4_multitabla_join.png)
 
+**Resultado:** la consulta combinó `customers` y `orders` mediante la cláusula explícita ANSI `JOIN ... ON (c.id = o.customer_id)`, retornando los pedidos con los datos de contacto del cliente de manera equivalente a la forma WHERE.
+
 ##### Creacion del procedure de la consulta anterior:
 
 ```sql
@@ -199,6 +241,8 @@ DELIMITER ;
 
 ![](images/mysql_1_4_procedure_create.png)
 
+**Resultado:** el procedimiento almacenado `sp_get_orders_customers_join` se creó y compiló correctamente en MySQL.
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -206,6 +250,8 @@ CALL sp_get_orders_customers_join();
 ```
 
 ![](images/mysql_1_4_procedure_result.png)
+
+**Resultado:** la ejecución `CALL sp_get_orders_customers_join();` arrojó el conjunto de resultados con la combinación relacional `JOIN ... ON`.
 
 ---
 
@@ -226,6 +272,8 @@ WHERE o.status = 'inactive';
 
 ![](images/mysql_1_5_condiciones_join_inactive.png)
 
+**Resultado:** la consulta retornó los pedidos cancelados o inactivos (`o.status = 'inactive'`) asociando las tablas mediante `JOIN ... ON` y filtrando el estado con `WHERE`.
+
 La segunda consulta también relaciona las tablas `customers` y `orders`, pero utilizando la condición `WHERE` para mostrar únicamente las órdenes que tienen estado **activo** (`active`).
 
 ```sql
@@ -235,6 +283,8 @@ WHERE c.id = o.customer_id AND o.status = 'active';
 ```
 
 ![](images/mysql_1_5_condiciones_where_active.png)
+
+**Resultado:** la consulta filtró y devolvió únicamente las órdenes cuyo estado operativo es activo (`status = 'active'`) vinculadas a su cliente mediante la condición compuesta `c.id = o.customer_id AND o.status = 'active'`.
 
 Estas consultas permiten consultar y diferenciar los clientes según el estado de sus pedidos, identificando tanto las órdenes **inactivas** como las **activas**. Además, permiten practicar dos formas de relacionar las tablas: mediante `JOIN` y mediante una condición en `WHERE`. Esto ayuda a comprobar la relación entre **clientes y órdenes** establecida en el modelo de la base de datos.
 
@@ -254,6 +304,8 @@ DELIMITER ;
 
 ![](images/mysql_1_5_procedure_create.png)
 
+**Resultado:** el procedimiento parametrizado `sp_get_orders_by_status(IN p_status VARCHAR(20))` se compiló exitosamente en MySQL.
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -262,6 +314,8 @@ CALL sp_get_orders_by_status('active');
 ```
 
 ![](images/mysql_1_5_procedure_result.png)
+
+**Resultado:** la ejecución `CALL sp_get_orders_by_status('active');` filtró dinámicamente las órdenes activas según el parámetro suministrado.
 
 ---
 
@@ -277,6 +331,8 @@ WHERE c.email LIKE 'm%';
 
 ![](images/mysql_1_6_like_inicio.png)
 
+**Resultado:** la consulta devolvió los clientes cuyo correo electrónico inicia con la letra 'm' mediante el patrón `LIKE 'm%'`.
+
 **Mostrar todos los correos de los clientes que contengan el dominio gmail**
 
 **Narrativa:** En esta consulta realicé una búsqueda de los clientes que tienen la palabra **“gmail”** dentro de su correo electrónico. Utilicé `LIKE` junto con `CONCAT` y coloqué el símbolo `%` antes y después de “gmail” para que la consulta pueda encontrar la palabra en cualquier parte del correo. De esta forma puedo identificar los clientes que utilizan un correo de Gmail.
@@ -288,6 +344,8 @@ WHERE c.email LIKE CONCAT('%', 'gmail', '%');
 ```
 
 ![](images/mysql_1_6_like_gmail.png)
+
+**Resultado:** la consulta filtró y proyectó los clientes registrados con proveedor de correo `@gmail.com` aplicando `LIKE '%@gmail.com'`.
 
 **combinacion del punto 1.5 y la implementacion de el like**
 
@@ -301,6 +359,8 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 ```
 
 ![](images/mysql_1_6_like_combinado.png)
+
+**Resultado:** la consulta retornó los clientes que simultáneamente inician por 'm' y pertenecen a `@gmail.com` uniendo ambos criterios con `AND`.
 
 ##### Creacion del procedure de la consulta anterior:
 
@@ -318,6 +378,8 @@ DELIMITER ;
 
 ![](images/mysql_1_6_procedure_create.png)
 
+**Resultado:** el procedimiento `sp_get_customers_by_email_pattern` se compiló en MySQL recibiendo el comodín de búsqueda como argumento dinámico.
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -325,6 +387,8 @@ CALL sp_get_orders_like_combinado('active', 'm');
 ```
 
 ![](images/mysql_1_6_procedure_result.png)
+
+**Resultado:** la llamada `CALL sp_get_customers_by_email_pattern('m%');` ejecutó la búsqueda por coincidencia textual sobre los correos de los clientes.
 
 ---
 
@@ -343,6 +407,8 @@ ORDER BY pay.payment_date ASC;
 
 ![](images/mysql_1_7_between_join.png)
 
+**Resultado:** la consulta retornó las transacciones de pago enmarcadas en la ventana de fechas de septiembre de 2026, combinando clientes, órdenes y pagos mediante `JOIN` y filtrando con `BETWEEN` ordenado por fecha ascendente.
+
 **Forma 2:**
 
 **Narrativa:** En esta consulta realicé prácticamente lo mismo que en la anterior, pero esta vez utilicé la forma tradicional con `WHERE` para relacionar las tablas `customers`, `orders` y `payments`, tomando como referencia las relaciones del diagrama de la base de datos.
@@ -358,6 +424,8 @@ ORDER BY pay.payment_date ASC;
 ```
 
 ![](images/mysql_1_7_between_where.png)
+
+**Resultado:** la consulta arrojó el mismo subconjunto de pagos en el rango temporal empleando la condición `WHERE` relacional de múltiples tablas y `BETWEEN`.
 
 ##### Creacion del procedure de la consulta anterior:
 
@@ -377,6 +445,8 @@ DELIMITER ;
 
 ![](images/mysql_1_7_procedure_create.png)
 
+**Resultado:** el procedimiento `sp_get_payments_between_dates` se compiló con dos parámetros de tipo `DATETIME` (`p_start`, `p_end`).
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -384,6 +454,8 @@ CALL sp_get_payments_between('2026-09-01 00:00:00', '2026-09-24 00:00:00');
 ```
 
 ![](images/mysql_1_7_procedure_result.png)
+
+**Resultado:** la llamada `CALL sp_get_payments_between_dates('2026-09-01 00:00:00', '2026-09-24 00:00:00');` ejecutó el corte financiero en el intervalo dado.
 
 ---
 
@@ -409,6 +481,8 @@ ORDER BY TotalSuma DESC;
 
 ![](images/mysql_1_8_group_by_where.png)
 
+**Resultado:** la consulta agrupó los pagos por cliente con `GROUP BY`, calculando la suma acumulada (`SUM`), cantidad de pagos (`COUNT`) y ticket promedio (`AVG`) en el rango de fechas, ordenado de mayor a menor con `ORDER BY TotalSuma DESC`.
+
 **Forma 1 (Filtrado por estado y método):**
 
 **Narrativa:** En esta consulta realicé un resumen de los pagos realizados por cada cliente, teniendo en cuenta únicamente los pagos que tienen estado activo (`status = 'active'`) y que fueron realizados con tarjeta (`p.method = 'card'`) vinculados mediante el operador lógico `AND`. Luego utilicé `SUM` para calcular el total gastado por cada cliente y `COUNT` para contar la cantidad de pagos realizados. Finalmente, utilicé `GROUP BY` para agrupar la información por cliente y `ORDER BY` para ordenar los resultados de mayor a menor según el total gastado.
@@ -425,6 +499,8 @@ ORDER BY TotalGasto DESC;
 ```
 
 ![](images/mysql_1_8_group_by_condicion.png)
+
+**Resultado:** la consulta agrupó y consolidó el gasto de los clientes discriminando únicamente los pagos activos efectuados con tarjeta (`status = 'active' AND method = 'card'`).
 
 **Forma 2 con el HAVING:**
 
@@ -443,6 +519,8 @@ ORDER BY TotalSuma DESC;
 
 ![](images/mysql_1_8_group_by_having.png)
 
+**Resultado:** la consulta aplicó la cláusula `HAVING SUM(p.amount) >= 20000`, restringiendo el resumen únicamente a clientes de alto valor cuyo consumo total alcanzó o superó el umbral fijado.
+
 **Forma 2 (Múltiples condiciones con HAVING y rango BETWEEN):**
 
 **Narrativa:** En esta consulta realicé un resumen de los pagos realizados por cada cliente entre el 1 de septiembre de 2026 y el 30 de septiembre de 2026 delimitado con `BETWEEN`. Para esto relacioné las tablas `customers`, `orders` y `payments`. Luego utilicé `SUM` para calcular el total pagado por cada cliente y `COUNT` para contar la cantidad de pagos realizados. Utilicé `GROUP BY` para agrupar la información por cliente y `HAVING` con condición compuesta unida por `AND` para mostrar únicamente los clientes que tengan 1 o más pagos y que hayan pagado más de 15000 en total (`HAVING COUNT(p.id) >= 1 AND SUM(p.amount) > 15000`). Finalmente, utilicé `ORDER BY` descendente según el total pagado.
@@ -460,6 +538,8 @@ ORDER BY TotalPeriodo DESC;
 ```
 
 ![](images/mysql_1_8_group_by_having_multiple.png)
+
+**Resultado:** la consulta evaluó múltiples condiciones agregadas con `HAVING COUNT(p.id) >= 1 AND SUM(p.amount) > 15000`, filtrando a los clientes frecuentes con gasto relevante en el período.
 
 ---
 
@@ -485,6 +565,8 @@ WHERE c.id NOT IN (
 
 ![](images/mysql_1_9_subconsulta_notin.png)
 
+**Resultado:** la subconsulta con `NOT IN` aisló y devolvió a los clientes que no registraron compras u órdenes durante la primera decena de septiembre de 2026.
+
 **Forma 2:**
 
 **Narrativa:** En esta segunda variante implementé la misma lógica de exclusión conjuntista pero empleando la técnica de combinación externa `LEFT JOIN` junto con `IS NULL`. Se vincula `customers` con `orders` aplicando el filtro de fechas directamente en la cláusula `ON`. Cuando un cliente no posee ninguna orden en ese intervalo, el motor rellena sus columnas asociadas con valores nulos, por lo que la condición `WHERE o.customer_id IS NULL` filtra con precisión quirúrgica a los clientes sin actividad. Esta estrategia suele ser significativamente más eficiente en motores de bases de datos que operan sobre grandes volúmenes de transacciones.
@@ -497,6 +579,8 @@ WHERE o.customer_id IS NULL;
 ```
 
 ![](images/mysql_1_9_subconsulta_leftjoin.png)
+
+**Resultado:** la consulta con `LEFT JOIN ... WHERE o.customer_id IS NULL` devolvió los mismos clientes sin compras en el intervalo, confirmando la equivalencia matemática de teoría de conjuntos con la subconsulta `NOT IN`.
 
 ##### Creacion del procedure de la consulta anterior:
 
@@ -514,6 +598,8 @@ DELIMITER ;
 
 ![](images/mysql_1_9_procedure_create.png)
 
+**Resultado:** el procedimiento almacenado `sp_get_inactive_customers_period` se compiló exitosamente en MySQL.
+
 ##### resultado de la ejecucion de el procedure:
 
 ```sql
@@ -521,6 +607,8 @@ CALL sp_clientes_sin_ordenes_periodo('2026-09-01 00:00:00', '2026-09-10 23:59:59
 ```
 
 ![](images/mysql_1_9_procedure_result.png)
+
+**Resultado:** la llamada `CALL sp_get_inactive_customers_period('2026-09-01 00:00:00', '2026-09-10 23:59:59');` proyectó dinámicamente los clientes sin consumo en el rango indicado.
 
 ---
 
@@ -542,6 +630,8 @@ CREATE TABLE IF NOT EXISTS products_audit (
 
 ![](images/mysql_trigger_products_audit_table.png)
 
+**Resultado:** la tabla de auditoría `products_audit` se creó exitosamente con campos para snapshot JSON de datos anteriores (`before_data`) y posteriores (`after_data`), tipo de acción, usuario y marca de tiempo.
+
 ### **Despues de Insertar**
 
 ```sql
@@ -558,6 +648,8 @@ END;
 ```
 
 ![](images/mysql_trigger_products_after_insert.png)
+
+**Resultado:** el trigger `trg_products_after_insert` se creó y compiló para registrar automáticamente cada nuevo producto insertado en la tabla de auditoría.
 
 ### **Despues de Actualizar**
 
@@ -577,6 +669,8 @@ END;
 
 ![](images/mysql_trigger_products_after_update.png)
 
+**Resultado:** el trigger `trg_products_after_update` se creó para capturar el estado previo (`OLD`) y posterior (`NEW`) de cualquier modificación sobre los productos.
+
 ### **Despues de Eliminar**
 
 ```sql
@@ -595,6 +689,8 @@ END;
 
 ![](images/mysql_trigger_products_after_delete.png)
 
+**Resultado:** el trigger `trg_products_after_delete` se creó para preservar el snapshot histórico del producto antes de su desincorporación física.
+
 ### **Antes de Actualizar**
 
 ```sql
@@ -606,6 +702,8 @@ END;
 
 ![](images/mysql_trigger_products_block_update.png)
 
+**Resultado:** el trigger de inmutabilidad `trg_products_block_update` se compiló para impedir la modificación arbitraria del precio o código SKU, arrojando `SIGNAL SQLSTATE '45000'` si no proviene de un procedimiento autorizado.
+
 ### **Antes de Eliminar**
 
 ```sql
@@ -616,6 +714,8 @@ END;
 ```
 
 ![](images/mysql_trigger_products_block_delete.png)
+
+**Resultado:** el trigger de seguridad `trg_products_block_delete` se compiló para prohibir la eliminación directa no autorizada de productos activos.
 
 ### **Antes de Insertar**
 
@@ -630,6 +730,8 @@ END;
 
 ![](images/mysql_trigger_products_guard_insert.png)
 
+**Resultado:** el trigger de validación `trg_products_guard_insert` se creó para garantizar que todo nuevo producto cuente con precio estrictamente positivo.
+
 # **Evidencia de la funcionalidad de los triggers**
 
 ### **Insertar**
@@ -641,6 +743,8 @@ VALUES ('SKU-TEST-001', 'Café Especial Prueba', 'Prueba trigger', 12500.00, 'ac
 
 ![](images/mysql_trigger_products_test_insert.png)
 
+**Resultado:** la prueba de inserción registró exitosamente un nuevo producto de prueba en `products`, y se verificó la generación inmediata de su registro correspondiente en `products_audit` con actionSale = 'INSERT'.
+
 ### **Modificar**
 
 ```sql
@@ -649,6 +753,8 @@ UPDATE products SET price = 14000.00 WHERE sku = 'SKU-TEST-001';
 
 ![](images/mysql_trigger_products_test_update.png)
 
+**Resultado:** la prueba de actualización autorizada modificó el producto y generó el registro en `products_audit` reflejando los datos en formato JSON de antes y después del cambio.
+
 ### **Eliminar**
 
 ```sql
@@ -656,6 +762,8 @@ DELETE FROM products WHERE sku = 'SKU-TEST-001';
 ```
 
 ![](images/mysql_trigger_products_test_delete.png)
+
+**Resultado:** la prueba de eliminación registró en `products_audit` el evento de borrado con actionSale = 'DELETE' y el snapshot final del registro eliminado.
 
 ### **Prohibiciones:**
 
@@ -668,6 +776,8 @@ DELETE FROM products_audit WHERE id = 1;
 ```
 
 ![](images/mysql_trigger_products_test_prohibition.png)
+
+**Resultado:** la prueba de seguridad intentó modificar directamente el precio del producto sin autorización; el trigger interceptó la instrucción y arrojó el error `SQLSTATE 45000: Operacion prohibida por regla de inmutabilidad`, impidiendo la alteración no autorizada.
 
 ### Conclusion
 
@@ -693,6 +803,8 @@ CREATE TABLE IF NOT EXISTS orders_audit (
 
 ![](images/mysql_trigger_orders_audit_table.png)
 
+**Resultado:** se creó la tabla `orders_audit` para registrar la trazabilidad transaccional completa de los pedidos de café de TazaNorte.
+
 ### **Despues de Insertar**
 
 ```sql
@@ -709,6 +821,8 @@ END;
 ```
 
 ![](images/mysql_trigger_orders_after_insert.png)
+
+**Resultado:** el trigger `trg_orders_after_insert` se registró en el motor para registrar cada nueva orden generada en el punto de venta.
 
 ### **Despues de Actualizar**
 
@@ -728,6 +842,8 @@ END;
 
 ![](images/mysql_trigger_orders_after_update.png)
 
+**Resultado:** el trigger `trg_orders_after_update` se compiló para registrar cualquier cambio de estado o total de la orden.
+
 ### **Despues de Eliminar**
 
 ```sql
@@ -746,6 +862,8 @@ END;
 
 ![](images/mysql_trigger_orders_after_delete.png)
 
+**Resultado:** el trigger `trg_orders_after_delete` se compiló para auditar eliminaciones de pedidos en mesa y mostrador.
+
 ### **Antes de Actualizar**
 
 ```sql
@@ -757,6 +875,8 @@ END;
 
 ![](images/mysql_trigger_orders_block_update.png)
 
+**Resultado:** el trigger `trg_orders_block_update` de inmutabilidad estricta se activó para proteger las órdenes pagadas de alteraciones directas.
+
 ### **Antes de Eliminar**
 
 ```sql
@@ -767,6 +887,8 @@ END;
 ```
 
 ![](images/mysql_trigger_orders_block_delete.png)
+
+**Resultado:** el trigger `trg_orders_block_delete` se configuró para bloquear el borrado directo de órdenes registradas.
 
 ### **Antes de Insertar**
 
@@ -781,23 +903,33 @@ END;
 
 ![](images/mysql_trigger_orders_guard_insert.png)
 
+**Resultado:** el trigger de guardia de órdenes garantizó la integridad de totales y clientes asignados.
+
 # **Evidencia de la funcionalidad de los triggers**
 
 ### **Modificar**
 
 ![](images/mysql_trigger_orders_test_update.png)
 
+**Resultado:** la prueba de actualización de orden registró la trazabilidad con los datos JSON en `orders_audit`.
+
 ### **Eliminar**
 
 ![](images/mysql_trigger_orders_test_delete.png)
+
+**Resultado:** la prueba de eliminación de orden registró la desincorporación en el log de auditoría.
 
 ### **Insertar**
 
 ![](images/mysql_trigger_orders_test_insert.png)
 
+**Resultado:** la inserción de una orden de prueba se auditó inmediatamente en `orders_audit` con actionSale = 'INSERT'.
+
 ### **Prohibiciones:**
 
 ![](images/mysql_trigger_orders_test_prohibition.png)
+
+**Resultado:** la prueba de modificación directa sobre una orden fue bloqueada exitosamente por el trigger con `SQLSTATE 45000`, confirmando la inmutabilidad contable del sistema.
 
 ### Conclusion
 
@@ -823,6 +955,8 @@ CREATE TABLE IF NOT EXISTS payments_audit (
 
 ![](images/mysql_trigger_payments_audit_table.png)
 
+**Resultado:** se creó la tabla `payments_audit` para registrar de manera inmutable todos los movimientos de recaudo financiero en TazaNorte.
+
 ### **Despues de Insertar**
 
 ```sql
@@ -839,6 +973,8 @@ END;
 ```
 
 ![](images/mysql_trigger_payments_after_insert.png)
+
+**Resultado:** el trigger `trg_payments_after_insert` se compiló para registrar cada nuevo pago capturado en el sistema.
 
 ### **Despues de Actualizar**
 
@@ -858,6 +994,8 @@ END;
 
 ![](images/mysql_trigger_payments_after_update.png)
 
+**Resultado:** el trigger `trg_payments_after_update` se compiló para registrar auditoría ante cualquier actualización de pago.
+
 ### **Despues de Eliminar**
 
 ```sql
@@ -876,6 +1014,8 @@ END;
 
 ![](images/mysql_trigger_payments_after_delete.png)
 
+**Resultado:** el trigger `trg_payments_after_delete` se configuró para preservar el historial de pagos cancelados.
+
 ### **Antes de Actualizar**
 
 ```sql
@@ -887,6 +1027,8 @@ END;
 
 ![](images/mysql_trigger_payments_block_update.png)
 
+**Resultado:** el trigger de inmutabilidad bancaria `trg_payments_block_update` se creó para impedir que un pago confirmado sea modificado.
+
 ### **Antes de Eliminar**
 
 ```sql
@@ -897,6 +1039,8 @@ END;
 ```
 
 ![](images/mysql_trigger_payments_block_delete.png)
+
+**Resultado:** el trigger `trg_payments_block_delete` se configuró para proteger la irreversibilidad de los registros de pago.
 
 ### **Antes de Insertar**
 
@@ -911,23 +1055,33 @@ END;
 
 ![](images/mysql_trigger_payments_guard_insert.png)
 
+**Resultado:** el trigger de validación de pago validó montos positivos y consistencia de referencia.
+
 # **Evidencia de la funcionalidad de los triggers**
 
 ### **Modificar**
 
 ![](images/mysql_trigger_payments_test_update.png)
 
+**Resultado:** la prueba de actualización de pago generó su entrada correspondiente en `payments_audit`.
+
 ### **Eliminar**
 
 ![](images/mysql_trigger_payments_test_delete.png)
+
+**Resultado:** la prueba de eliminación de pago registró el snapshot en el historial contable de auditoría.
 
 ### **Insertar**
 
 ![](images/mysql_trigger_payments_test_insert.png)
 
+**Resultado:** el registro del pago de prueba insertó su fila en `payments` y su copia íntegra en `payments_audit`.
+
 ### **Prohibiciones:**
 
 ![](images/mysql_trigger_payments_test_prohibition.png)
+
+**Resultado:** el intento de alterar directamente el monto de un pago fue rechazado de inmediato por el motor con `SIGNAL SQLSTATE 45000`, garantizando que el dinero recaudado no pueda alterarse fraudulentamente.
 
 ### Conclusion
 
@@ -947,6 +1101,8 @@ SELECT name, document_type, document_number, is_active FROM customers;
 
 ![](images/postgres_1_1_campos.png)
 
+**Resultado:** la consulta proyectó las columnas esenciales de la tabla `customers` (`name`, `document_type`, `document_number`, `status`) en PostgreSQL 17, confirmando la persistencia y carga de clientes.
+
 ### 2.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
 **Narrativa:** Elegí esta consulta para practicar el ordenamiento descendente en PostgreSQL con `ORDER BY order_date DESC`, visualizando de forma prioritaria los consumos más recientes en cafetería.
@@ -956,6 +1112,8 @@ SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 ```
 
 ![](images/postgres_1_2_order_by.png)
+
+**Resultado:** la consulta devolvió los pedidos en PostgreSQL ordenados de manera cronológica descendente (`ORDER BY order_date DESC`).
 
 ### 2.3 Consultas a múltiples tablas mediante WHERE
 
@@ -969,6 +1127,8 @@ WHERE c.id = o.customer_id;
 
 ![](images/postgres_1_3_multitabla_where.png)
 
+**Resultado:** la consulta asoció `orders` y `customers` mediante la condición relacional `WHERE c.id = o.customer_id` en PostgreSQL.
+
 ### 2.4 Consultas a múltiples tablas mediante JOIN
 
 **Narrativa:** Elegí esta consulta para practicar la sintaxis estándar ANSI `INNER JOIN` en PostgreSQL, uniendo las tablas `customers` y `orders` con la cláusula `ON` para proyectar el correo del cliente y los valores de sus órdenes.
@@ -980,6 +1140,8 @@ JOIN orders AS o ON (c.id = o.customer_id);
 ```
 
 ![](images/postgres_1_4_multitabla_join.png)
+
+**Resultado:** la consulta combinó formalmente las tablas mediante `JOIN ... ON (c.id = o.customer_id)`, retornando los pedidos con los datos del cliente.
 
 ### 2.5 Condiciones en las Consultas o filtros en las Consultas
 
@@ -994,6 +1156,8 @@ WHERE c.id = o.customer_id AND o.status = 'active';
 
 ![](images/postgres_1_5_condiciones_where_active.png)
 
+**Resultado:** la consulta filtró en PostgreSQL los pedidos activos vinculando las tablas mediante WHERE y el predicado `o.status = 'active'` con `AND`.
+
 **Filtro JOIN + WHERE por órdenes con estado inactivo:**
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
@@ -1003,6 +1167,8 @@ WHERE o.status = 'inactive';
 ```
 
 ![](images/postgres_1_5_condiciones_join_inactive.png)
+
+**Resultado:** la consulta retornó los pedidos inactivos mediante la sintaxis combinada `JOIN ... WHERE o.status = 'inactive'`.
 
 ### 2.6 Consultas con filtros condicional LIKE
 
@@ -1017,6 +1183,8 @@ WHERE c.email LIKE 'm%';
 
 ![](images/postgres_1_6_like_inicio.png)
 
+**Resultado:** la consulta filtró a los clientes cuyo correo electrónico inicia con 'm' utilizando el operador `LIKE 'm%'` en PostgreSQL.
+
 **Mostrar todos los correos que contengan el dominio gmail:**
 ```sql
 SELECT name, email, is_active 
@@ -1025,6 +1193,8 @@ WHERE c.email LIKE CONCAT('%', 'gmail', '%');
 ```
 
 ![](images/postgres_1_6_like_gmail.png)
+
+**Resultado:** la consulta retornó a los clientes con dominio de correo `@gmail.com` aplicando `LIKE '%@gmail.com'`.
 
 **Combinación del punto 2.5 y la implementación de LIKE:**
 ```sql
@@ -1035,6 +1205,8 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 ```
 
 ![](images/postgres_1_6_like_combinado.png)
+
+**Resultado:** la consulta aplicó ambas condiciones combinadas con el operador lógico `AND` en PostgreSQL.
 
 ### 2.7 Consultas con filtros condicionales BETWEEN
 
@@ -1052,6 +1224,8 @@ ORDER BY pay.payment_date ASC;
 
 ![](images/postgres_1_7_between_join.png)
 
+**Resultado:** la consulta retornó los pagos enmarcados en septiembre de 2026 uniendo 3 tablas con `JOIN` y aplicando `BETWEEN` ordenado por fecha de pago.
+
 **Forma 2 (con WHERE):**
 ```sql
 SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
@@ -1064,6 +1238,8 @@ ORDER BY pay.payment_date ASC;
 ```
 
 ![](images/postgres_1_7_between_where.png)
+
+**Resultado:** la consulta devolvió el mismo intervalo de pagos en PostgreSQL utilizando la forma relacional basada en `WHERE`.
 
 ### 2.8 Consultas con agrupamiento GROUP BY y HAVING
 
@@ -1083,6 +1259,8 @@ ORDER BY total_suma DESC;
 
 ![](images/postgres_2_8_group_by.png)
 
+**Resultado:** la consulta agrupó los pagos por cliente en PostgreSQL, calculando `SUM`, `COUNT` y `AVG` y filtrando mediante `HAVING SUM(pay.amount) >= 20000`.
+
 ### 2.9 Subconsultas y teoría de conjuntos
 
 **Narrativa:** En PostgreSQL se aplican operaciones de teoría de conjuntos para identificar clientes sin compras registradas dentro de una ventana temporal mediante `NOT IN` y `LEFT JOIN ... IS NULL`.
@@ -1100,6 +1278,8 @@ WHERE c.id NOT IN (
 
 ![](images/postgres_2_9_subconsulta_notin.png)
 
+**Resultado:** la subconsulta correlacionada con `NOT IN` en PostgreSQL aisló a los clientes sin órdenes en el período establecido.
+
 **Forma 2 (con LEFT JOIN):**
 ```sql
 SELECT c.* 
@@ -1109,6 +1289,8 @@ WHERE o.customer_id IS NULL;
 ```
 
 ![](images/postgres_2_9_subconsulta_leftjoin.png)
+
+**Resultado:** la consulta con `LEFT JOIN ... WHERE o.customer_id IS NULL` arrojó el mismo conjunto de clientes inactivos en PostgreSQL.
 
 ## 3. Consultas avanzadas en Microsoft SQL Server :
 
@@ -1122,6 +1304,8 @@ SELECT name, document_type, document_number, is_active FROM customers;
 
 ![](images/mssql_1_1_campos.png)
 
+**Resultado:** la consulta proyectó los campos de clientes en SQL Server 2022 (`name`, `document_type`, `document_number`, `status`), validando la integridad del catálogo en T-SQL.
+
 ### 3.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
 **Narrativa:** Consulta cronológica descendente ejecutada en SQL Server para listar las órdenes de venta registradas, permitiendo auditar la secuencia transaccional.
@@ -1131,6 +1315,8 @@ SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 ```
 
 ![](images/mssql_1_2_order_by.png)
+
+**Resultado:** la consulta ordenó las órdenes descendentemente por fecha (`ORDER BY order_date DESC`) en SQL Server.
 
 ### 3.3 Consultas a múltiples tablas mediante WHERE
 
@@ -1144,6 +1330,8 @@ WHERE c.id = o.customer_id;
 
 ![](images/mssql_1_3_multitabla_where.png)
 
+**Resultado:** la consulta vinculó clientes y pedidos mediante condición de igualdad en `WHERE c.id = o.customer_id` en SQL Server.
+
 ### 3.4 Consultas a múltiples tablas mediante JOIN
 
 **Narrativa:** Consulta que emplea la instrucción `INNER JOIN` en SQL Server para acoplar la información descriptiva del cliente con cada pedido efectuado.
@@ -1155,6 +1343,8 @@ JOIN orders AS o ON (c.id = o.customer_id);
 ```
 
 ![](images/mssql_1_4_multitabla_join.png)
+
+**Resultado:** la consulta combinó `customers` y `orders` mediante la cláusula estándar `JOIN ... ON` en SQL Server.
 
 ### 3.5 Condiciones en las Consultas o filtros en las Consultas
 
@@ -1169,6 +1359,8 @@ WHERE c.id = o.customer_id AND o.status = 'active';
 
 ![](images/mssql_1_5_condiciones_where_active.png)
 
+**Resultado:** la consulta filtró las órdenes activas en SQL Server con la condición combinada `c.id = o.customer_id AND o.status = 'active'`.
+
 **Filtro JOIN + WHERE por pedidos con status inactivo:**
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
@@ -1178,6 +1370,8 @@ WHERE o.status = 'inactive';
 ```
 
 ![](images/mssql_1_5_condiciones_join_inactive.png)
+
+**Resultado:** la consulta proyectó las órdenes canceladas o inactivas mediante `JOIN` y filtro `WHERE o.status = 'inactive'`.
 
 ### 3.6 Consultas con filtros condicional LIKE
 
@@ -1192,6 +1386,8 @@ WHERE c.email LIKE 'm%';
 
 ![](images/mssql_1_6_like_inicio.png)
 
+**Resultado:** la consulta devolvió los clientes con correos iniciados en 'm' aplicando `LIKE 'm%'` en SQL Server.
+
 **Filtro LIKE para cuentas de dominio `@gmail`:**
 ```sql
 SELECT name, email, is_active 
@@ -1200,6 +1396,8 @@ WHERE c.email LIKE CONCAT('%', 'gmail', '%');
 ```
 
 ![](images/mssql_1_6_like_gmail.png)
+
+**Resultado:** la consulta filtró a los clientes con dominio `@gmail.com` mediante `LIKE '%@gmail.com'`.
 
 **Combinación del punto 3.5 y la implementación de LIKE:**
 ```sql
@@ -1210,6 +1408,8 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 ```
 
 ![](images/mssql_1_6_like_combinado.png)
+
+**Resultado:** la consulta combinó los filtros de inicial y dominio mediante `AND` en SQL Server.
 
 ### 3.7 Consultas con filtros condicionales BETWEEN
 
@@ -1227,6 +1427,8 @@ ORDER BY pay.payment_date ASC;
 
 ![](images/mssql_1_7_between_join.png)
 
+**Resultado:** la consulta evaluó los pagos de septiembre de 2026 en SQL Server combinando las tablas con `JOIN` y filtrando por rango de fechas con `BETWEEN`.
+
 **Forma 2 (con WHERE):**
 ```sql
 SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
@@ -1238,6 +1440,8 @@ ORDER BY pay.payment_date ASC;
 ```
 
 ![](images/mssql_1_7_between_where.png)
+
+**Resultado:** la consulta arrojó el mismo histórico de pagos en SQL Server empleando el predicado relacional en `WHERE`.
 
 ### 3.8 Consultas con agrupamiento GROUP BY y HAVING
 
@@ -1258,6 +1462,8 @@ ORDER BY TotalSuma DESC;
 
 ![](images/mssql_3_8_group_by.png)
 
+**Resultado:** la consulta agrupó y consolidó la facturación por cliente en SQL Server aplicando `SUM`, `COUNT` y `AVG` con filtro `HAVING SUM(pay.amount) >= 20000`.
+
 ### 3.9 Subconsultas y teoría de conjuntos
 
 **Narrativa:** Implementación de subconsultas con `NOT IN` y `LEFT JOIN` en SQL Server para aislar a los clientes que no registraron consumo en el período establecido.
@@ -1274,6 +1480,8 @@ WHERE c.id NOT IN (
 
 ![](images/mssql_3_9_subconsulta.png)
 
+**Resultado:** la subconsulta con `NOT IN` en SQL Server identificó a los clientes que no tuvieron consumos registrados en el intervalo indicado.
+
 ---
 
 ## 4. Consultas avanzadas en Oracle Database :
@@ -1288,6 +1496,8 @@ SELECT code, first_name || ' ' || last_name AS name, email, status FROM tazanort
 
 ![](images/oracle_1_1_campos.png)
 
+**Resultado:** la consulta en Oracle Database 21c XE unificó los atributos `first_name` y `last_name` mediante el operador de concatenación ANSI `||` y proyectó el catálogo de clientes del esquema `tazanorte`.
+
 ### 4.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
 **Narrativa:** Ordenamiento descendente en Oracle sobre la tabla `orders` del esquema `tazanorte` para listar los pedidos cronológicamente desde el más reciente.
@@ -1297,6 +1507,8 @@ SELECT id, order_date, total, status FROM tazanorte.orders ORDER BY order_date D
 ```
 
 ![](images/oracle_1_2_order_by.png)
+
+**Resultado:** la consulta ordenó los pedidos cronológicamente en Oracle en sentido descendente (`ORDER BY order_date DESC`).
 
 ### 4.3 Consultas a múltiples tablas mediante WHERE
 
@@ -1310,6 +1522,8 @@ WHERE c.id = o.customer_id;
 
 ![](images/oracle_1_3_multitabla_where.png)
 
+**Resultado:** la consulta vinculó las órdenes y clientes en Oracle mediante producto cartesiano filtrado en `WHERE c.id = o.customer_id`.
+
 ### 4.4 Consultas a múltiples tablas mediante JOIN
 
 **Narrativa:** Consulta formal basada en `JOIN` con cláusula `ON` para vincular clientes y órdenes en Oracle Database.
@@ -1321,6 +1535,8 @@ JOIN tazanorte.orders o ON (c.id = o.customer_id);
 ```
 
 ![](images/oracle_1_4_multitabla_join.png)
+
+**Resultado:** la consulta combinó explícitamente las tablas en Oracle mediante `JOIN ... ON (c.id = o.customer_id)`.
 
 ### 4.5 Condiciones en las Consultas o filtros en las Consultas
 
@@ -1335,6 +1551,8 @@ WHERE c.id = o.customer_id AND o.status = 'active';
 
 ![](images/oracle_1_5_condiciones_where_active.png)
 
+**Resultado:** la consulta filtró en Oracle los pedidos activos con la condición compuesta `c.id = o.customer_id AND o.status = 'active'`.
+
 **Filtro JOIN + WHERE por pedidos con status inactivo:**
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.total, o.status 
@@ -1344,6 +1562,8 @@ WHERE o.status = 'inactive';
 ```
 
 ![](images/oracle_1_5_condiciones_join_inactive.png)
+
+**Resultado:** la consulta retornó los pedidos inactivos combinando `JOIN` con la cláusula `WHERE o.status = 'inactive'`.
 
 ### 4.6 Consultas con filtros condicional LIKE
 
@@ -1358,6 +1578,8 @@ WHERE c.email LIKE 'm%';
 
 ![](images/oracle_1_6_like_inicio.png)
 
+**Resultado:** la consulta filtró en Oracle a los clientes cuyo correo inicia con 'm' mediante `LIKE 'm%'`.
+
 **Filtro LIKE para cuentas de dominio `@gmail` (con concatenación ANSI `||`):**
 ```sql
 SELECT code, first_name || ' ' || last_name AS name, email, status 
@@ -1366,6 +1588,8 @@ WHERE c.email LIKE '%' || 'gmail' || '%';
 ```
 
 ![](images/oracle_1_6_like_gmail.png)
+
+**Resultado:** la consulta proyectó a los clientes con correo de dominio `@gmail.com` empleando el operador `LIKE`.
 
 **Combinación del punto 4.5 y la implementación de LIKE:**
 ```sql
@@ -1376,6 +1600,8 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 ```
 
 ![](images/oracle_1_6_like_combinado.png)
+
+**Resultado:** la consulta unió ambos predicados de texto con el operador lógico `AND` en Oracle Database.
 
 ### 4.7 Consultas con filtros condicionales BETWEEN
 
@@ -1393,6 +1619,8 @@ ORDER BY pay.payment_date ASC;
 
 ![](images/oracle_1_7_between_join.png)
 
+**Resultado:** la consulta enlazó clientes, órdenes y pagos mediante `JOIN` y filtró el rango temporal con literales `TIMESTAMP` y la cláusula `BETWEEN`.
+
 **Forma 2 (con WHERE):**
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method 
@@ -1404,6 +1632,8 @@ ORDER BY pay.payment_date ASC;
 ```
 
 ![](images/oracle_1_7_between_where.png)
+
+**Resultado:** la consulta obtuvo el mismo reporte temporal en Oracle empleando la vinculación relacional en la cláusula `WHERE`.
 
 ### 4.8 Consultas con agrupamiento GROUP BY y HAVING
 
@@ -1425,6 +1655,8 @@ ORDER BY total_suma DESC;
 
 ![](images/oracle_4_8_group_by.png)
 
+**Resultado:** la consulta analítica en Oracle agrupó las transacciones por cliente con `GROUP BY`, calculó `SUM`, `COUNT`, `AVG` y filtró con `HAVING SUM(pay.amount) >= 20000`.
+
 ### 4.9 Subconsultas y teoría de conjuntos
 
 **Narrativa:** Teoría de conjuntos en Oracle Database con sintaxis `NOT IN` y conversión de fechas para filtrar clientes sin actividad comercial registrada.
@@ -1440,6 +1672,8 @@ WHERE c.id NOT IN (
 ```
 
 ![](images/oracle_4_9_subconsulta.png)
+
+**Resultado:** la subconsulta con `NOT IN` y literales `TIMESTAMP` en Oracle aisló a los clientes que no tuvieron órdenes registradas durante el rango analizado.
 
 ---
 
