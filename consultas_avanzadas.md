@@ -1103,6 +1103,32 @@ SELECT name, document_type, document_number, is_active FROM customers;
 
 **Resultado:** la consulta proyectó las columnas esenciales de la tabla `customers` (`name`, `document_type`, `document_number`, `status`) en PostgreSQL 17, confirmando la persistencia y carga de clientes.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_get_customers()
+RETURNS TABLE (name VARCHAR, document_type VARCHAR, document_number VARCHAR, is_active BOOLEAN) AS $$
+BEGIN
+    RETURN QUERY SELECT c.name, c.document_type, c.document_number, c.is_active FROM customers c;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_1_procedure_create.png)
+
+**Resultado:** la función/procedimiento almacenado `sp_get_customers()` fue creada y registrada exitosamente en PostgreSQL 17 dentro del esquema `public`, encapsulando la consulta selectiva de campos de clientes.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+SELECT * FROM sp_get_customers();
+```
+
+![](images/postgres_2_1_procedure_result.png)
+
+**Resultado:** la ejecución `SELECT * FROM sp_get_customers();` en DBeaver retornó la lista completa de clientes con sus columnas de identificación y estado activo, validando la recuperación modular de registros.
+
 ### 2.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
 **Hipótesis:** Se postula como hipótesis que la ejecución de `ORDER BY order_date DESC` en PostgreSQL invocará el algoritmo de ordenamiento interno (quicksort o external merge sort según la memoria de trabajo `work_mem`), entregando el historial de órdenes ordenado rigurosamente desde la fecha más reciente, lo que facilitará la supervisión de la rotación de mesas y comandas sin afectar el rendimiento del plan de ejecución.
@@ -1114,6 +1140,22 @@ SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 ![](images/postgres_1_2_order_by.png)
 
 **Resultado:** la consulta devolvió los pedidos en PostgreSQL ordenados de manera cronológica descendente (`ORDER BY order_date DESC`).
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_get_orders_desc()
+RETURNS TABLE (id BIGINT, order_date TIMESTAMP, total NUMERIC, status VARCHAR) AS $$
+BEGIN
+    RETURN QUERY SELECT o.id, o.order_date, o.total, o.status FROM orders o ORDER BY o.order_date DESC;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_2_procedure_create.png)
+
+**Resultado:** la función almacenada `sp_get_orders_desc()` fue compilada y almacenada en PostgreSQL 17, encapsulando la lógica de ordenamiento descendente por fecha de comanda.
 
 ### 2.3 Consultas a múltiples tablas mediante WHERE
 
@@ -1129,6 +1171,32 @@ WHERE c.id = o.customer_id;
 
 **Resultado:** la consulta asoció `orders` y `customers` mediante la condición relacional `WHERE c.id = o.customer_id` en PostgreSQL.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_get_orders_customers_where()
+RETURNS TABLE (name VARCHAR, order_id BIGINT, total NUMERIC, status VARCHAR) AS $$
+BEGIN
+    RETURN QUERY SELECT c.name, o.id, o.total, o.status FROM orders o, customers c WHERE o.customer_id = c.id;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_3_procedure_create.png)
+
+**Resultado:** la rutina almacenada `sp_get_orders_customers_where()` fue compilada exitosamente en PostgreSQL, gestionando el enlace multitabla entre órdenes y clientes mediante la cláusula WHERE.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+SELECT * FROM sp_get_orders_customers_where();
+```
+
+![](images/postgres_2_3_procedure_result.png)
+
+**Resultado:** la ejecución `SELECT * FROM sp_get_orders_customers_where();` proyectó satisfactoriamente las órdenes asociadas a sus respectivos clientes en DBeaver.
+
 ### 2.4 Consultas a múltiples tablas mediante JOIN
 
 **Hipótesis:** Se formula la hipótesis de que la instrucción estándar `INNER JOIN ... ON` en PostgreSQL optimizará la semántica de la consulta, permitiendo que el analizador de costos seleccione el árbol relacional más eficiente para unir las tablas de clientes y pedidos, proyectando la información de contacto y facturación con total coherencia y claridad formal.
@@ -1142,6 +1210,32 @@ JOIN orders AS o ON (c.id = o.customer_id);
 ![](images/postgres_1_4_multitabla_join.png)
 
 **Resultado:** la consulta combinó formalmente las tablas mediante `JOIN ... ON (c.id = o.customer_id)`, retornando los pedidos con los datos del cliente.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_get_orders_customers_join()
+RETURNS TABLE (name VARCHAR, email VARCHAR, order_id BIGINT, order_date TIMESTAMP, total NUMERIC, status VARCHAR) AS $$
+BEGIN
+    RETURN QUERY SELECT c.name, c.email, o.id, o.order_date, o.total, o.status FROM orders o INNER JOIN customers c ON o.customer_id = c.id;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_4_procedure_create.png)
+
+**Resultado:** el procedimiento almacenado `sp_get_orders_customers_join()` fue creado y validado en el esquema de PostgreSQL, normalizando el enlace relacional explícito mediante INNER JOIN.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+SELECT * FROM sp_get_orders_customers_join();
+```
+
+![](images/postgres_2_4_procedure_result.png)
+
+**Resultado:** la ejecución `SELECT * FROM sp_get_orders_customers_join();` devolvió el conjunto homologado de comandas, fechas y correos electrónicos de clientes en DBeaver.
 
 ### 2.5 Condiciones en las Consultas o filtros en las Consultas
 
@@ -1169,6 +1263,32 @@ WHERE o.status = 'inactive';
 ![](images/postgres_1_5_condiciones_join_inactive.png)
 
 **Resultado:** la consulta retornó los pedidos inactivos mediante la sintaxis combinada `JOIN ... WHERE o.status = 'inactive'`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_get_orders_by_status(p_status VARCHAR DEFAULT 'active')
+RETURNS TABLE (name VARCHAR, order_id BIGINT, order_date TIMESTAMP, total NUMERIC, status VARCHAR) AS $$
+BEGIN
+    RETURN QUERY SELECT c.name, o.id, o.order_date, o.total, o.status FROM orders o INNER JOIN customers c ON o.customer_id = c.id WHERE o.status = p_status;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_5_procedure_create.png)
+
+**Resultado:** el procedimiento parametrizado `sp_get_orders_by_status` fue compilado en PostgreSQL, permitiendo recibir el estado de orden deseado como argumento de entrada.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+SELECT * FROM sp_get_orders_by_status('active');
+```
+
+![](images/postgres_2_5_procedure_result.png)
+
+**Resultado:** la invocación `SELECT * FROM sp_get_orders_by_status('active');` discriminó y entregó únicamente los pedidos en estado activo con sus datos de cliente en la cuadrícula de resultados.
 
 ### 2.6 Consultas con filtros condicional LIKE
 
@@ -1208,6 +1328,22 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 
 **Resultado:** la consulta aplicó ambas condiciones combinadas con el operador lógico `AND` en PostgreSQL.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_get_customers_like_email(p_pattern VARCHAR DEFAULT '%@gmail.com')
+RETURNS TABLE (name VARCHAR, email VARCHAR, is_active BOOLEAN) AS $$
+BEGIN
+    RETURN QUERY SELECT c.name, c.email, c.is_active FROM customers c WHERE c.email LIKE p_pattern;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_6_procedure_create.png)
+
+**Resultado:** la rutina almacenada `sp_get_customers_like_email` fue compilada en PostgreSQL, permitiendo filtrar el catálogo de clientes mediante patrones dinámicos del predicado LIKE.
+
 ### 2.7 Consultas con filtros condicionales BETWEEN
 
 **Hipótesis:** La conciliación contable de TazaNorte en PostgreSQL exige verificar el recaudo financiero en intervalos específicos. Se postula la hipótesis de que el operador `BETWEEN` con marcas temporales `TIMESTAMP` evaluará de forma cerrada el intervalo comprendido entre el 1 y el 24 de septiembre de 2026, uniendo en cadena clientes, órdenes y pagos para auditar la correlación entre facturación y cobro en orden cronológico ascendente.
@@ -1240,6 +1376,37 @@ ORDER BY pay.payment_date ASC;
 ![](images/postgres_1_7_between_where.png)
 
 **Resultado:** la consulta devolvió el mismo intervalo de pagos en PostgreSQL utilizando la forma relacional basada en `WHERE`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_get_payments_between(p_start TIMESTAMP DEFAULT '2026-09-01 00:00:00', p_end TIMESTAMP DEFAULT '2026-09-30 23:59:59')
+RETURNS TABLE (name VARCHAR, email VARCHAR, order_date TIMESTAMP, status VARCHAR, payment_date TIMESTAMP, amount NUMERIC, method VARCHAR) AS $$
+BEGIN
+    RETURN QUERY 
+    SELECT c.name, c.email, o.order_date, o.status, p.payment_date, p.amount, p.method
+    FROM payments p
+    INNER JOIN orders o ON p.reference_type = 'order' AND p.reference_id = o.id
+    INNER JOIN customers c ON o.customer_id = c.id
+    WHERE p.payment_date BETWEEN p_start AND p_end;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_7_procedure_create.png)
+
+**Resultado:** el procedimiento `sp_get_payments_between` fue registrado en PostgreSQL, encapsulando la auditoría de pagos entre dos límites temporales evaluados mediante BETWEEN.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+SELECT * FROM sp_get_payments_between('2026-09-01 00:00:00', '2026-09-30 23:59:59');
+```
+
+![](images/postgres_2_7_procedure_result.png)
+
+**Resultado:** la llamada a `sp_get_payments_between` proyectó los pagos efectuados durante septiembre de 2026 con sus métodos de abono y órdenes asociadas.
 
 ### 2.8 Consultas con agrupamiento GROUP BY y HAVING
 
@@ -1328,6 +1495,45 @@ ORDER BY total_periodo DESC;
 
 **Resultado:** la consulta en PostgreSQL filtró a los clientes con 1 o más visitas cuyo importe acumulado superó los 15.000 COP, proyectando su correo de contacto y monto facturado.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_resumen_pagos_group_by(p_min_monto NUMERIC DEFAULT 20000)
+RETURNS TABLE (id BIGINT, name VARCHAR, total_suma NUMERIC, total_pagos BIGINT, promedio_pago NUMERIC) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        c.id,
+        c.name,
+        SUM(p.amount) AS total_suma,
+        COUNT(p.id) AS total_pagos,
+        ROUND(AVG(p.amount), 2) AS promedio_pago
+    FROM customers c
+    INNER JOIN orders o ON o.customer_id = c.id
+    INNER JOIN payments p ON p.reference_type = 'order' AND p.reference_id = o.id
+    WHERE p.payment_date >= '2026-01-01 00:00:00'
+    GROUP BY c.id, c.name
+    HAVING SUM(p.amount) >= p_min_monto
+    ORDER BY total_suma DESC;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_8_procedure_create.png)
+
+**Resultado:** el procedimiento analítico `sp_resumen_pagos_group_by` fue creado en PostgreSQL, consolidando métricas agregadas (SUM, COUNT, AVG) y filtrado restrictivo post-agregación mediante HAVING.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+SELECT * FROM sp_resumen_pagos_group_by(20000);
+```
+
+![](images/postgres_2_8_procedure_result.png)
+
+**Resultado:** la ejecución `SELECT * FROM sp_resumen_pagos_group_by(20000);` en DBeaver agrupó el recaudo por cliente y discriminó con éxito a los clientes con facturación acumulada superior o igual a 20.000 COP.
+
 ### 2.9 Subconsultas y teoría de conjuntos
 
 **Hipótesis:** Se formula la hipótesis de que al ejecutar la sustracción de conjuntos para detectar clientes inactivos en PostgreSQL, tanto la subconsulta evaluada con `NOT IN` como la combinación externa `LEFT JOIN` filtrada con `WHERE o.customer_id IS NULL` arrojarán exactamente el mismo subconjunto de usuarios no compradores, corroborando la consistencia teórica del motor en operaciones de diferencia relacional.
@@ -1358,6 +1564,35 @@ WHERE o.customer_id IS NULL;
 ![](images/postgres_2_9_subconsulta_leftjoin.png)
 
 **Resultado:** la consulta con `LEFT JOIN ... WHERE o.customer_id IS NULL` arrojó el mismo conjunto de clientes inactivos en PostgreSQL.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_clientes_sin_ordenes()
+RETURNS SETOF customers AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM customers c
+    WHERE c.id NOT IN (SELECT DISTINCT o.customer_id FROM orders o WHERE o.customer_id IS NOT NULL);
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![](images/postgres_2_9_procedure_create.png)
+
+**Resultado:** el procedimiento de exclusión y álgebra conjuntista `sp_clientes_sin_ordenes` fue creado en PostgreSQL para aislar a los clientes sin transacciones registradas.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+SELECT * FROM sp_clientes_sin_ordenes();
+```
+
+![](images/postgres_2_9_procedure_result.png)
+
+**Resultado:** la ejecución de `sp_clientes_sin_ordenes()` validó la subconsulta anidada con `NOT IN`, entregando el registro de clientes inactivos o sin pedidos en la base de datos de TazaNorte.
+
 
 ## 3. Consultas avanzadas en Microsoft SQL Server :
 
