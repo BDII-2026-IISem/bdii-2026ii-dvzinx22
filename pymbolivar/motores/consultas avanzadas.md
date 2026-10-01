@@ -89,7 +89,7 @@ A continuación se presentan las evidencias visuales del estado actual de regist
 
 ### 1.1 Mostrar algunos de los registros de la tabla customers
 
-**Narrativa:** Escogí esta consulta como punto de partida porque es la forma más básica de verificar que la tabla `customers` se creó y se pobló correctamente en el motor MySQL. En lugar de usar `SELECT *`, seleccioné solo las columnas que realmente aportan valor para identificar a un cliente (nombre, tipo y número de documento, y estado operativo), practicando así la proyección de columnas en vez de traer toda la tabla.
+**Hipótesis:** En la arquitectura de datos de la cafetería de especialidad **TazaNorte**, el catálogo de clientes constituye la entidad primaria sobre la cual gravita el sistema de fidelización y trazabilidad de pedidos. Se plantea como hipótesis que proyectar selectivamente los atributos cardinales de identificación (`name`, `document_type`, `document_number`, `status`), en lugar de incurrir en la sobrecarga innecesaria de un `SELECT *`, reduce drásticamente el tráfico en el canal de red entre el motor MySQL y DBeaver y optimiza los búferes de memoria del servidor. Se espera comprobar que el motor resuelve la proyección columnar de forma inmediata, devolviendo un conjunto ordenado y libre de redundancias que certifica la correcta inserción inicial de clientes aptos para transaccionar en el punto de venta.
 
 ```sql
 SELECT name, document_type, document_number, status FROM customers;
@@ -128,7 +128,7 @@ CALL sp_get_customers();
 
 ### 1.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Narrativa:** Elegí esta consulta para practicar la cláusula `ORDER BY`, que es esencial cuando se necesita presentar información de forma cronológica en el negocio. Ordenar por la columna `order_date` de forma descendente (`DESC`) me permite ver primero los pedidos más recientes registrados en la cafetería TazaNorte.
+**Hipótesis:** Para el control operativo en barra y el monitoreo financiero de caja en **TazaNorte**, los supervisores necesitan auditar prioritariamente los pedidos en orden estrictamente cronológico decreciente para identificar las transacciones más recientes y detectar anomalías en tiempo real. Se plantea como hipótesis que al aplicar la cláusula `ORDER BY order_date DESC` sobre la tabla `orders`, el optimizador de consultas de MySQL ejecutará un plan de clasificación secuencial que organizará el universo de órdenes desde la fecha y hora más reciente hasta la más antigua. Se espera validar que la salida refleje con exactitud la temporalidad del negocio, permitiendo correlacionar cada venta con su importe total sin alterar la integridad de las claves primarias.
 
 ```sql
 SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
@@ -167,7 +167,7 @@ CALL sp_get_orders_desc();
 
 ### 1.3 Consultas a múltiples tablas mediante WHERE
 
-**Narrativa:** Elegí esta consulta para practicar la relación entre las tablas **`orders` y `customers`**, ya que en el modelo de la base de datos la tabla `orders` contiene el campo `customer_id`, que permite identificar al cliente al que pertenece cada orden de compra.
+**Hipótesis:** En el álgebra relacional tradicional, la asociación entre dos entidades se modela mediante el producto cartesiano restringido por una condición de igualdad en la cláusula `WHERE`. Se postula como hipótesis que al vincular `orders` y `customers` mediante el predicado `WHERE c.id = o.customer_id`, el motor MySQL delimitará rigurosamente la combinación de tuplas descartando cualquier cruce espurio. De este modo, se espera comprobar que cada pedido exhibido quede emparejado de forma unívoca con su cliente titular, demostrando la consistencia de la clave foránea `customer_id` y permitiendo evaluar el volumen de consumo personal sin inconsistencias de datos huérfanos.
 
 ```sql
 SELECT c.name, o.id AS order_id, o.total, o.status 
@@ -212,7 +212,7 @@ CALL sp_get_orders_customers_where();
 
 ### 1.4 Consultas a múltiples tablas mediante JOIN
 
-**Narrativa:** Elegí esta consulta para practicar el uso de **`JOIN`** (`INNER JOIN`), que permite relacionar información de diferentes tablas mediante un campo en común. En este caso, se relacionan las tablas `customers` y `orders` para mostrar los datos principales del cliente junto con la información detallada de su orden.
+**Hipótesis:** La especificación formal ANSI SQL `JOIN ... ON` fue introducida para separar limpiamente los criterios de acoplamiento estructural entre tablas de las condiciones de filtrado de negocio. Se plantea la hipótesis de que al ejecutar la combinación de `customers` y `orders` mediante la cláusula explícita `JOIN orders AS o ON (c.id = o.customer_id)`, el planificador de MySQL procesará de manera óptima los índices de clave primaria y foránea, arrojando un conjunto de resultados idéntico en cardinalidad y contenido al obtenido con la cláusula `WHERE`, pero garantizando un plan de ejecución más robusto y un código fuente estandarizado, legible y mantenible para el software de punto de venta.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -261,7 +261,7 @@ Para las condiciones se utiliza la clausula Where de la siguiente manera:
 
 Quiero realizar la misma consulta anterior de cualquiera de las dos formas, teniendo en cuenta la condición que presente las órdenes de un status específico.
 
-**Narrativa:** Elegí estas dos consultas para practicar la relación entre las tablas `customers` y `orders` y el uso de condiciones para filtrar los pedidos según su estado. La primera consulta utiliza `JOIN` para relacionar ambas tablas y obtener el nombre y correo del cliente junto con los datos de las órdenes que se encuentran **inactivas** (`inactive`).
+**Hipótesis:** En la gestión operativa de **TazaNorte**, resulta imperativo discriminar el flujo transaccional activo respecto de aquellos pedidos que fueron cancelados o quedaron inactivos por deserción o error en barra. Se plantea como hipótesis que al combinar las entidades `customers` y `orders` mediante la cláusula explícita `JOIN ... ON` y aplicar el predicado restrictivo `WHERE o.status = 'inactive'`, el motor MySQL ejecutará un plan de evaluación relacional que aislará con exactitud matemática el subconjunto de pedidos fallidos o suspendidos, proyectando el nombre del cliente y su correo para permitir análisis de calidad del servicio y auditoría de motivos de anulación.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
@@ -321,7 +321,7 @@ CALL sp_get_orders_by_status('active');
 
 ### 1.6 Consultas con filtros condicional LIKE
 
-**Narrativa:** Esta consulta permite consultar los clientes cuyo correo electrónico comienza con la letra **“m”**. Se utiliza `LIKE` junto con el símbolo `%`, que indica que después de la letra “m” puede existir cualquier cantidad de caracteres. De esta manera, se pueden filtrar los clientes según la primera letra de su correo electrónico.
+**Hipótesis:** Esta consulta permite consultar los clientes cuyo correo electrónico comienza con la letra **“m”**. Se utiliza `LIKE` junto con el símbolo `%`, que indica que después de la letra “m” puede existir cualquier cantidad de caracteres. De esta manera, se pueden filtrar los clientes según la primera letra de su correo electrónico.
 
 ```sql
 SELECT name, email, status 
@@ -335,7 +335,7 @@ WHERE c.email LIKE 'm%';
 
 **Mostrar todos los correos de los clientes que contengan el dominio gmail**
 
-**Narrativa:** En esta consulta realicé una búsqueda de los clientes que tienen la palabra **“gmail”** dentro de su correo electrónico. Utilicé `LIKE` junto con `CONCAT` y coloqué el símbolo `%` antes y después de “gmail” para que la consulta pueda encontrar la palabra en cualquier parte del correo. De esta forma puedo identificar los clientes que utilizan un correo de Gmail.
+**Hipótesis:** En esta consulta realicé una búsqueda de los clientes que tienen la palabra **“gmail”** dentro de su correo electrónico. Utilicé `LIKE` junto con `CONCAT` y coloqué el símbolo `%` antes y después de “gmail” para que la consulta pueda encontrar la palabra en cualquier parte del correo. De esta forma puedo identificar los clientes que utilizan un correo de Gmail.
 
 ```sql
 SELECT name, email, status 
@@ -349,7 +349,7 @@ WHERE c.email LIKE CONCAT('%', 'gmail', '%');
 
 **combinacion del punto 1.5 y la implementacion de el like**
 
-**Narrativa:** En esta consulta realicé una búsqueda de los clientes que tienen una orden con estado **“active”** y cuyo correo electrónico comienza con la letra **“m”**. Para esto relacioné las tablas `customers` y `orders` mediante un `JOIN`, utilizando el `id` del cliente y el `customer_id` de la orden. Luego utilicé dos condiciones en el `WHERE`: una para buscar las órdenes activas y otra para filtrar los correos que comienzan con **“m”**. Finalmente, muestro el nombre y correo del cliente junto con la información operativa de su orden.
+**Hipótesis:** En esta consulta realicé una búsqueda de los clientes que tienen una orden con estado **“active”** y cuyo correo electrónico comienza con la letra **“m”**. Para esto relacioné las tablas `customers` y `orders` mediante un `JOIN`, utilizando el `id` del cliente y el `customer_id` de la orden. Luego utilicé dos condiciones en el `WHERE`: una para buscar las órdenes activas y otra para filtrar los correos que comienzan con **“m”**. Finalmente, muestro el nombre y correo del cliente junto con la información operativa de su orden.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
@@ -394,7 +394,7 @@ CALL sp_get_orders_like_combinado('active', 'm');
 
 ### 1.7 Consultas con filtros condicionales BETWEEN
 
-**Narrativa:** En esta consulta realicé una búsqueda de los pagos realizados por los clientes entre el 1 de septiembre de 2026 y el 24 de septiembre de 2026. Para esto relacioné las tablas `customers`, `orders` y `payments`, aprovechando las relaciones que se muestran en el diagrama de la base de datos, donde un cliente genera órdenes y cada orden tiene pagos asociados. Luego utilicé `BETWEEN` para establecer el rango de fechas y `ORDER BY` para organizar los pagos desde el más antiguo hasta el más reciente. Finalmente, seleccioné los datos principales del cliente, la orden y el pago.
+**Hipótesis:** En esta consulta realicé una búsqueda de los pagos realizados por los clientes entre el 1 de septiembre de 2026 y el 24 de septiembre de 2026. Para esto relacioné las tablas `customers`, `orders` y `payments`, aprovechando las relaciones que se muestran en el diagrama de la base de datos, donde un cliente genera órdenes y cada orden tiene pagos asociados. Luego utilicé `BETWEEN` para establecer el rango de fechas y `ORDER BY` para organizar los pagos desde el más antiguo hasta el más reciente. Finalmente, seleccioné los datos principales del cliente, la orden y el pago.
 
 ```sql
 SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
@@ -411,7 +411,7 @@ ORDER BY pay.payment_date ASC;
 
 **Forma 2:**
 
-**Narrativa:** En esta consulta realicé prácticamente lo mismo que en la anterior, pero esta vez utilicé la forma tradicional con `WHERE` para relacionar las tablas `customers`, `orders` y `payments`, tomando como referencia las relaciones del diagrama de la base de datos.
+**Hipótesis:** En esta consulta realicé prácticamente lo mismo que en la anterior, pero esta vez utilicé la forma tradicional con `WHERE` para relacionar las tablas `customers`, `orders` y `payments`, tomando como referencia las relaciones del diagrama de la base de datos.
 
 ```sql
 SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
@@ -465,7 +465,7 @@ Se consideran este tipo de consultas cuando tenemos valores que se repiten en lo
 
 **Forma 1 con el where:**
 
-**Narrativa:** En esta consulta realicé un resumen de los pagos realizados por cada cliente entre el 1 de septiembre de 2026 y el 30 de septiembre de 2026. Para esto relacioné las tablas `customers`, `orders` y `payments`, siguiendo las relaciones del diagrama de la base de datos. Luego utilicé la función agregada `SUM` para calcular el total pagado por cada cliente, `COUNT` para contar la cantidad de pagos realizados y `AVG` para obtener el promedio de cada pago. Utilicé `GROUP BY` para agrupar los resultados por cliente y finalmente `ORDER BY` con criterio descendente (`DESC`) para ordenar de mayor a menor según el total pagado.
+**Hipótesis:** En la analítica de negocio de **TazaNorte**, es indispensable cuantificar el valor monetario del cliente (Customer Lifetime Value) en un ciclo de facturación mensual. Se plantea la hipótesis de que al acoplar `customers`, `orders` y `payments` bajo un rango temporal `BETWEEN` y aplicar las funciones de agregación `SUM(p.amount)`, `COUNT(p.id)` y `AVG(p.amount)` agrupadas por `GROUP BY c.id, c.name`, el motor condensará el universo de transacciones en un resumen ejecutivo ordenado por facturación decreciente (`ORDER BY TotalSuma DESC`), permitiendo clasificar de inmediato a los clientes con mayor frecuencia de visita y ticket promedio.
 
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS TotalSuma, 
@@ -485,7 +485,7 @@ ORDER BY TotalSuma DESC;
 
 **Forma 1 (Filtrado por estado y método):**
 
-**Narrativa:** En esta consulta realicé un resumen de los pagos realizados por cada cliente, teniendo en cuenta únicamente los pagos que tienen estado activo (`status = 'active'`) y que fueron realizados con tarjeta (`p.method = 'card'`) vinculados mediante el operador lógico `AND`. Luego utilicé `SUM` para calcular el total gastado por cada cliente y `COUNT` para contar la cantidad de pagos realizados. Finalmente, utilicé `GROUP BY` para agrupar la información por cliente y `ORDER BY` para ordenar los resultados de mayor a menor según el total gastado.
+**Hipótesis:** Con el objetivo de evaluar las comisiones de adquirencia bancaria y el comportamiento de pago electrónico en barra, se formula como hipótesis que la aplicación de filtros previos a la agrupación (`WHERE p.status = 'active' AND p.method = 'card'`) restringirá el cálculo agregado únicamente a las transacciones con datáfono confirmadas. Al colapsar los datos por cliente con `GROUP BY`, se espera obtener la distribución exacta de ingresos captados con tarjeta y el número de operaciones por usuario.
 
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS TotalGasto, 
@@ -504,7 +504,7 @@ ORDER BY TotalGasto DESC;
 
 **Forma 2 con el HAVING:**
 
-**Narrativa:** En esta consulta realicé un resumen de los pagos realizados por cada cliente. Para esto relacioné las tablas `customers`, `orders` y `payments`, siguiendo las relaciones que se muestran en el diagrama de la base de datos. Luego utilicé `SUM` para calcular el total pagado por cada cliente y `AVG` para obtener el promedio de sus pagos. Utilicé `GROUP BY` para agrupar la información por cliente y la cláusula `HAVING` para discriminar y proyectar únicamente los clientes cuyo total acumulado sea igual o mayor a 20000 (`HAVING SUM(p.amount) >= 20000`). Finalmente, utilicé `ORDER BY` para ordenar los resultados de mayor a menor según el total pagado.
+**Hipótesis:** La cláusula `WHERE` resulta insuficiente cuando el predicado de exclusión depende del resultado computado de una función agregada. Se postula la hipótesis de que al incorporar la cláusula pos-agrupamiento `HAVING SUM(p.amount) >= 20000`, el motor MySQL calculará primero la acumulación por cliente y posteriormente descartará a todos aquellos comensales cuyo consumo global no alcance el piso de 20.000 COP, aislando con precisión matemática el segmento de clientes VIP o de alto impacto comercial.
 
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS TotalSuma, 
@@ -523,7 +523,7 @@ ORDER BY TotalSuma DESC;
 
 **Forma 2 (Múltiples condiciones con HAVING y rango BETWEEN):**
 
-**Narrativa:** En esta consulta realicé un resumen de los pagos realizados por cada cliente entre el 1 de septiembre de 2026 y el 30 de septiembre de 2026 delimitado con `BETWEEN`. Para esto relacioné las tablas `customers`, `orders` y `payments`. Luego utilicé `SUM` para calcular el total pagado por cada cliente y `COUNT` para contar la cantidad de pagos realizados. Utilicé `GROUP BY` para agrupar la información por cliente y `HAVING` con condición compuesta unida por `AND` para mostrar únicamente los clientes que tengan 1 o más pagos y que hayan pagado más de 15000 en total (`HAVING COUNT(p.id) >= 1 AND SUM(p.amount) > 15000`). Finalmente, utilicé `ORDER BY` descendente según el total pagado.
+**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine múltiples métricas de agregación unidas por `AND` (`HAVING COUNT(p.id) >= 1 AND SUM(p.amount) > 15000`) sobre una ventana temporal delimitada en `WHERE` con `BETWEEN`, permitirá al motor filtrar simultáneamente por volumen de visitas y umbral de recaudación acumulada, ofreciendo una métrica de fidelización compuesta altamente fidedigna para la toma de decisiones gerenciales.
 
 ```sql
 SELECT c.id, c.name, c.email, SUM(p.amount) AS TotalPeriodo,   
@@ -551,7 +551,7 @@ La más conocida es el siguiente caso:
 
 Teniendo en cuenta las tablas entre clientes y órdenes (`customers` y `orders`), muestre los clientes que no han realizado órdenes en una fecha o período determinado.
 
-**Narrativa:** En esta consulta realicé una búsqueda de los clientes que no registran órdenes de compra entre el 1 de septiembre de 2026 y el 10 de septiembre de 2026. Primero, en la subconsulta interna, examiné la tabla `orders` y utilicé `BETWEEN` para obtener el conjunto de `customer_id` de todos los clientes que compraron en ese período. Después, en la consulta externa principal, utilicé la cláusula `NOT IN` junto con `c.id` para excluir a todos los clientes que aparecen en los resultados de la subconsulta. De esta manera, el resultado muestra únicamente los clientes inactivos o sin consumo en dicha ventana temporal, lo cual es de gran valor para campañas de fidelización y reactivación en la cafetería TazaNorte.
+**Hipótesis:** En esta consulta realicé una búsqueda de los clientes que no registran órdenes de compra entre el 1 de septiembre de 2026 y el 10 de septiembre de 2026. Primero, en la subconsulta interna, examiné la tabla `orders` y utilicé `BETWEEN` para obtener el conjunto de `customer_id` de todos los clientes que compraron en ese período. Después, en la consulta externa principal, utilicé la cláusula `NOT IN` junto con `c.id` para excluir a todos los clientes que aparecen en los resultados de la subconsulta. De esta manera, el resultado muestra únicamente los clientes inactivos o sin consumo en dicha ventana temporal, lo cual es de gran valor para campañas de fidelización y reactivación en la cafetería TazaNorte.
 
 ```sql
 SELECT * 
@@ -569,7 +569,7 @@ WHERE c.id NOT IN (
 
 **Forma 2:**
 
-**Narrativa:** En esta segunda variante implementé la misma lógica de exclusión conjuntista pero empleando la técnica de combinación externa `LEFT JOIN` junto con `IS NULL`. Se vincula `customers` con `orders` aplicando el filtro de fechas directamente en la cláusula `ON`. Cuando un cliente no posee ninguna orden en ese intervalo, el motor rellena sus columnas asociadas con valores nulos, por lo que la condición `WHERE o.customer_id IS NULL` filtra con precisión quirúrgica a los clientes sin actividad. Esta estrategia suele ser significativamente más eficiente en motores de bases de datos que operan sobre grandes volúmenes de transacciones.
+**Hipótesis:** Se postula como hipótesis que la técnica de diferencia de conjuntos implementada mediante combinación externa `LEFT JOIN` con el predicado de nulidad `WHERE o.customer_id IS NULL` producirá un conjunto de resultados idéntico al de la subconsulta con `NOT IN`. Asimismo, desde la perspectiva de rendimiento interno en MySQL, el planificador optimizará la unión mediante índices evitando evaluaciones de conjuntos en subconsultas no correlacionadas, logrando la detección de clientes inactivos con máxima eficiencia operacional.
 
 ```sql
 SELECT c.* 
@@ -614,7 +614,7 @@ CALL sp_clientes_sin_ordenes_periodo('2026-09-01 00:00:00', '2026-09-10 23:59:59
 
 ### **Creacion triggers en la tabla products**
 
-**Narrativa :** Elegí esta tabla porque el catálogo de productos y sus precios (`price`, `sku`) representan el corazón comercial de la cafetería TazaNorte. No se puede permitir que nadie altere el precio de un producto, cambie su SKU o borre ítems sin que quede una bitácora forense exacta. Con un trigger `AFTER INSERT`, `AFTER UPDATE` y `AFTER DELETE`, la base de datos se encarga de auditar automáticamente cada cambio guardando en formato `JSON` el estado previo (`before_data`) y posterior (`after_data`), la fecha y el usuario responsable en `products_audit`. Además, mediante triggers `BEFORE UPDATE`, `BEFORE DELETE` y `BEFORE INSERT` sobre `products_audit`, se garantiza que la tabla de auditoría sea **completamente inmutable**, impidiendo cualquier intento de manipulación o borrado del historial.
+**Hipótesis:** El catálogo de productos y la fijación de precios (`price`, `sku`) constituyen el activo financiero más sensible del punto de venta en **TazaNorte**. Se postula la hipótesis de que un sistema de disparadores reactivos (`AFTER INSERT`, `AFTER UPDATE`, `AFTER DELETE`) que serialice instantáneas completas en formato estructurado `JSON` hacia una bitácora `products_audit` garantizará la no-repudiación y la trazabilidad forense de cada movimiento contable. Adicionalmente, se formula como hipótesis que la instalación de disparadores restrictivos `BEFORE UPDATE` y `BEFORE DELETE` sobre `products_audit` con invocación de `SIGNAL SQLSTATE '45000'` blindará de forma inviolable la tabla de auditoría, impidiendo cualquier intento interno o externo de manipular, alterar o suprimir la evidencia histórica.
 
 ```sql
 CREATE TABLE IF NOT EXISTS products_audit (
@@ -787,7 +787,7 @@ En la evidencia se observa cómo quedaron registradas en la tabla `products_audi
 
 ### **Creacion triggers en la tabla orders**
 
-**Narrativa:** Elegí esta tabla porque en `orders` se concentran los montos de facturación global (`total`), el canal de venta (`channel`) y el estado operativo (`status`) de cada servicio en mesa o delivery de TazaNorte. Alguien con acceso indebido podría anular órdenes ficticiamente para ocultar ventas o rebajar el total liquidado. Por ello, se implementó un esquema de auditoría reactivo que captura cada transición transaccional en `orders_audit` y protege el historial mediante bloqueos estrictos de inmutabilidad.
+**Hipótesis:** En la tabla `orders` convergen los ingresos brutos, los canales de atención y los estados de liquidación de la cafetería. Se plantea la hipótesis de que un usuario con privilegios elevados en la base de datos podría intentar anular pedidos fraudulentamente o alterar los totales cobrados para encubrir faltantes de inventario en caja. Para mitigar esta vulnerabilidad, se formula la hipótesis de que un esquema de auditoría automática complementado con validaciones de inmutabilidad estricta registrará toda mutación en `orders_audit` y abortará de inmediato cualquier modificación directa sobre órdenes consolidadas, manteniendo la integridad del libro contable.
 
 ```sql
 CREATE TABLE IF NOT EXISTS orders_audit (
@@ -939,7 +939,7 @@ Se validó que toda alteración sobre las órdenes de venta queda blindada y aud
 
 ### **Creacion triggers en la tabla payments**
 
-**Narrativa:** Elegí esta tabla porque es la más sensible a fraude de todo el sistema de la cafetería, ya que aquí se gestiona directamente el flujo monetario y los medios de pago (`method`, `amount`). Un usuario mal intencionado podría registrar un pago por un valor inferior, marcarlo como `active` sin haber ingresado el dinero en caja o alterar las fechas de liquidación para cuadrar turnos extemporáneamente. Los triggers desarrollados garantizan que cualquier evento de inserción, actualización o eliminación quede registrado en `payments_audit` con sus instantáneas JSON antes y después, y que nadie pueda editar o eliminar posteriormente dichos comprobantes de auditoría.
+**Hipótesis:** La entidad `payments` gestiona el flujo de caja real y los medios de pago físicos y electrónicos de **TazaNorte**, constituyendo el flanco más expuesto a fraude financiero y conciliación ficticia de arqueos. Se plantea como hipótesis que la implementación de disparadores a nivel de fila (`FOR EACH ROW`) registrará sin excepción cada ingreso monetario capturado, mientras que los triggers de inmutabilidad rechazarán con código de error fatal cualquier intento de alterar el importe o método de pago de un cobro ya efectuado, garantizando la irreversibilidad probatoria requerida por las normas contables y de auditoría.
 
 ```sql
 CREATE TABLE IF NOT EXISTS payments_audit (
@@ -1093,7 +1093,7 @@ La implementación de auditoría en la tabla `payments` garantiza la inviolabili
 
 ### 2.1 Mostrar algunos de los registros de la tabla customers
 
-**Narrativa:** Escogí esta consulta como punto de partida en PostgreSQL para verificar los registros de clientes y la representación del atributo booleano de actividad (`is_active`). Se seleccionan las columnas clave de identificación personal y tributaria.
+**Hipótesis:** En el motor PostgreSQL 17, el manejo de tipos de datos es fuertemente tipado en comparación con otros RDBMS. Se plantea como hipótesis que la proyección selectiva de atributos en `customers` validará la coherencia del tipo `BOOLEAN` nativo (`true`/`false`) para el estado de actividad del cliente, comprobando que la migración e importación de datos conservó la integridad de tipos y permitiendo visualizar los clientes autorizados para transaccionar en TazaNorte.
 
 ```sql
 SELECT name, document_type, document_number, is_active FROM customers;
@@ -1105,7 +1105,7 @@ SELECT name, document_type, document_number, is_active FROM customers;
 
 ### 2.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Narrativa:** Elegí esta consulta para practicar el ordenamiento descendente en PostgreSQL con `ORDER BY order_date DESC`, visualizando de forma prioritaria los consumos más recientes en cafetería.
+**Hipótesis:** Se postula como hipótesis que la ejecución de `ORDER BY order_date DESC` en PostgreSQL invocará el algoritmo de ordenamiento interno (quicksort o external merge sort según la memoria de trabajo `work_mem`), entregando el historial de órdenes ordenado rigurosamente desde la fecha más reciente, lo que facilitará la supervisión de la rotación de mesas y comandas sin afectar el rendimiento del plan de ejecución.
 
 ```sql
 SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
@@ -1117,7 +1117,7 @@ SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 
 ### 2.3 Consultas a múltiples tablas mediante WHERE
 
-**Narrativa:** En esta consulta relacioné las entidades `orders` y `customers` mediante una condición de igualdad en la cláusula `WHERE`, verificando que cada venta esté asociada correctamente al identificador de cliente.
+**Hipótesis:** Se plantea la hipótesis de que la vinculación relacional tradicional en la cláusula `WHERE` sobre PostgreSQL 17 ejecutará un operador `Hash Join` o `Merge Join` para enlazar la clave primaria `customers.id` con la foránea `orders.customer_id`, garantizando que ninguna orden válida quede excluida y verificando que el cruce de datos refleje con exactitud la titularidad de las compras en TazaNorte.
 
 ```sql
 SELECT c.name, o.id AS order_id, o.total, o.status 
@@ -1131,7 +1131,7 @@ WHERE c.id = o.customer_id;
 
 ### 2.4 Consultas a múltiples tablas mediante JOIN
 
-**Narrativa:** Elegí esta consulta para practicar la sintaxis estándar ANSI `INNER JOIN` en PostgreSQL, uniendo las tablas `customers` y `orders` con la cláusula `ON` para proyectar el correo del cliente y los valores de sus órdenes.
+**Hipótesis:** Se formula la hipótesis de que la instrucción estándar `INNER JOIN ... ON` en PostgreSQL optimizará la semántica de la consulta, permitiendo que el analizador de costos seleccione el árbol relacional más eficiente para unir las tablas de clientes y pedidos, proyectando la información de contacto y facturación con total coherencia y claridad formal.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -1145,7 +1145,7 @@ JOIN orders AS o ON (c.id = o.customer_id);
 
 ### 2.5 Condiciones en las Consultas o filtros en las Consultas
 
-**Narrativa:** En estas consultas se evalúan las órdenes según su estado operativo (`active` e `inactive`) en PostgreSQL, contrastando el uso de `WHERE` y `JOIN` para discriminar pedidos vigentes y cancelados.
+**Hipótesis:** Se plantea la hipótesis de que al incorporar filtros discriminatorios sobre el atributo `status` en PostgreSQL (`WHERE o.status = 'active'` y `WHERE o.status = 'inactive'`), el motor segmentará con precisión los pedidos completados frente a los cancelados, demostrando la consistencia de los predicados lógicos compuestos unidos por `AND` y validando la equivalencia funcional entre las formas de unión de tablas.
 
 **Filtro WHERE por órdenes con estado activo:**
 ```sql
@@ -1172,7 +1172,7 @@ WHERE o.status = 'inactive';
 
 ### 2.6 Consultas con filtros condicional LIKE
 
-**Narrativa:** Se aplican patrones de coincidencia de texto mediante `LIKE` en PostgreSQL para localizar clientes por la letra inicial del correo y por el dominio `@gmail`.
+**Hipótesis:** En PostgreSQL, la evaluación de expresiones de coincidencia de cadenas mediante el operador `LIKE` opera respetando estrictamente el cotejamiento y la distinción de mayúsculas y minúsculas. Se postula la hipótesis de que la búsqueda con comodines `%` (`email LIKE 'm%'` y `email LIKE '%@gmail.com'`) permitirá filtrar y recuperar con precisión a los usuarios registrados bajo dominios masivos, posibilitando campañas dirigidas para los clientes habituales de la cafetería.
 
 **Filtro por inicial de correo electrónico (`m%`):**
 ```sql
@@ -1210,7 +1210,7 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 
 ### 2.7 Consultas con filtros condicionales BETWEEN
 
-**Narrativa:** Consulta cronológica para auditar los pagos liquidados en septiembre de 2026 dentro de PostgreSQL, comparando la sintaxis `JOIN` con la sintaxis de producto cartesiano en `WHERE`.
+**Hipótesis:** La conciliación contable de TazaNorte en PostgreSQL exige verificar el recaudo financiero en intervalos específicos. Se postula la hipótesis de que el operador `BETWEEN` con marcas temporales `TIMESTAMP` evaluará de forma cerrada el intervalo comprendido entre el 1 y el 24 de septiembre de 2026, uniendo en cadena clientes, órdenes y pagos para auditar la correlación entre facturación y cobro en orden cronológico ascendente.
 
 **Forma 1 (con JOIN):**
 ```sql
@@ -1243,7 +1243,7 @@ ORDER BY pay.payment_date ASC;
 
 ### 2.8 Consultas con agrupamiento GROUP BY y HAVING
 
-**Narrativa:** En PostgreSQL se aplican funciones de agregación (`SUM`, `COUNT`, `AVG`) agrupando por cliente mediante `GROUP BY`, y restringiendo los grupos con `HAVING` para totalizar ingresos y clasificar perfiles de compra.
+**Hipótesis:** Se plantea como hipótesis que el motor PostgreSQL ejecutará un plan de agregación por tabla de dispersión (`HashAggregate`) al procesar `GROUP BY c.id, c.name`, calculando simultáneamente la sumatoria, cuenta y media de pagos por cliente. La posterior aplicación del filtro `HAVING SUM(pay.amount) >= 20000` permitirá aislar de forma automática a los clientes con mayor valor financiero acumulado.
 
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS total_suma, 
@@ -1263,7 +1263,7 @@ ORDER BY total_suma DESC;
 
 ### 2.9 Subconsultas y teoría de conjuntos
 
-**Narrativa:** En PostgreSQL se aplican operaciones de teoría de conjuntos para identificar clientes sin compras registradas dentro de una ventana temporal mediante `NOT IN` y `LEFT JOIN ... IS NULL`.
+**Hipótesis:** Se formula la hipótesis de que al ejecutar la sustracción de conjuntos para detectar clientes inactivos en PostgreSQL, tanto la subconsulta evaluada con `NOT IN` como la combinación externa `LEFT JOIN` filtrada con `WHERE o.customer_id IS NULL` arrojarán exactamente el mismo subconjunto de usuarios no compradores, corroborando la consistencia teórica del motor en operaciones de diferencia relacional.
 
 **Forma 1 (con NOT IN):**
 ```sql
@@ -1296,7 +1296,7 @@ WHERE o.customer_id IS NULL;
 
 ### 3.1 Mostrar algunos de los registros de la tabla customers
 
-**Narrativa:** En SQL Server (T-SQL) se proyectan los atributos de clientes utilizando el tipo de dato nativo `BIT` (`1` / `0`) para validar el estado de activación de cada registro.
+**Hipótesis:** En Microsoft SQL Server 2022 (T-SQL), los indicadores lógicos se representan físicamente mediante el tipo de datos entero compacto `BIT`. Se plantea como hipótesis que la consulta de proyección selectiva sobre `customers` recuperará limpiamente las columnas de identificación y exhibirá el estado del cliente en formato binario (`1` para activo, `0` para inactivo), validando la compatibilidad de esquemas entre motores relacionales para TazaNorte.
 
 ```sql
 SELECT name, document_type, document_number, is_active FROM customers;
@@ -1308,7 +1308,7 @@ SELECT name, document_type, document_number, is_active FROM customers;
 
 ### 3.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Narrativa:** Consulta cronológica descendente ejecutada en SQL Server para listar las órdenes de venta registradas, permitiendo auditar la secuencia transaccional.
+**Hipótesis:** Se postula la hipótesis de que la directiva `ORDER BY order_date DESC` en SQL Server utilizará un operador `Sort` en el plan de ejecución de T-SQL, estructurando las órdenes de venta desde la más reciente hasta la más antigua, garantizando una inspección cronológica rigurosa para la supervisión de comandas y arqueos diarios en la cafetería.
 
 ```sql
 SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
@@ -1320,7 +1320,7 @@ SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 
 ### 3.3 Consultas a múltiples tablas mediante WHERE
 
-**Narrativa:** Enlace relacional tradicional entre órdenes y clientes mediante la cláusula `WHERE`, verificando la asociación de clave foránea `customer_id`.
+**Hipótesis:** Se plantea la hipótesis de que al enlazar las entidades `orders` y `customers` mediante igualdad en `WHERE c.id = o.customer_id`, el optimizador de SQL Server creará un plan de ejecución relacional que evitará lecturas desordenadas y acoplará de forma estricta cada orden con su cliente correspondiente, comprobando la integridad referencial del modelo.
 
 ```sql
 SELECT c.name, o.id AS order_id, o.total, o.status 
@@ -1334,7 +1334,7 @@ WHERE c.id = o.customer_id;
 
 ### 3.4 Consultas a múltiples tablas mediante JOIN
 
-**Narrativa:** Consulta que emplea la instrucción `INNER JOIN` en SQL Server para acoplar la información descriptiva del cliente con cada pedido efectuado.
+**Hipótesis:** Se formula como hipótesis que la cláusula `INNER JOIN ... ON` en SQL Server representará de forma declarativa y normalizada la relación entre clientes y pedidos, permitiendo al optimizador basado en costos (Cost-Based Optimizer) generar un plan de acceso eficiente y devolviendo un conjunto de datos perfectamente homologado con los demás motores relacionales del proyecto.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -1348,7 +1348,7 @@ JOIN orders AS o ON (c.id = o.customer_id);
 
 ### 3.5 Condiciones en las Consultas o filtros en las Consultas
 
-**Narrativa:** Aplicación de filtros lógicos sobre el atributo `status` en SQL Server para discriminar órdenes activas e inactivas.
+**Hipótesis:** Se plantea la hipótesis de que la utilización de operadores booleanos en T-SQL (`AND o.status = 'active'` y `WHERE o.status = 'inactive'`) discriminará eficientemente los pedidos completados de los anulados, demostrando la capacidad del motor de aplicar predicados relacionales compuestos tanto sobre combinaciones implícitas como sobre sentencias `JOIN`.
 
 **Filtro WHERE por pedidos con status activo:**
 ```sql
@@ -1375,7 +1375,7 @@ WHERE o.status = 'inactive';
 
 ### 3.6 Consultas con filtros condicional LIKE
 
-**Narrativa:** Búsquedas por coincidencia de texto mediante `LIKE` en SQL Server, evaluando coincidencias por inicial y cuentas bajo el dominio `@gmail`.
+**Hipótesis:** Se postula la hipótesis de que el operador de coincidencia de patrones `LIKE` en SQL Server evaluará eficazmente los comodines `%`, aislando con rapidez a los clientes cuyos correos electrónicos comienzan con una inicial determinada o pertenecen a un proveedor específico, facilitando la extracción de listas de contacto para la operación de TazaNorte.
 
 **Filtro LIKE por letra inicial (`m%`):**
 ```sql
@@ -1413,7 +1413,7 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 
 ### 3.7 Consultas con filtros condicionales BETWEEN
 
-**Narrativa:** En SQL Server el modelo vincula los pagos directamente mediante la clave foránea `order_id`, ejecutando el filtrado temporal por `payment_date`.
+**Hipótesis:** La auditoría temporal en SQL Server permite validar los ingresos acumulados en un corte mensual. Se formula la hipótesis de que al vincular `customers`, `orders` y `payments` y acotar la fecha con `BETWEEN '2026-09-01' AND '2026-09-24'`, el motor recuperará los cobros del intervalo en estricto orden cronológico ascendente, certificando la trazabilidad de los pagos en barra.
 
 **Forma 1 (con JOIN):**
 ```sql
@@ -1445,7 +1445,7 @@ ORDER BY pay.payment_date ASC;
 
 ### 3.8 Consultas con agrupamiento GROUP BY y HAVING
 
-**Narrativa:** Resumen financiero por cliente en T-SQL aplicando funciones de agregación para determinar qué clientes acumulan facturaciones superiores a un umbral mediante `HAVING`.
+**Hipótesis:** Se plantea como hipótesis que el motor de SQL Server agrupará eficientemente los pagos por cliente mediante `GROUP BY c.id, c.name` y aplicará las métricas `SUM`, `COUNT` y `AVG`. La inclusión de la condición restrictiva `HAVING SUM(pay.amount) >= 20000` filtrará en una segunda fase del procesamiento a los comensales cuyo consumo supere el umbral establecido, entregando un reporte financiero consolidado.
 
 ```sql
 SELECT c.id, c.name, SUM(pay.amount) AS TotalSuma, 
@@ -1466,7 +1466,7 @@ ORDER BY TotalSuma DESC;
 
 ### 3.9 Subconsultas y teoría de conjuntos
 
-**Narrativa:** Implementación de subconsultas con `NOT IN` y `LEFT JOIN` en SQL Server para aislar a los clientes que no registraron consumo en el período establecido.
+**Hipótesis:** Se postula la hipótesis de que tanto la subconsulta de exclusión con `NOT IN` como la combinación externa `LEFT JOIN` condicionada a nulidad en SQL Server identificarán de manera coincidente al grupo de clientes que no registraron compras en el lapso evaluado, demostrando la solidez y consistencia del álgebra conjuntista en T-SQL.
 
 ```sql
 SELECT * 
@@ -1488,7 +1488,7 @@ WHERE c.id NOT IN (
 
 ### 4.1 Mostrar algunos de los registros de la tabla customers
 
-**Narrativa:** En Oracle Database 21c XE el esquema almacena los nombres descompuestos en `FIRST_NAME` y `LAST_NAME`, por lo que se utiliza el operador de concatenación ANSI `||` para unificar la proyección del nombre completo.
+**Hipótesis:** En Oracle Database 21c XE, el esquema transaccional de TazaNorte almacena los nombres de clientes desglosados en columnas atómicas `first_name` y `last_name`. Se formula como hipótesis que el uso del operador estándar de concatenación de cadenas `||` unirá dinámicamente ambos campos en una única columna calculada `name`, validando que la normalización atómica de atributos no perjudica la legibilidad ni la presentación ejecutiva de los datos en DBeaver.
 
 ```sql
 SELECT code, first_name || ' ' || last_name AS name, email, status FROM tazanorte.customers;
@@ -1500,7 +1500,7 @@ SELECT code, first_name || ' ' || last_name AS name, email, status FROM tazanort
 
 ### 4.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Narrativa:** Ordenamiento descendente en Oracle sobre la tabla `orders` del esquema `tazanorte` para listar los pedidos cronológicamente desde el más reciente.
+**Hipótesis:** Se plantea la hipótesis de que la cláusula `ORDER BY order_date DESC` ejecutada sobre el esquema de Oracle organizará el histórico de transacciones de mayor a menor antigüedad cronológica, demostrando que el optimizador de Oracle gestiona de forma transparente el tipo de dato nativo `TIMESTAMP` para satisfacer los requerimientos de auditoría de la cafetería.
 
 ```sql
 SELECT id, order_date, total, status FROM tazanorte.orders ORDER BY order_date DESC;
@@ -1512,7 +1512,7 @@ SELECT id, order_date, total, status FROM tazanorte.orders ORDER BY order_date D
 
 ### 4.3 Consultas a múltiples tablas mediante WHERE
 
-**Narrativa:** Enlace relacional entre `orders` y `customers` mediante condición de igualdad en la cláusula `WHERE` sobre el esquema Oracle.
+**Hipótesis:** Se postula como hipótesis que la combinación de `orders` y `customers` mediante igualdad en `WHERE c.id = o.customer_id` en Oracle forzará al optimizador a construir un plan de unión relacional robusto, emparejando inequívocamente a cada comensal con el código y monto de su orden de compra sin tolerar anomalías de datos.
 
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.total, o.status 
@@ -1526,7 +1526,7 @@ WHERE c.id = o.customer_id;
 
 ### 4.4 Consultas a múltiples tablas mediante JOIN
 
-**Narrativa:** Consulta formal basada en `JOIN` con cláusula `ON` para vincular clientes y órdenes en Oracle Database.
+**Hipótesis:** Se plantea como hipótesis que la instrucción `INNER JOIN ... ON` en Oracle Database 21c XE representará la relación estructural formal entre las dos entidades, permitiendo proyectar el nombre completo concatenado y los detalles de facturación de manera estandarizada y equivalente al producto cartesiano filtrado en `WHERE`.
 
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -1540,7 +1540,7 @@ JOIN tazanorte.orders o ON (c.id = o.customer_id);
 
 ### 4.5 Condiciones en las Consultas o filtros en las Consultas
 
-**Narrativa:** Filtrado de órdenes por su estado operativo (`active` e `inactive`) en Oracle Database, validando la consistencia entre `JOIN` y `WHERE`.
+**Hipótesis:** Se formula la hipótesis de que al incorporar condiciones de estado sobre las órdenes (`AND o.status = 'active'` y `WHERE o.status = 'inactive'`) en Oracle, el motor segmentará con exactitud las ventas activas de las canceladas, demostrando la vigencia de los predicados lógicos compuestos en el motor corporativo de Oracle.
 
 **Filtro WHERE por pedidos con status activo:**
 ```sql
@@ -1567,7 +1567,7 @@ WHERE o.status = 'inactive';
 
 ### 4.6 Consultas con filtros condicional LIKE
 
-**Narrativa:** Uso del operador `LIKE` en Oracle con concatenación de caracteres comodín `%` mediante el operador `||`.
+**Hipótesis:** En Oracle Database, la concordancia de cadenas mediante `LIKE` combinada con concatenación de comodines (`LIKE 'm%'` y `LIKE '%@gmail.com'`) evaluará de manera óptima las columnas alfanuméricas de correo, abstrayendo patrones textuales para identificar segmentos específicos de clientes en la base de datos de TazaNorte.
 
 **Filtro LIKE inicial (`m%`):**
 ```sql
@@ -1605,7 +1605,7 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 
 ### 4.7 Consultas con filtros condicionales BETWEEN
 
-**Narrativa:** En Oracle se emplean literales de tipo `TIMESTAMP` para garantizar precisión estricta en el filtrado temporal de pagos por fecha.
+**Hipótesis:** Dado que Oracle Database exige rigor extremo en el formateo de fechas y horas, se plantea como hipótesis que el uso explícito de literales `TIMESTAMP '2026-09-01 00:00:00'` en combinación con el operador `BETWEEN` evitará ambigüedades de conversión de caracteres a fecha, acotando el conjunto de pagos percibidos en septiembre de 2026 con total exactitud de microsegundos.
 
 **Forma 1 (con JOIN):**
 ```sql
@@ -1637,7 +1637,7 @@ ORDER BY pay.payment_date ASC;
 
 ### 4.8 Consultas con agrupamiento GROUP BY y HAVING
 
-**Narrativa:** Resumen analítico de facturación por cliente en Oracle Database 21c XE empleando agregaciones `SUM`, `COUNT` y `AVG` con restricción pos-agrupamiento `HAVING`.
+**Hipótesis:** Se postula como hipótesis que al agrupar por `GROUP BY c.id, c.first_name, c.last_name` en Oracle y aplicar las métricas `SUM`, `COUNT` y `AVG`, el motor generará un resumen financiero consolidado por cliente, y que la cláusula `HAVING SUM(pay.amount) >= 20000` restringirá el conjunto únicamente a aquellos usuarios cuyo consumo total supere el umbral establecido.
 
 ```sql
 SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
@@ -1659,7 +1659,7 @@ ORDER BY total_suma DESC;
 
 ### 4.9 Subconsultas y teoría de conjuntos
 
-**Narrativa:** Teoría de conjuntos en Oracle Database con sintaxis `NOT IN` y conversión de fechas para filtrar clientes sin actividad comercial registrada.
+**Hipótesis:** Se formula la hipótesis de que la exclusión conjuntista mediante `NOT IN` con subconsulta anidada sobre órdenes de compra en Oracle Database sustraerá de forma confiable a los clientes con actividad en el rango indicado, aislando a aquellos usuarios registrados que no registraron consumos en el período analizado.
 
 ```sql
 SELECT * 
