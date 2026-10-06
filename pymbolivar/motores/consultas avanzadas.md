@@ -1593,6 +1593,101 @@ SELECT * FROM sp_clientes_sin_ordenes();
 
 **Resultado:** la ejecución de `sp_clientes_sin_ordenes()` validó la subconsulta anidada con `NOT IN`, entregando el registro de clientes inactivos o sin pedidos en la base de datos de TazaNorte.
 
+---
+
+### **Sistema de Triggers de Auditoría y Trazabilidad Transaccional en PostgreSQL**
+
+**Hipótesis:** En la arquitectura empresarial de **TazaNorte**, el catálogo de productos y las ventas exigen trazabilidad forense estricta y cumplimiento del principio contable de no-repudiación. Se formula como hipótesis que la implementación de un sistema de disparadores reactivos basados en funciones PL/pgSQL unificadas (`fn_auditoria_unificada`), acoplado a la capacidad nativa de PostgreSQL para serializar tuplas en formato `JSONB`, permitirá capturar snapshots integrales de cualquier mutación de datos (`INSERT`, `UPDATE`, `DELETE`) en una bitácora centralizada `audit_log_general`. Asimismo, se postula que la fijación de disparadores de intercepción previa `BEFORE UPDATE OR DELETE` con emisión de excepciones controladas (`RAISE EXCEPTION`) garantizará la inmutabilidad absoluta del historial, neutralizando cualquier intento de alteración o borrado de registros probatorios.
+
+#### 1. Creación de la Tabla de Auditoría y Disparadores
+
+```sql
+-- Creación de la tabla de auditoría y triggers de inmutabilidad
+CREATE TABLE IF NOT EXISTS audit_log_general (
+    id BIGSERIAL PRIMARY KEY,
+    tabla_afectada VARCHAR(50) NOT NULL,
+    registro_id BIGINT NOT NULL,
+    accion VARCHAR(20) NOT NULL,
+    fecha_cambio TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    datos_json JSONB
+);
+
+-- Triggers de auditoría unificada
+CREATE OR REPLACE FUNCTION fn_auditoria_unificada() RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES (TG_TABLE_NAME, NEW.id, 'INSERT', to_jsonb(NEW));
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES (TG_TABLE_NAME, NEW.id, 'UPDATE', jsonb_build_object('antes', to_jsonb(OLD), 'despues', to_jsonb(NEW)));
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES (TG_TABLE_NAME, OLD.id, 'DELETE', to_jsonb(OLD));
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Asociación a tablas principales
+DROP TRIGGER IF EXISTS trg_audit_products ON products;
+CREATE TRIGGER trg_audit_products AFTER INSERT OR UPDATE OR DELETE ON products FOR EACH ROW EXECUTE FUNCTION fn_auditoria_unificada();
+
+-- Blindaje e Inmutabilidad estricta
+CREATE OR REPLACE FUNCTION fn_bloqueo_auditoria() RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Operación denegada: La tabla de auditoría es estrictamente inmutable.';
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_bloqueo_auditoria ON audit_log_general;
+CREATE TRIGGER trg_bloqueo_auditoria BEFORE UPDATE OR DELETE ON audit_log_general FOR EACH ROW EXECUTE FUNCTION fn_bloqueo_auditoria();
+```
+
+![](images/postgres_trigger_creacion.png)
+
+**Resultado:** el script compiló exitosamente en PostgreSQL 17 la tabla `audit_log_general`, la función de captura `fn_auditoria_unificada`, el trigger multiplexado `trg_audit_products` y la rutina de blindaje e inmutabilidad estricta.
+
+#### 2. Prueba Transaccional de Trazabilidad Forense (INSERT, UPDATE y DELETE)
+
+```sql
+-- 1. Insertar producto de prueba
+INSERT INTO products (sku, name, price, is_active) 
+VALUES ('PROD-PRUEBA', 'Café Geisha TazaNorte', 25000, true);
+
+-- 2. Modificar producto
+UPDATE products SET price = 28000 WHERE sku = 'PROD-PRUEBA';
+
+-- 3. Eliminar producto
+DELETE FROM products WHERE sku = 'PROD-PRUEBA';
+
+-- 4. Ver bitácora completa con todo el historial JSON
+SELECT id, tabla_afectada, registro_id, accion, fecha_cambio, datos_json 
+FROM audit_log_general 
+ORDER BY id ASC;
+```
+
+![](images/postgres_trigger_test_trazabilidad.png)
+
+**Resultado:** la ejecución secuencial de operaciones DML en PostgreSQL activó reactivamente los triggers, persistiendo en `audit_log_general` los tres estados transaccionales con sus snapshots estructurados en formato JSONB.
+
+#### 3. Prueba de Blindaje e Inmutabilidad Estricta (Bloqueo de Modificación)
+
+```sql
+-- Intento no autorizado de alterar la auditoría
+UPDATE audit_log_general SET accion = 'MODIFICADO' WHERE id = 1;
+```
+
+![](images/postgres_trigger_test_inmutabilidad.png)
+
+**Resultado:** el intento de actualización en la tabla de auditoría fue interceptado de inmediato por el trigger `trg_bloqueo_auditoria`, cancelando la transacción y disparando la excepción controlada de inmutabilidad estricta (`Operación denegada: La tabla de auditoría es estrictamente inmutable`).
+
+
+---
 
 ## 3. Consultas avanzadas en Microsoft SQL Server :
 
