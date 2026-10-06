@@ -1608,6 +1608,34 @@ SELECT name, document_type, document_number, is_active FROM customers;
 
 **Resultado:** la consulta proyectó los campos de clientes en SQL Server 2022 (`name`, `document_type`, `document_number`, `status`), validando la integridad del catálogo en T-SQL.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_get_customers
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT name, document_type, document_number, is_active FROM customers;
+END;
+GO
+```
+
+![](images/mssql_3_1_procedure_create.png)
+
+**Resultado:** el procedimiento almacenado `sp_get_customers` fue creado y compilado exitosamente en Microsoft SQL Server 2022 dentro de la base de datos `tazanorte`, encapsulando la proyección de atributos de clientes.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_get_customers;
+```
+
+![](images/mssql_3_1_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_get_customers;` invocó el procedimiento en SQL Server, retornando en la grilla de resultados el catálogo completo de clientes con sus campos de documento y estado activo.
+
 ### 3.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
 **Hipótesis:** Se postula la hipótesis de que la directiva `ORDER BY order_date DESC` en SQL Server utilizará un operador `Sort` en el plan de ejecución de T-SQL, estructurando las órdenes de venta desde la más reciente hasta la más antigua, garantizando una inspección cronológica rigurosa para la supervisión de comandas y arqueos diarios en la cafetería.
@@ -1619,6 +1647,34 @@ SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
 ![](images/mssql_1_2_order_by.png)
 
 **Resultado:** la consulta ordenó las órdenes descendentemente por fecha (`ORDER BY order_date DESC`) en SQL Server.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_get_orders_desc
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
+END;
+GO
+```
+
+![](images/mssql_3_2_procedure_create.png)
+
+**Resultado:** el procedimiento `sp_get_orders_desc` fue registrado en el catálogo de procedimientos almacenados de SQL Server, encapsulando la consulta de comandas ordenadas cronológicamente de forma descendente.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_get_orders_desc;
+```
+
+![](images/mssql_3_2_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_get_orders_desc;` devolvió el historial de órdenes de venta ordenadas desde la más reciente hasta la más antigua en DBeaver.
 
 ### 3.3 Consultas a múltiples tablas mediante WHERE
 
@@ -1634,6 +1690,36 @@ WHERE c.id = o.customer_id;
 
 **Resultado:** la consulta vinculó clientes y pedidos mediante condición de igualdad en `WHERE c.id = o.customer_id` en SQL Server.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_get_orders_customers_where
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT c.name, o.id AS order_id, o.total, o.status
+    FROM orders o, customers c
+    WHERE o.customer_id = c.id;
+END;
+GO
+```
+
+![](images/mssql_3_3_procedure_create.png)
+
+**Resultado:** la rutina almacenada `sp_get_orders_customers_where` fue compilada exitosamente en T-SQL, gestionando la asociación implícita entre órdenes y clientes mediante la cláusula WHERE.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_get_orders_customers_where;
+```
+
+![](images/mssql_3_3_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_get_orders_customers_where;` proyectó satisfactoriamente las comandas enlazadas a los clientes respectivos en la interfaz de DBeaver.
+
 ### 3.4 Consultas a múltiples tablas mediante JOIN
 
 **Hipótesis:** Se formula como hipótesis que la cláusula `INNER JOIN ... ON` en SQL Server representará de forma declarativa y normalizada la relación entre clientes y pedidos, permitiendo al optimizador basado en costos (Cost-Based Optimizer) generar un plan de acceso eficiente y devolviendo un conjunto de datos perfectamente homologado con los demás motores relacionales del proyecto.
@@ -1647,6 +1733,36 @@ JOIN orders AS o ON (c.id = o.customer_id);
 ![](images/mssql_1_4_multitabla_join.png)
 
 **Resultado:** la consulta combinó `customers` y `orders` mediante la cláusula estándar `JOIN ... ON` en SQL Server.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_get_orders_customers_join
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status
+    FROM orders o
+    INNER JOIN customers c ON o.customer_id = c.id;
+END;
+GO
+```
+
+![](images/mssql_3_4_procedure_create.png)
+
+**Resultado:** el procedimiento almacenado `sp_get_orders_customers_join` fue validado en SQL Server, normalizando la combinación explícita mediante la sintaxis estándar INNER JOIN.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_get_orders_customers_join;
+```
+
+![](images/mssql_3_4_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_get_orders_customers_join;` retornó los pedidos junto con los datos de contacto del cliente en SQL Server.
 
 ### 3.5 Condiciones en las Consultas o filtros en las Consultas
 
@@ -1674,6 +1790,38 @@ WHERE o.status = 'inactive';
 ![](images/mssql_1_5_condiciones_join_inactive.png)
 
 **Resultado:** la consulta proyectó las órdenes canceladas o inactivas mediante `JOIN` y filtro `WHERE o.status = 'inactive'`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_get_orders_by_status
+    @status VARCHAR(50) = 'active'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT c.name, o.id AS order_id, o.order_date, o.total, o.status
+    FROM orders o
+    INNER JOIN customers c ON o.customer_id = c.id
+    WHERE o.status = @status;
+END;
+GO
+```
+
+![](images/mssql_3_5_procedure_create.png)
+
+**Resultado:** el procedimiento parametrizado `sp_get_orders_by_status` fue compilado en SQL Server, admitiendo el filtro dinámico por estado de la orden mediante el parámetro `@status`.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_get_orders_by_status 'active';
+```
+
+![](images/mssql_3_5_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_get_orders_by_status 'active';` filtró y proyectó en la grilla exclusivamente las comandas con estado activo.
 
 ### 3.6 Consultas con filtros condicional LIKE
 
@@ -1713,6 +1861,35 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 
 **Resultado:** la consulta combinó los filtros de inicial y dominio mediante `AND` en SQL Server.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_get_customers_like_email
+    @pattern VARCHAR(100) = '%@gmail.com'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT name, email, is_active FROM customers WHERE email LIKE @pattern;
+END;
+GO
+```
+
+![](images/mssql_3_6_procedure_create.png)
+
+**Resultado:** la rutina `sp_get_customers_like_email` fue registrada en SQL Server, permitiendo la búsqueda y coincidencia de patrones en cadenas de texto mediante el operador LIKE.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_get_customers_like_email '%@gmail.com';
+```
+
+![](images/mssql_3_6_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_get_customers_like_email '%@gmail.com';` devolvió en DBeaver los clientes registrados con cuentas de correo de Gmail.
+
 ### 3.7 Consultas con filtros condicionales BETWEEN
 
 **Hipótesis:** La auditoría temporal en SQL Server permite validar los ingresos acumulados en un corte mensual. Se formula la hipótesis de que al vincular `customers`, `orders` y `payments` y acotar la fecha con `BETWEEN '2026-09-01' AND '2026-09-24'`, el motor recuperará los cobros del intervalo en estricto orden cronológico ascendente, certificando la trazabilidad de los pagos en barra.
@@ -1744,6 +1921,40 @@ ORDER BY pay.payment_date ASC;
 ![](images/mssql_1_7_between_where.png)
 
 **Resultado:** la consulta arrojó el mismo histórico de pagos en SQL Server empleando el predicado relacional en `WHERE`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_get_payments_between
+    @start DATETIME2 = '2026-09-01',
+    @end DATETIME2 = '2026-09-30 23:59:59'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT c.name, c.email, o.order_date, o.status, p.payment_date, p.amount, p.payment_method
+    FROM payments p
+    INNER JOIN orders o ON p.order_id = o.id
+    INNER JOIN customers c ON o.customer_id = c.id
+    WHERE p.payment_date BETWEEN @start AND @end;
+END;
+GO
+```
+
+![](images/mssql_3_7_procedure_create.png)
+
+**Resultado:** el procedimiento almacenado `sp_get_payments_between` fue compilado en T-SQL, encapsulando la auditoría de cobros dentro de una ventana temporal delimitada por el predicado BETWEEN.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_get_payments_between '2026-09-01 00:00:00', '2026-09-30 23:59:59';
+```
+
+![](images/mssql_3_7_procedure_result.png)
+
+**Resultado:** la llamada `EXEC sp_get_payments_between '2026-09-01 00:00:00', '2026-09-30 23:59:59';` generó la relación de pagos de septiembre de 2026 en SQL Server.
 
 ### 3.8 Consultas con agrupamiento GROUP BY y HAVING
 
@@ -1838,6 +2049,47 @@ ORDER BY TotalPeriodo DESC;
 
 **Resultado:** la consulta en SQL Server filtró a los clientes con 1 o más visitas cuyo importe acumulado superó los 15.000 COP, proyectando su correo de contacto y monto facturado.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_resumen_pagos_group_by
+    @min_monto DECIMAL(12,2) = 20000
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT 
+        c.id,
+        c.name,
+        SUM(p.amount) AS total_suma,
+        COUNT(p.id) AS total_pagos,
+        ROUND(AVG(p.amount), 2) AS promedio_pago
+    FROM customers c
+    INNER JOIN orders o ON o.customer_id = c.id
+    INNER JOIN payments p ON p.order_id = o.id
+    WHERE p.payment_date >= '2026-09-01'
+    GROUP BY c.id, c.name
+    HAVING SUM(p.amount) >= @min_monto
+    ORDER BY total_suma DESC;
+END;
+GO
+```
+
+![](images/mssql_3_8_procedure_create.png)
+
+**Resultado:** el procedimiento de analítica agregada `sp_resumen_pagos_group_by` fue creado en SQL Server, consolidando funciones agregadas (SUM, COUNT, AVG) y evaluación de umbral mínimo mediante HAVING.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_resumen_pagos_group_by 20000;
+```
+
+![](images/mssql_3_8_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_resumen_pagos_group_by 20000;` en DBeaver agrupó el gasto por comensal y filtró a aquellos con consumos superiores o iguales a 20.000 COP en SQL Server.
+
 ### 3.9 Subconsultas y teoría de conjuntos
 
 **Forma 1 (subconsulta con NOT IN):**
@@ -1873,6 +2125,36 @@ WHERE o.customer_id IS NULL;
 ![](images/mssql_3_9_subconsulta_leftjoin.png)
 
 **Resultado:** la consulta con `LEFT JOIN ... WHERE o.customer_id IS NULL` en SQL Server confirmó la equivalencia de teoría de conjuntos, arrojando los clientes sin actividad en el intervalo establecido.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR ALTER PROCEDURE sp_clientes_sin_ordenes
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id, name, document_type, document_number, email
+    FROM customers
+    WHERE id NOT IN (SELECT DISTINCT customer_id FROM orders WHERE customer_id IS NOT NULL);
+END;
+GO
+```
+
+![](images/mssql_3_9_procedure_create.png)
+
+**Resultado:** la rutina `sp_clientes_sin_ordenes` fue registrada en SQL Server para resolver la exclusión conjuntista de clientes sin comandas registradas.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+USE tazanorte;
+EXEC sp_clientes_sin_ordenes;
+```
+
+![](images/mssql_3_9_procedure_result.png)
+
+**Resultado:** la ejecución `EXEC sp_clientes_sin_ordenes;` confirmó la correcta evaluación de la subconsulta anidada con `NOT IN` en SQL Server 2022.
 
 ---
 
