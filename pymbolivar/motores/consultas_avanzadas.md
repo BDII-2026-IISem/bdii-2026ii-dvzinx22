@@ -2924,6 +2924,154 @@ END;
 
 ---
 
+### **Sistema de Triggers de Auditoría y Trazabilidad Transaccional en Oracle Database**
+
+**Hipótesis:** En la arquitectura de datos corporativa de **TazaNorte**, las entidades de productos (`products`), órdenes comerciales (`orders`) y recaudos financieros (`payments`) concentran el núcleo transaccional crítico del negocio y demandan un mecanismo automatizado e incorruptible de supervisión forense. Se postula la hipótesis de que un conjunto de disparadores reactivos a nivel de fila (`AFTER INSERT OR UPDATE OR DELETE FOR EACH ROW`) desarrollados en PL/SQL permitirá capturar y serializar instantáneas atómicas de datos en formato JSON mediante los pseudo-registros relacionales `:NEW` y `:OLD` hacia una bitácora centralizada `audit_log_general`. Asimismo, se formula como hipótesis que la implementación de un disparador preventivo (`BEFORE UPDATE OR DELETE`) con invocación de la excepción de usuario `RAISE_APPLICATION_ERROR(-20001, ...)` garantizará la inmutabilidad estricta y blindaje forense de la bitácora, abortando de manera inmediata e irrevocable cualquier intento de alteración o depuración no autorizada de la trazabilidad corporativa en Oracle Database 21c XE.
+
+#### 1. Creación de la Tabla Centralizada de Auditoría y Disparadores en Oracle
+
+```sql
+-- 1. Tabla centralizada de auditoría
+CREATE TABLE tazanorte.audit_log_general (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    tabla_afectada VARCHAR2(50) NOT NULL,
+    registro_id NUMBER NOT NULL,
+    accion VARCHAR2(20) NOT NULL,
+    fecha_cambio TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+    datos_json CLOB
+);
+
+-- 2. Trigger de auditoría en PRODUCTS
+CREATE OR REPLACE TRIGGER tazanorte.trg_audit_products
+AFTER INSERT OR UPDATE OR DELETE ON tazanorte.products
+FOR EACH ROW
+BEGIN
+    IF INSERTING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('products', :NEW.id, 'INSERT', 
+                '{"id":' || :NEW.id || ',"sku":"' || :NEW.sku || '","name":"' || :NEW.name || '","price":' || :NEW.price || ',"status":"' || :NEW.status || '"}');
+    ELSIF UPDATING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('products', :NEW.id, 'UPDATE', 
+                '{"antes":{"price":' || :OLD.price || '},"despues":{"price":' || :NEW.price || '}}');
+    ELSIF DELETING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('products', :OLD.id, 'DELETE', 
+                '{"id":' || :OLD.id || ',"sku":"' || :OLD.sku || '"}');
+    END IF;
+END;
+/
+
+-- 3. Trigger de auditoría en ORDERS
+CREATE OR REPLACE TRIGGER tazanorte.trg_audit_orders
+AFTER INSERT OR UPDATE OR DELETE ON tazanorte.orders
+FOR EACH ROW
+BEGIN
+    IF INSERTING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('orders', :NEW.id, 'INSERT', 
+                '{"id":' || :NEW.id || ',"customer_id":' || :NEW.customer_id || ',"total":' || :NEW.total || ',"status":"' || :NEW.status || '"}');
+    ELSIF UPDATING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('orders', :NEW.id, 'UPDATE', 
+                '{"antes":{"status":"' || :OLD.status || '"},"despues":{"status":"' || :NEW.status || '"}}');
+    ELSIF DELETING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('orders', :OLD.id, 'DELETE', 
+                '{"id":' || :OLD.id || '}');
+    END IF;
+END;
+/
+
+-- 4. Trigger de auditoría en PAYMENTS
+CREATE OR REPLACE TRIGGER tazanorte.trg_audit_payments
+AFTER INSERT OR UPDATE OR DELETE ON tazanorte.payments
+FOR EACH ROW
+BEGIN
+    IF INSERTING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('payments', :NEW.id, 'INSERT', 
+                '{"id":' || :NEW.id || ',"order_id":' || :NEW.order_id || ',"amount":' || :NEW.amount || ',"status":"' || :NEW.status || '"}');
+    ELSIF UPDATING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('payments', :NEW.id, 'UPDATE', 
+                '{"antes":{"status":"' || :OLD.status || '"},"despues":{"status":"' || :NEW.status || '"}}');
+    ELSIF DELETING THEN
+        INSERT INTO tazanorte.audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        VALUES ('payments', :OLD.id, 'DELETE', 
+                '{"id":' || :OLD.id || '}');
+    END IF;
+END;
+/
+
+-- 5. Trigger de inmutabilidad estricta en AUDIT_LOG_GENERAL
+CREATE OR REPLACE TRIGGER tazanorte.trg_bloqueo_auditoria
+BEFORE UPDATE OR DELETE ON tazanorte.audit_log_general
+FOR EACH ROW
+BEGIN
+    RAISE_APPLICATION_ERROR(-20001, 'Operación denegada: La tabla de auditoría en Oracle es estrictamente inmutable.');
+END;
+/
+```
+
+![](images/oracle_trigger_creacion.png)
+
+**Resultado:** el motor PL/SQL de Oracle Database 21c XE compiló satisfactoriamente la tabla estructurada `audit_log_general`, los tres disparadores de auditoría granular para `products`, `orders` y `payments`, y el disparador de salvaguarda de inmutabilidad.
+
+#### 2. Prueba Transaccional Integral de Trazabilidad (products, orders y payments)
+
+```sql
+-- 1. Insertar producto
+INSERT INTO tazanorte.products (sku, name, description, price, status, created_at, updated_at)
+VALUES ('SKU-ORA-AUDIT', 'Café Especial Huila Oracle', 'Origen Huila Tueste Medio', 45000.00, 'active', SYSTIMESTAMP, SYSTIMESTAMP);
+
+-- 2. Modificar producto
+UPDATE tazanorte.products 
+SET price = 49900.00, updated_at = SYSTIMESTAMP
+WHERE sku = 'SKU-ORA-AUDIT';
+
+-- 3. Crear orden
+INSERT INTO tazanorte.orders (customer_id, cash_shift_id, channel, order_date, subtotal, total, status, created_at, updated_at)
+VALUES (1, 1, 'POS', TRUNC(SYSDATE), 49900.00, 49900.00, 'completed', SYSTIMESTAMP, SYSTIMESTAMP);
+
+-- 4. Registrar pago
+INSERT INTO tazanorte.payments (order_id, payment_method, amount, payment_date, status, created_at, updated_at)
+VALUES (1, 'TARJETA_CREDITO', 49900.00, SYSTIMESTAMP, 'completed', SYSTIMESTAMP, SYSTIMESTAMP);
+
+-- 5. Eliminar producto
+DELETE FROM tazanorte.products 
+WHERE sku = 'SKU-ORA-AUDIT';
+
+COMMIT;
+
+-- Consultar la trazabilidad capturada
+SELECT id, tabla_afectada, registro_id, accion, 
+       TO_CHAR(fecha_cambio, 'YYYY-MM-DD HH24:MI:SS') AS fecha, 
+       datos_json
+FROM tazanorte.audit_log_general
+ORDER BY id ASC;
+```
+
+![](images/oracle_trigger_test_trazabilidad.png)
+
+**Resultado:** la ejecución de operaciones DML en cascada activó con éxito los disparadores en las tres tablas maestras, almacenando con fidelidad la secuencia histórica completa de inserción, modificación y eliminación con sus respectivas cargas útiles en formato JSON.
+
+#### 3. Prueba de Blindaje e Inmutabilidad Estricta (Bloqueo de Modificación ORA-20001)
+
+```sql
+-- Intento de alteración no autorizada sobre la bitácora
+UPDATE tazanorte.audit_log_general 
+SET accion = 'ALTERADO' 
+WHERE ROWNUM = 1;
+```
+
+![](images/oracle_trigger_test_inmutabilidad.png)
+
+**Resultado:** el motor de base de datos abortó de inmediato la transacción no autorizada sobre la bitácora mediante la excepción personalizada `ORA-20001: Operación denegada: La tabla de auditoría en Oracle es estrictamente inmutable.`, demostrando la total inmutabilidad y resistencia forense del repositorio en Oracle Database.
+
+
+---
+
 ## 5. Cuadro Comparativo de Variaciones Sintácticas entre Motores
 
 | Operación / Característica | MySQL 8.0 | PostgreSQL 17 | Microsoft SQL Server 2022 | Oracle Database 21c XE |
