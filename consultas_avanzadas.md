@@ -2172,6 +2172,23 @@ SELECT code, first_name || ' ' || last_name AS name, email, status FROM tazanort
 
 **Resultado:** la consulta en Oracle Database 21c XE unificó los atributos `first_name` y `last_name` mediante el operador de concatenación ANSI `||` y proyectó el catálogo de clientes del esquema `tazanorte`.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_get_customers AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR SELECT code, first_name || ' ' || last_name AS name, email, status FROM tazanorte.customers;
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_1_procedure_create.png)
+
+**Resultado:** el procedimiento almacenado `sp_get_customers` fue creado y compilado exitosamente en el motor Oracle Database 21c XE dentro del esquema `tazanorte`, encapsulando la concatenación y selección de datos del cliente mediante `DBMS_SQL.RETURN_RESULT`.
+
 ### 4.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
 **Hipótesis:** Se plantea la hipótesis de que la cláusula `ORDER BY order_date DESC` ejecutada sobre el esquema de Oracle organizará el histórico de transacciones de mayor a menor antigüedad cronológica, demostrando que el optimizador de Oracle gestiona de forma transparente el tipo de dato nativo `TIMESTAMP` para satisfacer los requerimientos de auditoría de la cafetería.
@@ -2183,6 +2200,19 @@ SELECT id, order_date, total, status FROM tazanorte.orders ORDER BY order_date D
 ![](images/oracle_1_2_order_by.png)
 
 **Resultado:** la consulta ordenó los pedidos cronológicamente en Oracle en sentido descendente (`ORDER BY order_date DESC`).
+
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_get_orders_desc;
+END;
+```
+
+![](images/oracle_4_2_procedure_result.png)
+
+**Resultado:** la ejecución del bloque PL/SQL `BEGIN tazanorte.sp_get_orders_desc; END;` en Oracle Database retornó el historial de órdenes ordenadas descendentemente por fecha en la interfaz de DBeaver.
 
 ### 4.3 Consultas a múltiples tablas mediante WHERE
 
@@ -2198,6 +2228,35 @@ WHERE c.id = o.customer_id;
 
 **Resultado:** la consulta vinculó las órdenes y clientes en Oracle mediante producto cartesiano filtrado en `WHERE c.id = o.customer_id`.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_get_orders_customers_where AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.total, o.status FROM tazanorte.orders o, tazanorte.customers c WHERE c.id = o.customer_id;
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_3_procedure_create.png)
+
+**Resultado:** el procedimiento almacenado `sp_get_orders_customers_where` fue validado en Oracle, encapsulando la asociación multitabla mediante el producto relacional filtrado en la cláusula WHERE.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_get_orders_customers_where;
+END;
+```
+
+![](images/oracle_4_3_procedure_result.png)
+
+**Resultado:** la llamada al procedimiento en Oracle proyectó de manera inmediata las órdenes asociadas a sus comensales respectivos.
+
 ### 4.4 Consultas a múltiples tablas mediante JOIN
 
 **Hipótesis:** Se plantea como hipótesis que la instrucción `INNER JOIN ... ON` en Oracle Database 21c XE representará la relación estructural formal entre las dos entidades, permitiendo proyectar el nombre completo concatenado y los detalles de facturación de manera estandarizada y equivalente al producto cartesiano filtrado en `WHERE`.
@@ -2211,6 +2270,35 @@ JOIN tazanorte.orders o ON (c.id = o.customer_id);
 ![](images/oracle_1_4_multitabla_join.png)
 
 **Resultado:** la consulta combinó explícitamente las tablas en Oracle mediante `JOIN ... ON (c.id = o.customer_id)`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_get_orders_customers_join AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.order_date, o.total, o.status FROM tazanorte.customers c JOIN tazanorte.orders o ON (c.id = o.customer_id);
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_4_procedure_create.png)
+
+**Resultado:** el procedimiento `sp_get_orders_customers_join` fue compilado en Oracle Database, normalizando el enlace relacional explícito mediante la sentencia INNER JOIN.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_get_orders_customers_join;
+END;
+```
+
+![](images/oracle_4_4_procedure_result.png)
+
+**Resultado:** la ejecución del procedimiento devolvió en DBeaver el listado combinado de clientes y órdenes con sus detalles transaccionales.
 
 ### 4.5 Condiciones en las Consultas o filtros en las Consultas
 
@@ -2238,6 +2326,35 @@ WHERE o.status = 'inactive';
 ![](images/oracle_1_5_condiciones_join_inactive.png)
 
 **Resultado:** la consulta retornó los pedidos inactivos combinando `JOIN` con la cláusula `WHERE o.status = 'inactive'`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_get_orders_by_status AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.order_date, o.total, o.status FROM tazanorte.orders o, tazanorte.customers c WHERE c.id = o.customer_id AND o.status = 'active';
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_5_procedure_create.png)
+
+**Resultado:** la rutina almacenada `sp_get_orders_by_status` fue creada en Oracle para aislar las órdenes en función de su estado operativo.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_get_orders_by_status;
+END;
+```
+
+![](images/oracle_4_5_procedure_result.png)
+
+**Resultado:** la ejecución del procedimiento discriminó y entregó exclusivamente las comandas en estado activo en Oracle Database.
 
 ### 4.6 Consultas con filtros condicional LIKE
 
@@ -2277,6 +2394,35 @@ WHERE o.status = 'active' AND c.email LIKE 'm%';
 
 **Resultado:** la consulta unió ambos predicados de texto con el operador lógico `AND` en Oracle Database.
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_get_customers_like_email AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR SELECT first_name || ' ' || last_name AS name, email, status FROM tazanorte.customers WHERE email LIKE '%@gmail.com';
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_6_procedure_create.png)
+
+**Resultado:** el procedimiento `sp_get_customers_like_email` fue compilado en Oracle XE, encapsulando la evaluación del predicado LIKE sobre cadenas de correo electrónico.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_get_customers_like_email;
+END;
+```
+
+![](images/oracle_4_6_procedure_result.png)
+
+**Resultado:** la ejecución del bloque PL/SQL filtró a los clientes con dominio de correo Gmail en la cuadrícula de resultados de DBeaver.
+
 ### 4.7 Consultas con filtros condicionales BETWEEN
 
 **Hipótesis:** Dado que Oracle Database exige rigor extremo en el formateo de fechas y horas, se plantea como hipótesis que el uso explícito de literales `TIMESTAMP '2026-09-01 00:00:00'` en combinación con el operador `BETWEEN` evitará ambigüedades de conversión de caracteres a fecha, acotando el conjunto de pagos percibidos en septiembre de 2026 con total exactitud de microsegundos.
@@ -2308,6 +2454,35 @@ ORDER BY pay.payment_date ASC;
 ![](images/oracle_1_7_between_where.png)
 
 **Resultado:** la consulta obtuvo el mismo reporte temporal en Oracle empleando la vinculación relacional en la cláusula `WHERE`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_get_payments_between AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.payment_method FROM tazanorte.customers c JOIN tazanorte.orders o ON c.id = o.customer_id JOIN tazanorte.payments pay ON pay.order_id = o.id WHERE pay.payment_date BETWEEN TIMESTAMP '2026-09-01 00:00:00' AND TIMESTAMP '2026-09-30 23:59:59' ORDER BY pay.payment_date ASC;
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_7_procedure_create.png)
+
+**Resultado:** el procedimiento `sp_get_payments_between` fue registrado en el catálogo de Oracle, gestionando la consulta analítica con filtrado de fechas mediante el operador BETWEEN.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_get_payments_between;
+END;
+```
+
+![](images/oracle_4_7_procedure_result.png)
+
+**Resultado:** la ejecución en Oracle arrojó el consolidado cronológico de pagos correspondientes al mes de septiembre de 2026.
 
 ### 4.8 Consultas con agrupamiento GROUP BY y HAVING
 
@@ -2399,6 +2574,46 @@ ORDER BY total_periodo DESC;
 
 ---
 
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_resumen_pagos_group_by AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR
+    SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
+           SUM(pay.amount) AS total_suma, 
+           COUNT(pay.id) AS total_pagos, 
+           ROUND(AVG(pay.amount), 2) AS promedio_pago
+    FROM tazanorte.customers c
+    JOIN tazanorte.orders o ON o.customer_id = c.id
+    JOIN tazanorte.payments pay ON pay.order_id = o.id
+    WHERE pay.payment_date >= TO_DATE('2026-01-01', 'YYYY-MM-DD')
+    GROUP BY c.id, c.first_name, c.last_name
+    HAVING SUM(pay.amount) >= 20000
+    ORDER BY total_suma DESC;
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_8_procedure_create.png)
+
+**Resultado:** el procedimiento analítico `sp_resumen_pagos_group_by` fue creado en Oracle Database 21c XE, encapsulando agrupaciones complejas con GROUP BY y filtros pos-agregación mediante HAVING.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_resumen_pagos_group_by;
+END;
+```
+
+![](images/oracle_4_8_procedure_result.png)
+
+**Resultado:** la ejecución del procedimiento calculó el acumulado y promedio de ventas por comensal, visualizando a los clientes de mayor impacto financiero en TazaNorte.
+
 ### 4.9 Subconsultas y teoría de conjuntos
 
 **Forma 1 (subconsulta con NOT IN):**
@@ -2434,6 +2649,38 @@ WHERE o.customer_id IS NULL;
 ![](images/oracle_4_9_subconsulta_leftjoin.png)
 
 **Resultado:** la consulta con `LEFT JOIN ... WHERE o.customer_id IS NULL` en Oracle devolvió exactamente los mismos 41 clientes inactivos sin transacciones en la primera decena de septiembre, comprobando la equivalencia de álgebra relacional frente a la cláusula `NOT IN`.
+
+
+##### Creacion del procedure de la consulta anterior:
+
+```sql
+CREATE OR REPLACE PROCEDURE tazanorte.sp_clientes_sin_ordenes AS
+  c SYS_REFCURSOR;
+BEGIN
+  OPEN c FOR
+    SELECT id, code, first_name || ' ' || last_name AS name, email
+    FROM tazanorte.customers
+    WHERE id NOT IN (SELECT DISTINCT customer_id FROM tazanorte.orders WHERE customer_id IS NOT NULL);
+  DBMS_SQL.RETURN_RESULT(c);
+END;
+/
+```
+
+![](images/oracle_4_9_procedure_create.png)
+
+**Resultado:** el procedimiento de teoría conjuntista `sp_clientes_sin_ordenes` fue compilado en Oracle para aislar a los comensales que no han realizado órdenes de compra.
+
+##### resultado de la ejecucion de el procedure:
+
+```sql
+BEGIN
+  tazanorte.sp_clientes_sin_ordenes;
+END;
+```
+
+![](images/oracle_4_9_procedure_result.png)
+
+**Resultado:** la ejecución del bloque PL/SQL evaluó la subconsulta anidada con `NOT IN`, entregando con total exactitud los registros de clientes inactivos en Oracle Database.
 
 ---
 
