@@ -2253,6 +2253,151 @@ EXEC sp_clientes_sin_ordenes;
 
 ---
 
+---
+
+### **Sistema de Triggers de Auditoría y Trazabilidad Transaccional en Microsoft SQL Server**
+
+**Hipótesis:** En la arquitectura de datos transaccionales de **TazaNorte**, las entidades de productos (`products`), comandas de venta (`orders`) y recaudos financieros (`payments`) constituyen el núcleo operacional del negocio y demandan un mecanismo automatizado de supervisión y trazabilidad contable. Se postula la hipótesis de que un sistema reactivo de disparadores en Transact-SQL acoplado a la cláusula `FOR JSON PATH` permitirá serializar instantáneas atómicas de datos (estados anteriores en `deleted` y estados posteriores en `inserted`) hacia una bitácora relacional centralizada `audit_log_general`. Asimismo, se formula como hipótesis que la imposición de un disparador sustitutivo `INSTEAD OF UPDATE, DELETE` con invocación de `RAISERROR` y reversión obligatoria mediante `ROLLBACK TRANSACTION` dotará a la bitácora de inmutabilidad estricta y blindaje forense, imposibilitando cualquier alteración, manipulación maliciosa o purga no autorizada de los registros históricos.
+
+#### 1. Creación de la Tabla de Auditoría y Disparadores en SQL Server
+
+```sql
+USE tazanorte;
+GO
+
+-- 1. Tabla de auditoría centralizada
+IF OBJECT_ID('audit_log_general', 'U') IS NOT NULL
+    DROP TABLE audit_log_general;
+GO
+
+CREATE TABLE audit_log_general (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    tabla_afectada VARCHAR(50) NOT NULL,
+    registro_id BIGINT NOT NULL,
+    accion VARCHAR(20) NOT NULL,
+    fecha_cambio DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    datos_json NVARCHAR(MAX)
+);
+GO
+
+-- 2. Trigger en PRODUCTS
+CREATE OR ALTER TRIGGER trg_audit_products
+ON products AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+    SET NOCOUNT ON;
+    IF EXISTS(SELECT 1 FROM inserted) AND NOT EXISTS(SELECT 1 FROM deleted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'products', i.id, 'INSERT', (SELECT i.id, i.sku, i.name, i.price, i.is_active FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) FROM inserted i;
+    IF EXISTS(SELECT 1 FROM inserted) AND EXISTS(SELECT 1 FROM deleted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'products', i.id, 'UPDATE', '{"antes":' + (SELECT d.id, d.sku, d.name, d.price, d.is_active FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) + ',"despues":' + (SELECT i.id, i.sku, i.name, i.price, i.is_active FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) + '}' FROM inserted i INNER JOIN deleted d ON i.id = d.id;
+    IF EXISTS(SELECT 1 FROM deleted) AND NOT EXISTS(SELECT 1 FROM inserted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'products', d.id, 'DELETE', (SELECT d.id, d.sku, d.name, d.price, d.is_active FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) FROM deleted d;
+END;
+GO
+
+-- 3. Trigger en ORDERS
+CREATE OR ALTER TRIGGER trg_audit_orders
+ON orders AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+    SET NOCOUNT ON;
+    IF EXISTS(SELECT 1 FROM inserted) AND NOT EXISTS(SELECT 1 FROM deleted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'orders', i.id, 'INSERT', (SELECT i.id, i.customer_id, i.total, i.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) FROM inserted i;
+    IF EXISTS(SELECT 1 FROM inserted) AND EXISTS(SELECT 1 FROM deleted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'orders', i.id, 'UPDATE', '{"antes":' + (SELECT d.id, d.customer_id, d.total, d.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) + ',"despues":' + (SELECT i.id, i.customer_id, i.total, i.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) + '}' FROM inserted i INNER JOIN deleted d ON i.id = d.id;
+    IF EXISTS(SELECT 1 FROM deleted) AND NOT EXISTS(SELECT 1 FROM inserted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'orders', d.id, 'DELETE', (SELECT d.id, d.customer_id, d.total, d.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) FROM deleted d;
+END;
+GO
+
+-- 4. Trigger en PAYMENTS
+CREATE OR ALTER TRIGGER trg_audit_payments
+ON payments AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+    SET NOCOUNT ON;
+    IF EXISTS(SELECT 1 FROM inserted) AND NOT EXISTS(SELECT 1 FROM deleted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'payments', i.id, 'INSERT', (SELECT i.id, i.order_id, i.payment_method, i.amount, i.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) FROM inserted i;
+    IF EXISTS(SELECT 1 FROM inserted) AND EXISTS(SELECT 1 FROM deleted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'payments', i.id, 'UPDATE', '{"antes":' + (SELECT d.id, d.order_id, d.payment_method, d.amount, d.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) + ',"despues":' + (SELECT i.id, i.order_id, i.payment_method, i.amount, i.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) + '}' FROM inserted i INNER JOIN deleted d ON i.id = d.id;
+    IF EXISTS(SELECT 1 FROM deleted) AND NOT EXISTS(SELECT 1 FROM inserted)
+        INSERT INTO audit_log_general (tabla_afectada, registro_id, accion, datos_json)
+        SELECT 'payments', d.id, 'DELETE', (SELECT d.id, d.order_id, d.payment_method, d.amount, d.status FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) FROM deleted d;
+END;
+GO
+
+-- 5. Blindaje de Inmutabilidad Estricta
+CREATE OR ALTER TRIGGER trg_bloqueo_auditoria
+ON audit_log_general INSTEAD OF UPDATE, DELETE AS
+BEGIN
+    SET NOCOUNT ON;
+    RAISERROR ('Operación denegada: La tabla de auditoría en SQL Server es estrictamente inmutable.', 16, 1);
+    ROLLBACK TRANSACTION;
+END;
+GO
+```
+
+![](images/mssql_trigger_creacion.png)
+
+**Resultado:** el script en Transact-SQL creó la tabla `audit_log_general`, configuró los disparadores reactivos sobre `products`, `orders` y `payments`, y fijó el trigger de blindaje sustitutivo `INSTEAD OF` en SQL Server 2022.
+
+#### 2. Prueba Transaccional Integral de Trazabilidad (products, orders y payments)
+
+```sql
+USE tazanorte;
+GO
+
+-- 1. Insertar en products
+INSERT INTO products (sku, name, price, is_active) 
+VALUES ('PROD-TRG-01', 'Café Especial TazaNorte', 22000, 1);
+GO
+
+-- 2. Insertar en orders
+INSERT INTO orders (customer_id, cash_shift_id, order_date, subtotal, total, status) 
+VALUES (1, 1, SYSDATETIME(), 22000, 22000, 'active');
+GO
+
+-- 3. Insertar en payments
+INSERT INTO payments (order_id, payment_method, amount, payment_date, status) 
+VALUES (1, 'card', 22000, SYSDATETIME(), 'active');
+GO
+
+-- 4. Modificar y eliminar en products
+UPDATE products SET price = 25000 WHERE sku = 'PROD-TRG-01';
+GO
+DELETE FROM products WHERE sku = 'PROD-TRG-01';
+GO
+
+-- 5. Ver bitácora completa reflejando las 3 tablas con su JSON
+SELECT id, tabla_afectada, registro_id, accion, fecha_cambio, datos_json 
+FROM audit_log_general 
+ORDER BY id ASC;
+GO
+```
+
+![](images/mssql_trigger_test_trazabilidad.png)
+
+**Resultado:** la ejecución de operaciones DML sobre las tres entidades disparó las rutinas de captura, consolidando en la grilla de resultados la trazabilidad forense completa de productos, pedidos y pagos con sus respectivos documentos JSON.
+
+#### 3. Prueba de Blindaje e Inmutabilidad Estricta (Bloqueo de Modificación)
+
+```sql
+USE tazanorte;
+UPDATE audit_log_general SET accion = 'MODIFICADO' WHERE id = 1;
+```
+
+![](images/mssql_trigger_test_inmutabilidad.png)
+
+**Resultado:** el intento no autorizado de manipulación en la tabla de auditoría fue cancelado por el trigger `trg_bloqueo_auditoria`, ejecutando un `ROLLBACK` forzado y retornando el mensaje de denegación de inmutabilidad estricta en Microsoft SQL Server.
+
+
+---
+
 ## 4. Consultas avanzadas en Oracle Database :
 
 ### 4.1 Mostrar algunos de los registros de la tabla customers
