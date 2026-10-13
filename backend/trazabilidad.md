@@ -312,4 +312,4 @@ El archivo `config/database.py` expone `database_from_environ(env)` que traduce 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
 |-------|------------------------|-------------|--------|
 | **ISS-00** | Entorno y proyecto Django: `.venv`, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
-| **ISS-01** | Settings y selección de motor: drivers, `config/database.py`, `config/settings/`, `tests.py` | *(en proceso)* | **COMPLETADO** |
+| **ISS-01** | Settings y selección de motor: drivers, `config/database.py`, `config/settings/`, `tests.py` | `494db4c` | **COMPLETADO** |
