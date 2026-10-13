@@ -58,6 +58,7 @@
   - [3. Pruebas Automatizadas y GATE en apps/sale/tests.py](#3-pruebas-automatizadas-y-gate-en-appssaletestspy)
   - [4. Verificación en Consola (GATE EVI-12-01)](#4-verificación-en-consola-gate-evi-12-01)
 - [Unidad ISS-13: Django Admin](#unidad-iss-13-django-admin)
+- [Unidad ISS-14: OpenAPI (drf-spectacular y Swagger UI)](#unidad-iss-14-openapi-drf-spectacular-y-swagger-ui)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -2815,6 +2816,443 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-14: OpenAPI (drf-spectacular y Swagger UI)
+
+Esta unidad implementa la generación automática y validación del esquema OpenAPI 3.0 mediante `drf-spectacular`, junto con las interfaces interactivas de documentación Swagger UI y ReDoc para todos los endpoints de **TazaNorte API** (`/api/clients/`, `/api/products/`, `/api/sales/`). Además, documenta explícitamente mediante `@extend_schema` las vistas basadas en `APIView` (`SaleCollectionAPIView` y `SaleRegisterAPIView`).
+
+### 1. `config/settings/__init__.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-13)
+```python
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "corsheaders",
+    "apps.common",
+    "apps.client",
+    "apps.product",
+    "apps.sale",
+]
+
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": (
+        "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer",
+    ),
+    "DEFAULT_PARSER_CLASSES": (
+        "djangorestframework_camel_case.parser.CamelCaseFormParser",
+        "djangorestframework_camel_case.parser.CamelCaseMultiPartParser",
+        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
+    ),
+}
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+    "rest_framework",
+    "corsheaders",
+```
+**REEMPLAZAR POR:**
+```python
+    "rest_framework",
+    "corsheaders",
+    "drf_spectacular",
+```
+
+**UBICAR:**
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": (
+        "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer",
+    ),
+    "DEFAULT_PARSER_CLASSES": (
+        "djangorestframework_camel_case.parser.CamelCaseFormParser",
+        "djangorestframework_camel_case.parser.CamelCaseMultiPartParser",
+        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
+    ),
+}
+```
+**REEMPLAZAR POR:**
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_RENDERER_CLASSES": (
+        "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer",
+    ),
+    "DEFAULT_PARSER_CLASSES": (
+        "djangorestframework_camel_case.parser.CamelCaseFormParser",
+        "djangorestframework_camel_case.parser.CamelCaseMultiPartParser",
+        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
+    ),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "TazaNorte API",
+    "DESCRIPTION": "API REST del Sistema de Gestión de Cafetería TazaNorte.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+}
+```
+
+#### Código Actualizado Completo
+```python
+from pathlib import Path
+from .database import DATABASES
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+SECRET_KEY = "django-insecure-test-key-for-dev-only"
+DEBUG = True
+ALLOWED_HOSTS = ["*"]
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "corsheaders",
+    "drf_spectacular",
+    "apps.common",
+    "apps.client",
+    "apps.product",
+    "apps.sale",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+
+AUTH_PASSWORD_VALIDATORS = []
+
+LANGUAGE_CODE = "es-co"
+TIME_ZONE = "America/Bogota"
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = "static/"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+AUTH_USER_MODEL = "common.User"
+
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_RENDERER_CLASSES": (
+        "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer",
+    ),
+    "DEFAULT_PARSER_CLASSES": (
+        "djangorestframework_camel_case.parser.CamelCaseFormParser",
+        "djangorestframework_camel_case.parser.CamelCaseMultiPartParser",
+        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
+    ),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "TazaNorte API",
+    "DESCRIPTION": "API REST del Sistema de Gestión de Cafetería TazaNorte.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+}
+```
+
+---
+
+### 2. `config/urls.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-13)
+```python
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include("apps.client.urls")),
+    path("api/", include("apps.product.urls")),
+    path("api/", include("apps.sale.urls")),
+]
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include("apps.client.urls")),
+    path("api/", include("apps.product.urls")),
+    path("api/", include("apps.sale.urls")),
+]
+```
+**REEMPLAZAR POR:**
+```python
+from django.contrib import admin
+from django.urls import path, include
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("api/", include("apps.client.urls")),
+    path("api/", include("apps.product.urls")),
+    path("api/", include("apps.sale.urls")),
+]
+```
+
+#### Código Actualizado Completo
+```python
+from django.contrib import admin
+from django.urls import path, include
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("api/", include("apps.client.urls")),
+    path("api/", include("apps.product.urls")),
+    path("api/", include("apps.sale.urls")),
+]
+```
+
+---
+
+### 3. `apps/sale/views.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-13)
+```python
+class SaleRegisterAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = SaleRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        read_serializer = SaleReadSerializer(sale)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+
+class SaleCollectionAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        active_sales = Sale.objects.active().select_related("client").prefetch_related("items__product")
+        serializer = SaleReadSerializer(active_sales, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        serializer = SaleRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        read_serializer = SaleReadSerializer(sale)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, viewsets, mixins
+```
+**REEMPLAZAR POR:**
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, viewsets, mixins
+from drf_spectacular.utils import extend_schema
+```
+
+**UBICAR:**
+```python
+class SaleRegisterAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+```
+**REEMPLAZAR POR:**
+```python
+class SaleRegisterAPIView(APIView):
+    @extend_schema(
+        request=SaleRegisterSerializer,
+        responses={201: SaleReadSerializer},
+        description="Registra una nueva venta atómica en TazaNorte.",
+    )
+    def post(self, request, *args, **kwargs):
+```
+
+**UBICAR:**
+```python
+class SaleCollectionAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+...
+    def post(self, request, *args, **kwargs):
+```
+**REEMPLAZAR POR:**
+```python
+class SaleCollectionAPIView(APIView):
+    @extend_schema(
+        responses={200: SaleReadSerializer(many=True)},
+        description="Lista las ventas activas registradas en TazaNorte.",
+    )
+    def get(self, request, *args, **kwargs):
+        active_sales = Sale.objects.active().select_related("client").prefetch_related("items__product")
+        serializer = SaleReadSerializer(active_sales, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=SaleRegisterSerializer,
+        responses={201: SaleReadSerializer},
+        description="Registra una nueva venta atómica en TazaNorte.",
+    )
+    def post(self, request, *args, **kwargs):
+```
+
+#### Código Actualizado Completo
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, viewsets, mixins
+from drf_spectacular.utils import extend_schema
+
+from .models import Sale
+from .serializers import SaleRegisterSerializer, SaleReadSerializer
+
+
+class SaleRegisterAPIView(APIView):
+    """
+    Endpoint alternativo POST para registrar una venta en TazaNorte.
+    """
+    @extend_schema(
+        request=SaleRegisterSerializer,
+        responses={201: SaleReadSerializer},
+        description="Registra una nueva venta atómica en TazaNorte.",
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = SaleRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        read_serializer = SaleReadSerializer(sale)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class SaleCollectionAPIView(APIView):
+    """
+    Endpoint coleccion /api/sales/:
+    - GET: Lista las ventas activas de TazaNorte con prefetch_related e items.
+    - POST: Registra una nueva venta transaccional.
+    """
+    @extend_schema(
+        responses={200: SaleReadSerializer(many=True)},
+        description="Lista las ventas activas registradas en TazaNorte.",
+    )
+    def get(self, request, *args, **kwargs):
+        active_sales = Sale.objects.active().select_related("client").prefetch_related("items__product")
+        serializer = SaleReadSerializer(active_sales, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=SaleRegisterSerializer,
+        responses={201: SaleReadSerializer},
+        description="Registra una nueva venta atómica en TazaNorte.",
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = SaleRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        read_serializer = SaleReadSerializer(sale)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class SaleReadViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    ViewSet de solo lectura y anulacion logica de ventas para TazaNorte.
+    - GET /api/sales/ -> Lista ventas activas.
+    - GET /api/sales/<id>/ -> Detalle de venta.
+    - DELETE /api/sales/<id>/ -> Anulacion logica (void) devolviendo 204 No Content.
+    """
+    queryset = Sale.objects.active().select_related("client").prefetch_related("items__product")
+    serializer_class = SaleReadSerializer
+
+    def perform_destroy(self, instance):
+        instance.void()
+```
+
+---
+
+### Verificación y Validación de Esquema OpenAPI
+
+```bash
+python manage.py check
+python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
+python manage.py test
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+[drf-spectacular] Validating schema...
+[drf-spectacular] Schema validation succeeded!
+Ran 55 tests in 4.100s
+
+OK
+```
+
+**Evidencias:**
+![Validación de esquema OpenAPI con drf-spectacular](capturas/ISS-14_01_spectacular_validate.png)
+![Documentación interactiva Swagger UI de TazaNorte API](capturas/ISS-14_02_swagger_ui_endpoints.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -2833,4 +3271,8 @@ System check identified no issues (0 silenced).
 | **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `4ab39a6` | **COMPLETADO** |
 | **ISS-08** | Client CRUD: ModelViewSet con baja lógica, SimpleRouter (/api/clients/) y suite GATE | `a459875` | **COMPLETADO** |
 | **ISS-09** | Catálogo CRUD: ViewSets con baja lógica, SimpleRouter (/api/products/ y /api/product-types/) y suite GATE | `9ccca92` | **COMPLETADO** |
-| **ISS-10** | Disponibles con ListAPIView: endpoint /api/products/available/ con filtro de activos y suite de tests | `334778` | **COMPLETADO** |
+| **ISS-10** | Disponibles con ListAPIView: endpoint /api/products/available/ con filtro de activos y suite de tests | `cd1cd31` | **COMPLETADO** |
+| **ISS-11** | Registro de venta atómica con APIView: `/api/sales/`, validaciones y suite GATE | `3225354` | **COMPLETADO** |
+| **ISS-12** | Consulta y anulación de ventas: `SaleReadViewSet`, `GET/DELETE /api/sales/<pk>/` y suite GATE | `179a19f` | **COMPLETADO** |
+| **ISS-13** | Configuración de Django Admin: `ClientAdmin`, `ProductAdmin`, `SaleAdmin` con inline seguro | `59e61ac` | **COMPLETADO** |
+| **ISS-14** | OpenAPI y Swagger UI: `drf-spectacular`, esquemas automáticos y documentación interactiva | `51483b2` | **COMPLETADO** |

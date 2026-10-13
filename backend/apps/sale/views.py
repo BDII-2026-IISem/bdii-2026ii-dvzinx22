@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -9,6 +10,10 @@ from apps.sale.serializers import SaleRegisterSerializer, SaleSerializer
 class SaleRegisterAPIView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        request=SaleRegisterSerializer,
+        responses={201: SaleSerializer},
+    )
     def post(self, request):
         serializer = SaleRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -46,10 +51,15 @@ class SaleReadViewSet(
 class SaleCollectionAPIView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(responses=SaleSerializer(many=True))
     def get(self, request, *args, **kwargs):
         sales = SaleReadViewSet.queryset.all()
         return Response(SaleSerializer(sales, many=True).data)
 
+    @extend_schema(
+        request=SaleRegisterSerializer,
+        responses={201: SaleSerializer},
+    )
     def post(self, request, *args, **kwargs):
         handler = SaleRegisterAPIView()
         handler.request = request
