@@ -32,6 +32,12 @@
   - [6. Re-Ejecución del intérprete](#6-re-ejecución-del-intérprete)
   - [7. Parches en puntos de entrada en el sistema](#7-parches-en-puntos-de-entrada-en-el-sistema)
   - [8. Pruebas unitarias de selección de motor (GATE EVI-01-01)](#8-pruebas-unitarias-de-selección-de-motor-gate-evi-01-01)
+- [Unidad ISS-02: Apps client, product y sale](#unidad-iss-02-apps-client-product-y-sale)
+  - [1. Construcción de paquetes](#1-construcción-de-paquetes)
+  - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
+  - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
+  - [4. Agregación de las apps a settings/__init__.py](#4-agregación-de-las-apps-a-settings__init__py)
+  - [5. Prueba de aceptación y GATE (EVI-02-01)](#5-prueba-de-aceptación-y-gate-evi-02-01)
 - [Bitácora de Commits Realizados](#bitácora-de-commits-realizados)
 
 ---
@@ -474,9 +480,125 @@ OK
 
 ---
 
+---
+
+## Unidad ISS-02: Apps client, product y sale
+
+En esta unidad se crean los paquetes de aplicaciones de negocio con la CLI dentro del paquete `apps/` y se registran en la configuración global del proyecto.
+
+### 1. Construcción de paquetes
+Se crearon los directorios correspondientes a cada aplicación de negocio y se inicializaron mediante `startapp`.
+
+**Scripts:**
+```bash
+mkdir -p apps/client apps/product apps/sale
+python manage.py startapp client apps/client
+python manage.py startapp product apps/product
+python manage.py startapp sale apps/sale
+```
+
+**Evidencias:**
+![Creación de las aplicaciones client, product y sale](capturas/ISS-02_01_creacion_apps.png)
+
+---
+
+### 2. Creación de apps/__init__.py
+Se asegura que el directorio `apps/` sea reconocido formalmente como un paquete de Python.
+
+**Script:**
+```bash
+mkdir -p apps
+cat > apps/__init__.py <<'EOF'
+EOF
+```
+
+**Evidencia:**
+![Creación de apps/__init__.py](capturas/ISS-02_01_creacion_apps.png)
+
+---
+
+### 3. Parche de name y label en las apps
+Django supone por defecto que las aplicaciones viven en la raíz del proyecto. Al residir dentro del paquete `apps/`, se configura `name = "apps.<nombre>"` para el módulo y `label = "<nombre>"` para conservar nombres limpios en migraciones.
+
+**Parche en client (`apps/client/apps.py`):**
+```python
+from django.apps import AppConfig
+
+
+class ClientConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.client'
+    label = 'client'
+```
+
+**Parche en product (`apps/product/apps.py`):**
+```python
+from django.apps import AppConfig
+
+
+class ProductConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.product'
+    label = 'product'
+```
+
+**Parche en sale (`apps/sale/apps.py`):**
+```python
+from django.apps import AppConfig
+
+
+class SaleConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.sale'
+    label = 'sale'
+```
+
+**Evidencia:**
+![Parches en apps.py de client, product y sale](capturas/ISS-02_02_parches_apps_config.png)
+
+---
+
+### 4. Agregación de las apps a settings/__init__.py
+Se agregaron las clases `ClientConfig`, `ProductConfig` y `SaleConfig` al listado `INSTALLED_APPS` debajo de `staticfiles`.
+
+**Instrucción:**
+```python
+INSTALLED_APPS = [
+    ...
+    "django.contrib.staticfiles",
+    "apps.client.apps.ClientConfig",
+    "apps.product.apps.ProductConfig",
+    "apps.sale.apps.SaleConfig",
+]
+```
+
+**Evidencia:**
+![Registro de apps en INSTALLED_APPS](capturas/ISS-02_03_settings_installed_apps.png)
+
+---
+
+### 5. Prueba de aceptación y GATE (EVI-02-01)
+Se verificó la integridad del proyecto mediante el CLI de Django, confirmando que las tres apps están debidamente registradas y sin errores de configuración.
+
+**Script:**
+```bash
+python manage.py check
+```
+
+**Resultado:**
+```text
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Verificación exitosa con manage.py check](capturas/ISS-02_EVI-01_check_apps_registradas.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
 |-------|------------------------|-------------|--------|
 | **ISS-00** | Creación del entorno virtual, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
 | **ISS-01** | Settings y selección de motor: drivers, `database.py`, `settings/`, `project_python.py`, `tests.py` | `494db4c` | **COMPLETADO** |
+| **ISS-02** | Apps `client`, `product`, `sale`: inicialización CLI, parches `apps.py` y registro en `settings` | *(en proceso)* | **COMPLETADO** |
