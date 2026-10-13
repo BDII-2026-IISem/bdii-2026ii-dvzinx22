@@ -34,6 +34,7 @@
   - [8. Pruebas unitarias de selección de motor (GATE EVI-01-01)](#8-pruebas-unitarias-de-selección-de-motor-gate-evi-01-01)
 - [Unidad ISS-02: Apps client, product y sale](#unidad-iss-02-apps-client-product-y-sale)
 - [Unidad ISS-03: Custom User antes de la primera migración](#unidad-iss-03-custom-user-antes-de-la-primera-migración)
+- [Unidad ISS-04: Modelo Client](#unidad-iss-04-modelo-client)
   - [1. Construcción de paquetes](#1-construcción-de-paquetes)
   - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
   - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
@@ -727,6 +728,120 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-04: Modelo Client
+
+### 1. Modelos base abstractos y modelo Client
+Se implementaron los modelos base abstractos en `apps/common/models.py` (`TimeStampedModel` y `StoreLabModel`) para proveer campos de auditoría (`created_at`, `updated_at`), estado predeterminado `inactive` mediante `RecordStatus` y la restricción reutilizable de base de datos (`status_constraint`). En `apps/client/models.py`, el modelo `Client` hereda de `StoreLabModel` configurando la tabla física `clients`, validación de nombre (`MinLengthValidator(2)`), campos de contacto opcionales y normalización del correo a minúsculas en el método `save()`.
+
+**Scripts:**
+```bash
+cat << 'EOF' > apps/common/models.py
+from django.db import models
+from apps.common.status import RecordStatus
+
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+class StoreLabModel(TimeStampedModel):
+    status = models.CharField(
+        max_length=8,
+        choices=RecordStatus.choices,
+        default=RecordStatus.INACTIVE,
+    )
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def status_constraint(cls, name):
+        return models.CheckConstraint(
+            condition=models.Q(status__in=RecordStatus.values),
+            name=name,
+        )
+EOF
+
+cat << 'EOF' > apps/client/models.py
+from django.core.validators import MinLengthValidator
+from django.db import models
+from apps.common.models import StoreLabModel
+
+class Client(StoreLabModel):
+    name = models.CharField(max_length=150, validators=[MinLengthValidator(2)])
+    address = models.CharField(max_length=255, null=True, blank=True)
+    phone = models.CharField(max_length=30, null=True, blank=True)
+    email = models.EmailField(max_length=150, null=True, blank=True, unique=True)
+
+    class Meta:
+        db_table = "clients"
+        verbose_name = "cliente"
+        verbose_name_plural = "clientes"
+        ordering = ["name", "id"]
+        constraints = [StoreLabModel.status_constraint("clients_status_valid")]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
+EOF
+
+python manage.py check
+```
+
+**Evidencia:**
+![Creación de modelos en apps/common y apps/client](capturas/ISS-04_01_modelos_common_y_client.png)
+
+---
+
+### 2. Generación y aplicación de migraciones (EVI-04-01)
+Se generó el archivo de migración `client.0001_initial` y se ejecutó `migrate` contra el contenedor PostgreSQL activo (`tazanorte`), creando la tabla física `clients` con sus columnas y la restricción de estado `clients_status_valid`.
+
+**Scripts:**
+```bash
+python manage.py makemigrations client
+python manage.py migrate
+python manage.py showmigrations client
+```
+
+**Evidencia:**
+![Aplicación de migraciones de client en PostgreSQL](capturas/ISS-04_EVI-01_migracion_client.png)
+
+---
+
+### 3. Suite de pruebas unitarias y GATE (EVI-04-02 / AC-04-01 a AC-04-05)
+Se construyeron y ejecutaron las pruebas unitarias en `apps/client/tests.py` validando la totalidad de los criterios de aceptación del GATE:
+* **AC-04-01**: La tabla física es `clients`.
+* **AC-04-02**: Al dar de alta sin especificar estado, el valor asignado es `inactive`.
+* **AC-04-03**: Los campos `created_at` y `updated_at` se generan automáticamente.
+* **AC-04-04**: El email duplicado se rechaza (`IntegrityError`).
+* **AC-04-05**: Un nombre de un solo carácter se rechaza por validación (`ValidationError`).
+* **Normalización**: El correo se guarda en minúsculas.
+
+**Scripts:**
+```bash
+python manage.py test apps.client
+```
+
+**Resultado:**
+```text
+Ran 6 tests in 0.043s
+
+OK
+Destroying test database for alias 'default'...
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Pruebas unitarias exitosas del modelo Client](capturas/ISS-04_02_test_cliente_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
@@ -735,3 +850,4 @@ System check identified no issues (0 silenced).
 | **ISS-01** | Settings y selección de motor: drivers, `database.py`, `settings/`, `project_python.py`, `tests.py` | `494db4c` | **COMPLETADO** |
 | **ISS-02** | Apps `client`, `product`, `sale`: inicialización CLI, parches `apps.py` y registro en `settings` | `f4fe16f` | **COMPLETADO** |
 | **ISS-03** | Custom User antes de la primera migración: `RecordStatus`, modelo `User`, migraciones y suite de pruebas | `a7414c1` | **COMPLETADO** |
+| **ISS-04** | Modelo Client: modelos base `TimeStampedModel`/`StoreLabModel`, `Client`, migraciones y suite GATE | `3757380` | **COMPLETADO** |
