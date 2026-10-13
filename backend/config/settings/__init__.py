@@ -1,4 +1,4 @@
-"""Configuración de StoreLab. El paquete sustituye al settings.py generado por startproject.
+"""Configuración de TazaNorte. El paquete sustituye al settings.py generado por startproject.
 DJANGO_SETTINGS_MODULE sigue siendo config.settings.
 """
 import os

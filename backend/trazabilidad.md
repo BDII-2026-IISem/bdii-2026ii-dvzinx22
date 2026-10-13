@@ -35,6 +35,7 @@
 - [Unidad ISS-02: Apps client, product y sale](#unidad-iss-02-apps-client-product-y-sale)
 - [Unidad ISS-03: Custom User antes de la primera migración](#unidad-iss-03-custom-user-antes-de-la-primera-migración)
 - [Unidad ISS-04: Modelo Client](#unidad-iss-04-modelo-client)
+- [Unidad ISS-05: ProductType y Product](#unidad-iss-05-producttype-y-product)
   - [1. Construcción de paquetes](#1-construcción-de-paquetes)
   - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
   - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
@@ -842,6 +843,118 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-05: ProductType y Product
+
+### 1. Modelos ProductType y Product para el catálogo de TazaNorte
+Se implementaron los modelos del catálogo comercial de la cafetería **TazaNorte** en `apps/product/models.py` heredando de `StoreLabModel` para garantizar la uniformidad en timestamps y la restricción portátil de estados válidos (`status_constraint`). Se definieron:
+* **`ProductType`**: Define las categorías del menú (ej. *Café Caliente, Bebidas Frías, Repostería*) con nombre único (`MinLengthValidator(2)`) y tabla física `product_types`.
+* **`Product`**: Modela los ítems de venta (ej. *Café Espresso, Capuchino, Croissant*), con clave foránea obligatoria `product_type_id` configurada con **`on_delete=models.RESTRICT`** para impedir la eliminación accidental de categorías con productos existentes, campo de precio no negativo (`price__gte=0`), control de inventario (`stock` positivo por defecto en 0) y tabla física `products`.
+
+**Scripts:**
+```bash
+cat << 'EOF' > apps/product/models.py
+from decimal import Decimal
+from django.core.validators import MinLengthValidator, MinValueValidator
+from django.db import models
+from apps.common.models import StoreLabModel
+
+class ProductType(StoreLabModel):
+    name = models.CharField(max_length=100, unique=True, validators=[MinLengthValidator(2)])
+    description = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        db_table = "product_types"
+        verbose_name = "tipo de producto"
+        verbose_name_plural = "tipos de producto"
+        ordering = ["name", "id"]
+        constraints = [StoreLabModel.status_constraint("product_types_status_valid")]
+
+    def __str__(self):
+        return self.name
+
+class Product(StoreLabModel):
+    product_type = models.ForeignKey(
+        ProductType,
+        on_delete=models.RESTRICT,
+        related_name="products",
+        db_column="product_type_id",
+    )
+    name = models.CharField(max_length=120, unique=True, validators=[MinLengthValidator(2)])
+    description = models.CharField(max_length=255, null=True, blank=True)
+    price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    stock = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "products"
+        verbose_name = "producto"
+        verbose_name_plural = "productos"
+        ordering = ["name", "id"]
+        constraints = [
+            StoreLabModel.status_constraint("products_status_valid"),
+            models.CheckConstraint(
+                condition=models.Q(price__gte=0),
+                name="product_price_non_neg",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+EOF
+
+python manage.py check
+```
+
+**Evidencia:**
+![Creación de modelos ProductType y Product](capturas/ISS-05_01_modelos_product_type_y_product.png)
+
+---
+
+### 2. Generación y aplicación de migraciones (EVI-05-01)
+Se generó la migración inicial `product.0001_initial` y se ejecutó `migrate` sobre el motor PostgreSQL (`tazanorte`), creando las tablas relacionales `product_types` y `products` con la llave foránea y los constraints de validación.
+
+**Scripts:**
+```bash
+python manage.py makemigrations product
+python manage.py migrate
+python manage.py showmigrations product
+```
+
+**Evidencia:**
+![Aplicación de migraciones de product en PostgreSQL](capturas/ISS-05_EVI-01_migracion_product.png)
+
+---
+
+### 3. Suite de pruebas unitarias y GATE (EVI-05-02 / AC-05-01 a AC-05-04)
+Se implementaron y ejecutaron las pruebas automatizadas en `apps/product/tests.py` contextualizadas en el menú de TazaNorte, verificando la totalidad de los criterios de aceptación:
+* **AC-05-01**: La clave foránea `product_type_id` es obligatoria y rechaza valores nulos (`IntegrityError`).
+* **AC-05-02 (EVI-05-02)**: La eliminación de un tipo con productos asociados es bloqueada con **`RestrictedError`** protegiendo la integridad referencial.
+* **AC-05-03**: El nombre del producto es único y rechaza nombres duplicados (`IntegrityError`).
+* **AC-05-04**: Los valores por defecto asignados al dar de alta son `status = "inactive"` y `stock = 0`.
+* **Metadatos**: Las tablas físicas corresponden a `product_types` y `products`.
+
+**Scripts:**
+```bash
+python manage.py test apps.product
+```
+
+**Resultado:**
+```text
+Ran 5 tests in 0.045s
+
+OK
+Destroying test database for alias 'default'...
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Pruebas unitarias de integridad de producto y tipo](capturas/ISS-05_02_test_product_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
@@ -851,3 +964,4 @@ System check identified no issues (0 silenced).
 | **ISS-02** | Apps `client`, `product`, `sale`: inicialización CLI, parches `apps.py` y registro en `settings` | `f4fe16f` | **COMPLETADO** |
 | **ISS-03** | Custom User antes de la primera migración: `RecordStatus`, modelo `User`, migraciones y suite de pruebas | `a7414c1` | **COMPLETADO** |
 | **ISS-04** | Modelo Client: modelos base `TimeStampedModel`/`StoreLabModel`, `Client`, migraciones y suite GATE | `b2c2dab` | **COMPLETADO** |
+| **ISS-05** | Catálogo TazaNorte: modelos `ProductType` y `Product`, FK restrict, migraciones y suite GATE | `fab24fd` | **COMPLETADO** |
