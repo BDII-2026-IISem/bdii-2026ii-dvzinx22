@@ -2362,6 +2362,9 @@ class SaleCollectionAPIView(APIView):
         return handler.post(request)
 ```
 
+**Evidencia:**
+![Vistas SaleReadViewSet y SaleCollectionAPIView con soporte GET y DELETE](capturas/ISS-12_01_salereadviewset_y_urls.png)
+
 ---
 
 ### 2. Enrutamiento en `apps/sale/urls.py`
@@ -2530,6 +2533,9 @@ Destroying test database for alias 'default'...
 Found 15 test(s).
 System check identified no issues (0 silenced).
 ```
+
+**Evidencia:**
+![Pruebas automatizadas de consulta y anulación de ventas (GATE)](capturas/ISS-12_02_test_sale_read_and_void_gate.png)
 
 ---
 
