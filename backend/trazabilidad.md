@@ -33,6 +33,7 @@
   - [7. Parches en puntos de entrada en el sistema](#7-parches-en-puntos-de-entrada-en-el-sistema)
   - [8. Pruebas unitarias de selección de motor (GATE EVI-01-01)](#8-pruebas-unitarias-de-selección-de-motor-gate-evi-01-01)
 - [Unidad ISS-02: Apps client, product y sale](#unidad-iss-02-apps-client-product-y-sale)
+- [Unidad ISS-03: Custom User antes de la primera migración](#unidad-iss-03-custom-user-antes-de-la-primera-migración)
   - [1. Construcción de paquetes](#1-construcción-de-paquetes)
   - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
   - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
@@ -595,6 +596,137 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-03: Custom User antes de la primera migración
+
+### 1. Creación del módulo common y app security
+Se creó el módulo reutilizable `apps/common` con las definiciones globales de estado (`RecordStatus`), y la aplicación `apps/security` inicializada a través de la CLI de Django (`manage.py startapp`).
+
+**Scripts:**
+```bash
+mkdir -p apps/common
+touch apps/common/__init__.py
+python manage.py startapp security apps/security
+```
+
+**Código de `apps/common/status.py`:**
+```python
+from django.db import models
+
+class RecordStatus(models.TextChoices):
+    ACTIVE = "active", "Active"
+    INACTIVE = "inactive", "Inactive"
+```
+
+**Evidencia:**
+![Creación de common y app security](capturas/ISS-03_01_creacion_common_y_security.png)
+
+---
+
+### 2. Configuración del modelo Custom User y parches en settings
+Se definió el modelo de usuario personalizado `User` heredando de `AbstractUser` de Django, incorporando `StoreUserManager`, normalización de email, y vinculación de `is_active` según el estado del registro. Se parcheó `apps/security/apps.py` y se configuró `AUTH_USER_MODEL = "security.User"` en `config/settings/__init__.py` antes de cualquier migración.
+
+**Código de `apps/security/apps.py`:**
+```python
+from django.apps import AppConfig
+
+class SecurityConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.security'
+    label = 'security'
+```
+
+**Código de `apps/security/models.py`:**
+```python
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.db import models
+from apps.common.status import RecordStatus
+
+class StoreUserManager(UserManager):
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("status", RecordStatus.INACTIVE)
+        return super().create_user(username, email, password, **extra_fields)
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("status", RecordStatus.ACTIVE)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return super().create_superuser(username, email, password, **extra_fields)
+
+class User(AbstractUser):
+    email = models.EmailField("correo electrónico", max_length=150, unique=True)
+    status = models.CharField(
+        max_length=8,
+        choices=RecordStatus.choices,
+        default=RecordStatus.INACTIVE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = StoreUserManager()
+
+    class Meta:
+        db_table = "users"
+        verbose_name = "usuario"
+        verbose_name_plural = "usuarios"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=RecordStatus.values),
+                name="users_status_valid",
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        self.is_active = self.status == RecordStatus.ACTIVE
+        super().save(*args, **kwargs)
+```
+
+**Evidencia:**
+![Verificación de Custom User y configuración en settings](capturas/ISS-03_02_modelo_custom_user_y_settings.png)
+
+---
+
+### 3. Generación y aplicación de migraciones (EVI-03-01)
+Se generaron las migraciones iniciales para el nuevo modelo `User` en la app `security` y se aplicaron contra la base de datos relacional PostgreSQL activa, registrando la tabla `users` con sus restricciones y llaves foráneas correspondientes.
+
+**Scripts:**
+```bash
+python manage.py makemigrations security
+python manage.py migrate
+python manage.py showmigrations security
+```
+
+**Evidencia:**
+![Aplicación de migraciones de security en PostgreSQL](capturas/ISS-03_EVI-01_migracion_security.png)
+
+---
+
+### 4. Verificación de aceptación y suite de pruebas GATE (EVI-03-02 / AC-03-01 a AC-03-04)
+Se ejecutó la suite de pruebas unitarias que evalúa tanto la selección de motores de base de datos como el flujo de autenticación de usuario (`AuthFlowTests`), comprobando los criterios de aceptación del GATE:
+* **AC-03-01**: `AUTH_USER_MODEL = "security.User"` fijado en settings.
+* **AC-03-02**: El modelo `Client` no almacena credenciales ni contraseña.
+* **AC-03-03**: Los usuarios en estado inactivo no pueden iniciar sesión.
+* **AC-03-04**: Validación correcta de credenciales utilizando hashes seguros y rechazo de contraseñas erróneas.
+
+**Script:**
+```bash
+python manage.py test apps.security
+```
+
+**Resultado:**
+```text
+Ran 11 tests in 3.531s
+
+OK
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Suite de pruebas unitarias exitosa para security](capturas/ISS-03_03_test_verificacion.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
@@ -602,3 +734,4 @@ System check identified no issues (0 silenced).
 | **ISS-00** | Creación del entorno virtual, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
 | **ISS-01** | Settings y selección de motor: drivers, `database.py`, `settings/`, `project_python.py`, `tests.py` | `494db4c` | **COMPLETADO** |
 | **ISS-02** | Apps `client`, `product`, `sale`: inicialización CLI, parches `apps.py` y registro en `settings` | `f4fe16f` | **COMPLETADO** |
+| **ISS-03** | Custom User antes de la primera migración: `RecordStatus`, modelo `User`, migraciones y suite de pruebas | `a2522f5` | **COMPLETADO** |
