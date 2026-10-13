@@ -1376,6 +1376,9 @@ urlpatterns = [
 urlpatterns += router.urls
 ```
 
+**Evidencia:**
+![Configuración de ruta literal available y AvailableProductListAPIView](capturas/ISS-10_01_available_urls_y_views.png)
+
 ---
 
 ### 2. Implementación de Vista en `apps/product/views.py`
@@ -1560,8 +1563,8 @@ Found 10 test(s).
 System check identified no issues (0 silenced).
 ```
 
----
-
+**Evidencia:**
+![Pruebas de aceptación de productos disponibles](capturas/ISS-10_02_test_disponibles_gate.png)
 
 ---
 
@@ -1807,6 +1810,9 @@ class SaleQuerySet(models.QuerySet):
 class SaleManager(models.Manager.from_queryset(SaleQuerySet)):
     pass
 ```
+
+**Evidencia:**
+![Implementación del método register con transacción atómica](capturas/ISS-11_01_registro_sale_managers_y_views.png)
 
 ---
 
@@ -2200,6 +2206,9 @@ Destroying test database for alias 'default'...
 Found 10 test(s).
 System check identified no issues (0 silenced).
 ```
+
+**Evidencia:**
+![Pruebas transaccionales de venta y validación de GATE](capturas/ISS-11_02_test_sale_transaction_gate.png)
 
 ---
 
