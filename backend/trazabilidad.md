@@ -2797,6 +2797,9 @@ class ProductSaleAdmin(admin.ModelAdmin):
 
 #### Comandos de Ejecución
 ```bash
+# Creación de superusuario administrador de TazaNorte
+python manage.py createsuperuser
+
 # Verificación de integridad del sistema y autocompletado en admin
 python manage.py check
 ```
@@ -2805,6 +2808,10 @@ python manage.py check
 ```text
 System check identified no issues (0 silenced).
 ```
+
+**Evidencias:**
+![Creación de superusuario y verificación de Django Admin](capturas/ISS-13_01_createsuperuser_y_check.png)
+![Panel de administración de Django con las tablas de TazaNorte](capturas/ISS-13_02_django_admin_panel.png)
 
 ---
 
