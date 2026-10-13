@@ -1305,4 +1305,4 @@ System check identified no issues (0 silenced).
 | **ISS-06** | Ventas TazaNorte: modelos `Sale` y `ProductSale`, precio histórico, void, migraciones y suite GATE | `645ec19` | **COMPLETADO** |
 | **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `4ab39a6` | **COMPLETADO** |
 | **ISS-08** | Client CRUD: ModelViewSet con baja lógica, SimpleRouter (/api/clients/) y suite GATE | `a459875` | **COMPLETADO** |
-| **ISS-09** | Catálogo CRUD: ViewSets con baja lógica, SimpleRouter (/api/products/ y /api/product-types/) y suite GATE | `e1fa379` | **COMPLETADO** |
+| **ISS-09** | Catálogo CRUD: ViewSets con baja lógica, SimpleRouter (/api/products/ y /api/product-types/) y suite GATE | `9ccca92` | **COMPLETADO** |
