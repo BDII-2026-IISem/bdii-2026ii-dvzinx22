@@ -37,6 +37,7 @@
 - [Unidad ISS-04: Modelo Client](#unidad-iss-04-modelo-client)
 - [Unidad ISS-05: ProductType y Product](#unidad-iss-05-producttype-y-product)
 - [Unidad ISS-06: Sale y ProductSale](#unidad-iss-06-sale-y-productsale)
+- [Unidad ISS-07: Serializers y JSON camelCase](#unidad-iss-07-serializers-y-json-camelcase)
   - [1. Construcción de paquetes](#1-construcción-de-paquetes)
   - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
   - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
@@ -1132,6 +1133,67 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-07: Serializers y JSON camelCase
+
+### 1. Instalación de dependencias de API (DRF, camelCase y CORS)
+Se incorporaron al entorno virtual del backend las librerías base para la capa de API REST: `djangorestframework` (v3.17.2), `djangorestframework-camel-case` (v1.4.2) y `django-cors-headers` (v4.9.0). Se actualizó el archivo de dependencias `requirements.txt`.
+
+**Scripts:**
+```bash
+python -m pip install "djangorestframework==3.17.2" "djangorestframework-camel-case==1.4.2" "django-cors-headers==4.9.0"
+python -m pip freeze > requirements.txt
+python -m pip list | grep -E "djangorestframework|cors"
+```
+
+**Evidencia:**
+![Instalación de DRF, camelCase y CORS](capturas/ISS-07_01_instalacion_drf_y_cors.png)
+
+---
+
+### 2. Configuración en settings y construcción de serializers
+Se configuró `config/settings/__init__.py` registrando `rest_framework`, `corsheaders`, el middleware `CorsMiddleware` y la configuración global de renderers y parsers en `REST_FRAMEWORK` para traducción bidireccional automática a **`camelCase`**. Asimismo, se implementaron los serializers de negocio para **TazaNorte**:
+* **`ClientSerializer`**: Serializa los datos del cliente, convierte cadenas vacías en `None` para campos opcionales y normaliza los correos a minúsculas.
+* **`ProductTypeSerializer`** y **`ProductSerializer`**: Serializa las categorías y productos del menú, exponiendo `product_type_id` de escritura y `product_type_name` de lectura (mapeados en JSON como `productTypeId` y `productTypeName`).
+* **`ProductSaleSerializer`** y **`SaleSerializer`**: Serializa la cabecera del ticket de venta y las líneas de detalle con precio histórico.
+
+**Scripts:**
+```bash
+# apps/client/serializers.py
+# apps/product/serializers.py
+# apps/sale/serializers.py
+python manage.py check
+```
+
+**Evidencia:**
+![Configuración de serializers y verificación](capturas/ISS-07_02_serializers_y_settings.png)
+
+---
+
+### 3. Suite de pruebas unitarias y GATE (EVI-07-01 / AC-07-01 a AC-07-03)
+Se construyeron pruebas automatizadas en `apps/client/tests.py` validando la totalidad de los criterios de aceptación del GATE:
+* **AC-07-01 (EVI-07-01)**: El payload JSON emitido utiliza formato **`camelCase`** (`createdAt` y `updatedAt`), validando la ausencia de campos en formato snake_case en el borde HTTP.
+* **AC-07-02**: Normalización del correo electrónico a minúsculas (`Maria@Example.COM` a `maria@example.com`) y conversión de cadenas vacías a `None`.
+* **AC-07-03**: El serializador de productos informa `productTypeName` de forma directa sin requerir consultas adicionales.
+
+**Scripts:**
+```bash
+python manage.py test apps.client
+```
+
+**Resultado:**
+```text
+Ran 9 tests in 0.111s
+
+OK
+Destroying test database for alias 'default'...
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Pruebas de serialización camelCase y normalización](capturas/ISS-07_03_test_camelcase_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
@@ -1143,3 +1205,4 @@ System check identified no issues (0 silenced).
 | **ISS-04** | Modelo Client: modelos base `TimeStampedModel`/`StoreLabModel`, `Client`, migraciones y suite GATE | `b2c2dab` | **COMPLETADO** |
 | **ISS-05** | Catálogo TazaNorte: modelos `ProductType` y `Product`, FK restrict, migraciones y suite GATE | `d502e56` | **COMPLETADO** |
 | **ISS-06** | Ventas TazaNorte: modelos `Sale` y `ProductSale`, precio histórico, void, migraciones y suite GATE | `645ec19` | **COMPLETADO** |
+| **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `3c29aa7` | **COMPLETADO** |
