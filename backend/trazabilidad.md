@@ -42,7 +42,15 @@
   - [3.7 Verificación del Sistema](#37-verificación-del-sistema)
   - [3.8 Matriz GATE de la Unidad ISS-00](#38-matriz-gate-de-la-unidad-iss-00)
   - [3.9 Evidencias Visuales (EVI)](#39-evidencias-visuales-evi)
-- [4. Bitácora de Issues y Commits Realizados](#4-bitácora-de-issues-y-commits-realizados)
+- [4. Unidad ISS-01 · Settings y Selección del Motor — Capa 🛠 CONSTRUIR](#4-unidad-iss-01--settings-y-selección-del-motor--capa--construir)
+  - [4.1 Objetivo](#41-objetivo)
+  - [4.2 Requisitos y Dependencias Instaladas](#42-requisitos-y-dependencias-instaladas)
+  - [4.3 Arquitectura del Selector Multimotor (config/database.py)](#43-arquitectura-del-selector-multimotor-configdatabasepy)
+  - [4.4 Modularización de Settings y Gestión de Intérprete](#44-modularización-de-settings-y-gestión-de-intérprete)
+  - [4.5 Criterios de Aceptación (AC)](#45-criterios-de-aceptación-ac)
+  - [4.6 Matriz GATE de la Unidad ISS-01](#46-matriz-gate-de-la-unidad-iss-01)
+  - [4.7 Evidencias Visuales de la Unidad ISS-01](#47-evidencias-visuales-de-la-unidad-iss-01)
+- [5. Bitácora de Issues y Commits Realizados](#5-bitácora-de-issues-y-commits-realizados)
 
 ---
 
@@ -222,8 +230,86 @@ System check identified no issues (0 silenced).
 
 ---
 
-## 4. Bitácora de Issues y Commits Realizados
+
+---
+
+## 4. Unidad ISS-01 · Settings y Selección del Motor — Capa 🛠 CONSTRUIR
+
+- **Guía de estudio:** [ISS-01 · 🧠 Aprender](https://tecnogua.com/academic/site/backend2026/django/aprendizaje/ISS-01-aprendizaje/)
+- **Manual de construcción:** [ISS-01 · 🛠 Construir](https://tecnogua.com/academic/site/backend2026/django/manual/02-ISS-01-settings-y-seleccion-del-motor/)
+
+### 4.1 Objetivo
+
+Habilitar la selección dinámica de un solo motor de base de datos relacional por proceso (`postgresql`, `mysql`, `mssql`, `oracle`) mediante variables en `.env`, sin modificar código fuente ni escribir SQL.
+
+### 4.2 Requisitos y Dependencias Instaladas
+
+Se instalaron los paquetes de compilación del sistema en Ubuntu para `mysqlclient` (`build-essential`, `pkg-config`, `default-libmysqlclient-dev`, `python3.12-dev`) y los 5 paquetes principales en `.venv`:
+- `python-dotenv==1.2.3`: Carga de variables de entorno antes de importar `settings`.
+- `psycopg[binary]==3.3.6`: Driver moderno para PostgreSQL.
+- `mysqlclient==2.3.0`: Driver nativo C para MySQL 8.0.
+- `mssql-django==2.0.0`: Backend y driver para Microsoft SQL Server 2022.
+- `oracledb==26.0.1`: Driver oficial de Oracle Database XE 21c (reemplazo de `cx_Oracle`).
+
+### 4.3 Arquitectura del Selector Multimotor (`config/database.py`)
+
+El archivo `config/database.py` expone `database_from_environ(env)` que traduce `DB_ENGINE` a un único diccionario `DATABASES["default"]`:
+- **PostgreSQL:** Configura `ENGINE="django.db.backends.postgresql"` y valida credenciales obligatorias (`POSTGRES_DB`, `USER`, `PASSWORD`, `HOST`, `PORT`).
+- **MySQL:** Configura `ENGINE="django.db.backends.mysql"`, juego de caracteres `utf8mb4` y variables `MYSQL_*`.
+- **SQL Server:** Configura `ENGINE="mssql"` con `ODBC Driver 18 for SQL Server` y `TrustServerCertificate=yes`.
+- **Oracle:** Configura `ENGINE="django.db.backends.oracle"`, compone el DSN con `SERVICE_NAME` y deja `PORT=""` para evitar confusión con SID.
+
+### 4.4 Modularización de Settings y Gestión de Intérprete
+
+1. **Paquete `config/settings/`:** Se eliminó el archivo plano `settings.py` y se modularizó como paquete con `__init__.py`, validando la presencia obligatoria de `DJANGO_SECRET_KEY` antes de inicializar la aplicación.
+2. **Selector de Intérprete (`config/project_python.py`):** Define `use_project_python()`, la cual re-ejecuta `manage.py` dentro de `.venv/bin/python` si se invoca con el Python del sistema.
+3. **Puntos de entrada actualizados:** `manage.py`, `config/wsgi.py` y `config/asgi.py` integran `load_dotenv()` de manera preventiva.
+
+### 4.5 Criterios de Aceptación (AC)
+
+| Código | Criterio de Aceptación | Estado |
+|--------|------------------------|--------|
+| **AC-01-01** | `postgresql`, `mysql`, `mssql` y `oracle` producen el `ENGINE` documentado. | **CUMPLIDO** |
+| **AC-01-02** | Un motor desconocido falla con `ImproperlyConfigured`. | **CUMPLIDO** |
+| **AC-01-03** | Falta una variable obligatoria y la configuración falla antes de conectar. | **CUMPLIDO** |
+| **AC-01-04** | El DSN de Oracle contiene `SERVICE_NAME`. | **CUMPLIDO** |
+
+### 4.6 Matriz GATE de la Unidad ISS-01
+
+| AC | Verificación | Evidencia | Resultado |
+|----|--------------|-----------|-----------|
+| **AC-01-01** | Test unitario por motor (`DatabaseSelectionTests`) | `EVI-01-01` | **PASS** |
+| **AC-01-02** | Test de motor inválido con `ImproperlyConfigured` | `EVI-01-01` | **PASS** |
+| **AC-01-03** | Test de variable obligatoria vacía | `EVI-01-01` | **PASS** |
+| **AC-01-04** | Aserción de `SERVICE_NAME` en DSN de Oracle | `EVI-01-01` | **PASS** |
+
+> **Condición GATE:** Todas las condiciones de aceptación se encuentran en **PASS**. La unidad **ISS-01** queda formalmente superada y el sistema multidialecto verificado.
+
+### 4.7 Evidencias Visuales de la Unidad ISS-01
+
+#### 📸 Evidencia GATE (`EVI-01-01`): Ejecución Exitosa de Tests de Selección de Motor
+- **Archivo de captura:** `capturas/ISS-01_EVI-01_test_seleccion_motor.png`
+- **Comandos:** `python manage.py test config && python manage.py check`
+- **Descripción:** Ejecución de los 6 tests unitarios de `DatabaseSelectionTests` con resultado `OK` y chequeo del sistema sin observaciones (`0 silenced`).
+
+![EVI-01-01: DatabaseSelectionTests PASS y check limpio](capturas/ISS-01_EVI-01_test_seleccion_motor.png)
+
+#### 📸 Evidencias de Proceso de Construcción:
+- **Paso 1 (Dependencias del sistema):** `![Dependencias MySQL](capturas/ISS-01_01_dependencias_sistema_mysql.png)`
+- **Paso 2 (Instalación de Drivers):** `![Drivers Instalados](capturas/ISS-01_02_instalacion_drivers_motores.png)`
+- **Paso 3 (Paquete config/settings):** `![Paquete settings](capturas/ISS-01_03_paquete_config_settings.png)`
+- **Paso 4 (Configuración .env):** `![Configuración .env](capturas/ISS-01_04_configuracion_env_secret_key.png)`
+- **Paso 5 (Selector config/database.py):** `![Selector database.py](capturas/ISS-01_05_selector_config_database.png)`
+- **Paso 6 (Inicialización settings):** `![Settings __init__.py](capturas/ISS-01_06_settings_init_multimotor.png)`
+- **Paso 7 (Intérprete project_python.py):** `![Intérprete venv](capturas/ISS-01_07_project_python_venv.png)`
+- **Paso 8 (Parches manage/wsgi/asgi):** `![Parches puntos de entrada](capturas/ISS-01_08_parches_manage_wsgi_asgi.png)`
+- **Paso 9 (Tests unitarios):** `![Tests unitarios](capturas/ISS-01_09_test_unitarios_database.png)`
+
+---
+
+## 5. Bitácora de Issues y Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
 |-------|------------------------|-------------|--------|
-| **ISS-00** | Entorno y proyecto Django: `.venv`, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | *(pendiente de commit)* | **COMPLETADO** |
+| **ISS-00** | Entorno y proyecto Django: `.venv`, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
+| **ISS-01** | Settings y selección de motor: drivers, `config/database.py`, `config/settings/`, `tests.py` | *(en proceso)* | **COMPLETADO** |
