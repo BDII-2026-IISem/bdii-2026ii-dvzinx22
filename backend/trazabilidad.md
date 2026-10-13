@@ -1,17 +1,4 @@
-# Informe de Trazabilidad: Desarrollo y Arquitectura del Backend - TazaNorte
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Project-TazaNorte_Backend-6F4E37?style=for-the-badge&logo=coffeescript&logoColor=white" alt="TazaNorte Backend" />
-  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/Django-5.2.17-092E20?style=for-the-badge&logo=django&logoColor=white" alt="Django" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
-  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/MSSQL_Server-CC292B?style=for-the-badge&logo=microsoftsqlserver&logoColor=white" alt="MSSQL Server" />
-  <img src="https://img.shields.io/badge/Oracle_Database-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="Oracle" />
-</p>
-
----
+# Informe de Trazabilidad: Desarrollo Backend Django - TazaNorte
 
 ## Información del Estudiante
 
@@ -30,129 +17,77 @@
 ## Tabla de Contenido
 
 - [Información del Estudiante](#información-del-estudiante)
-- [1. Introducción y Contexto del Backend](#1-introducción-y-contexto-del-backend)
-- [2. Estructura del Repositorio y Módulo Backend](#2-estructura-del-repositorio-y-módulo-backend)
-- [3. Unidad ISS-00 · Entorno y Proyecto Django — Capa 🛠 CONSTRUIR](#3-unidad-iss-00--entorno-y-proyecto-django--capa--construir)
-  - [3.1 Objetivo](#31-objetivo)
-  - [3.2 Requisitos Previos y Entorno](#32-requisitos-previos-y-entorno)
-  - [3.3 Comandos de Construcción Ejecutados](#33-comandos-de-construcción-ejecutados)
-  - [3.4 Estructura Generada por la CLI](#34-estructura-generada-por-la-cli)
-  - [3.5 Configuración de .gitignore](#35-configuración-de-gitignore)
-  - [3.6 Criterios de Aceptación (AC)](#36-criterios-de-aceptación-ac)
-  - [3.7 Verificación del Sistema](#37-verificación-del-sistema)
-  - [3.8 Matriz GATE de la Unidad ISS-00](#38-matriz-gate-de-la-unidad-iss-00)
-  - [3.9 Evidencias Visuales (EVI)](#39-evidencias-visuales-evi)
-- [4. Unidad ISS-01 · Settings y Selección del Motor — Capa 🛠 CONSTRUIR](#4-unidad-iss-01--settings-y-selección-del-motor--capa--construir)
-  - [4.1 Objetivo](#41-objetivo)
-  - [4.2 Requisitos y Dependencias Instaladas](#42-requisitos-y-dependencias-instaladas)
-  - [4.3 Arquitectura del Selector Multimotor (config/database.py)](#43-arquitectura-del-selector-multimotor-configdatabasepy)
-  - [4.4 Modularización de Settings y Gestión de Intérprete](#44-modularización-de-settings-y-gestión-de-intérprete)
-  - [4.5 Criterios de Aceptación (AC)](#45-criterios-de-aceptación-ac)
-  - [4.6 Matriz GATE de la Unidad ISS-01](#46-matriz-gate-de-la-unidad-iss-01)
-  - [4.7 Evidencias Visuales de la Unidad ISS-01](#47-evidencias-visuales-de-la-unidad-iss-01)
-- [5. Bitácora de Issues y Commits Realizados](#5-bitácora-de-issues-y-commits-realizados)
+- [Unidad ISS-00: Creación del entorno virtual](#unidad-iss-00-creación-del-entorno-virtual)
+  - [1. Entorno](#1-entorno)
+  - [2. Instalación del framework](#2-instalación-del-framework)
+  - [3. Creación del proyecto](#3-creación-del-proyecto)
+  - [4. Protección del repositorio](#4-protección-del-repositorio)
+  - [5. Verificación](#5-verificación)
+- [Unidad ISS-01: Settings y selección de motor](#unidad-iss-01-settings-y-selección-de-motor)
+  - [1. Instalación de paquetes del sistema y drivers](#1-instalación-de-paquetes-del-sistema-y-drivers)
+  - [2. Transformación de la Estructura de Archivos](#2-transformación-de-la-estructura-de-archivos)
+  - [3. Definición de las variables de entorno](#3-definición-de-las-variables-de-entorno)
+  - [4. Módulo de selección de base de datos](#4-módulo-de-selección-de-base-de-datos)
+  - [5. Paquete de configuración](#5-paquete-de-configuración)
+  - [6. Re-Ejecución del intérprete](#6-re-ejecución-del-intérprete)
+  - [7. Parches en puntos de entrada en el sistema](#7-parches-en-puntos-de-entrada-en-el-sistema)
+  - [8. Pruebas unitarias de selección de motor (GATE EVI-01-01)](#8-pruebas-unitarias-de-selección-de-motor-gate-evi-01-01)
+- [Bitácora de Commits Realizados](#bitácora-de-commits-realizados)
 
 ---
 
-## 1. Introducción y Contexto del Backend
+## Unidad ISS-00: Creación del entorno virtual
 
-El presente documento constituye el **informe técnico y bitácora de trazabilidad** del desarrollo del backend del proyecto **TazaNorte**, articulado mediante el marco de trabajo **Django** en su versión **5.2.17** bajo un enfoque incremental guiado por unidades de trabajo (**Issues / ISS**).
+### 1. Entorno
+Se creó el entorno virtual con Python 3.12 en el cual se guardan las librerías necesarias para el funcionamiento del backend del proyecto en la carpeta aislada `.venv`.
 
-El backend se conecta e interactúa con los 4 motores de bases de datos aprovisionados en contenedores Docker (`MySQL 8.0`, `PostgreSQL 17`, `Microsoft SQL Server 2022` y `Oracle Database XE 21c`), garantizando integridad referencial, persistencia distribuida y auditoría transaccional.
-
----
-
-## 2. Estructura del Repositorio y Módulo Backend
-
-El proyecto backend se aloja en el directorio `backend/` dentro de la raíz del laboratorio (`~/ia-lab/backend/`), asegurando una separación modular respecto a los servicios de infraestructura y datos:
-
-```text
-backend/
-├── .gitignore                    # Reglas de exclusión para Git (.venv, pycache, env, sqlite)
-├── .venv/                        # Entorno virtual aislado con Python 3.12 y Django 5.2.17
-├── config/                       # Paquete principal de configuración del proyecto Django
-│   ├── __init__.py
-│   ├── asgi.py                   # Entrada para servidores asíncronos ASGI
-│   ├── settings.py               # Configuración centralizada de Django
-│   ├── urls.py                   # URLconf raíz del proyecto
-│   └── wsgi.py                   # Entrada para servidores síncronos WSGI
-├── manage.py                     # CLI de administración del proyecto Django
-├── requirements.txt              # Congelamiento exacto de dependencias instaladas
-├── capturas/                     # Almacén de evidencias visuales del laboratorio
-│   ├── .gitkeep
-│   ├── ISS-00_EVI-01_django_instalado.png
-│   └── ISS-00_EVI-02_arbol_config.png
-├── caps/                         # Enlace directo para material fotográfico
-└── trazabilidad.md               # Informe de trazabilidad técnica (este documento)
-```
-
----
-
-## 3. Unidad ISS-00 · Entorno y Proyecto Django — Capa 🛠 CONSTRUIR
-
-- **Guía de estudio:** [ISS-00 · 🧠 Aprender](https://tecnogua.com/academic/site/backend2026/django/aprendizaje/ISS-00-aprendizaje/)
-- **Manual de construcción:** [ISS-00 · 🛠 Construir](https://tecnogua.com/academic/site/backend2026/django/manual/01-ISS-00-entorno-y-proyecto-django/)
-
-### 3.1 Objetivo
-
-Crear el entorno virtual aislado (`.venv`) y el proyecto Django `config` mediante herramientas CLI oficiales, garantizando un punto de partida limpio y sin modelos de negocio iniciales.
-
-### 3.2 Requisitos Previos y Entorno
-
-- **Intérprete Python:** Python 3.12 (`Python 3.12.3` sobre Ubuntu 24.04 LTS / WSL2).
-- **Directorio de trabajo:** `~/ia-lab/backend`
-- **Versión de Framework requerida:** `Django==5.2.17`
-
-### 3.3 Comandos de Construcción Ejecutados
-
-Se ejecutó la secuencia oficial en el directorio del proyecto con el Python del sistema para inicializar el entorno y posteriormente con el intérprete del entorno activo:
-
+**Scripts de creación:**
 ```bash
-# 1. Creación del entorno virtual aislado
 python3 -m venv .venv
-
-# 2. Activación del entorno
-source .venv/bin/activate
-
-# 3. Instalación de la versión específica de Django
-python -m pip install "Django==5.2.17"
-
-# 4. Creación del proyecto Django con nombre config en la raíz del módulo
-django-admin startproject config .
-
-# 5. Congelamiento de las dependencias
-python -m pip freeze > requirements.txt
-
-# 6. Comprobación de la versión instalada
-python -m django --version
 ```
 
-**Resultado de la versión:**
-```text
-5.2.17
-```
-
-**Dependencias congeladas en `requirements.txt`:**
-```text
-asgiref==3.12.1
-Django==5.2.17
-sqlparse==0.6.0
-```
-
-### 3.4 Estructura Generada por la CLI
-
-El comando `django-admin startproject config .` generó la arquitectura base sin anidamientos innecesarios:
-- `manage.py`: Script de gestión que establece `DJANGO_SETTINGS_MODULE="config.settings"`.
-- `config/settings.py`: Archivo de configuración generado por la plantilla base.
-- `config/urls.py`: URLconf raíz con la ruta de administración `path('admin/', admin.site.urls)`.
-- `config/wsgi.py` y `config/asgi.py`: Puntos de entrada para servidores de aplicaciones web.
-
-### 3.5 Configuración de .gitignore
-
-Se creó el archivo `.gitignore` para evitar que el entorno virtual, caché de Python y bases de datos locales se incluyan en el control de versiones:
-
+**Scripts de activación:**
 ```bash
-cat > .gitignore <<'EOF'
+source .venv/bin/activate
+```
+
+**Evidencia:**
+![Activación del entorno virtual](capturas/ISS-00_EVI-01_django_instalado.png)
+
+---
+
+### 2. Instalación del framework
+El framework de Python que se utilizará para la creación del backend en este proyecto es Django 5.2.17, el cual provee el ORM, arquitectura MVC/MVT, controladores y la comunicación robusta con las bases de datos relacionales de TazaNorte. Para ello utilizamos el sistema de gestión de paquetes `pip`.
+
+**Scripts:**
+```bash
+python -m pip install "Django==5.2.17"
+python -m pip freeze > requirements.txt
+```
+
+**Evidencias:**
+![Instalación de Django y requirements.txt](capturas/ISS-00_EVI-01_django_instalado.png)
+
+---
+
+### 3. Creación del proyecto
+Por medio de Django nos es posible la creación de una plantilla inicial de proyecto a partir del framework con una estructura de archivos concreta para trabajar con la librería, dejando `manage.py` en la raíz y la configuración centralizada en el paquete `config/`.
+
+**Script:**
+```bash
+django-admin startproject config .
+```
+
+**Evidencias:**
+![Creación del proyecto config y estructura base](capturas/ISS-00_EVI-02_arbol_config.png)
+
+---
+
+### 4. Protección del repositorio
+Ya que se trabajará con repositorios de GitHub, es importante conocer que ficheros como `.env`, `.venv` o `db.sqlite3` contienen información sensible o redundante que no debe ser subida al repositorio. Para prevenir esto se agrega un archivo `.gitignore` a la raíz del backend donde se indica qué ficheros no deben ser subidos.
+
+**Contenido del `.gitignore`:**
+```text
 .venv/
 __pycache__/
 *.py[cod]
@@ -166,150 +101,382 @@ media/
 .pytest_cache/
 htmlcov/
 .coverage
-EOF
 ```
 
-### 3.6 Criterios de Aceptación (AC)
+**Evidencia:**
+![Configuración del archivo .gitignore](capturas/ISS-00_EVI-02_arbol_config.png)
 
-| Código | Criterio de Aceptación | Estado |
-|--------|------------------------|--------|
-| **AC-00-01** | `python -m django --version` imprime exactamente `5.2.17`. | **CUMPLIDO** |
-| **AC-00-02** | Existen en la raíz del backend los archivos `manage.py` y `config/urls.py`. | **CUMPLIDO** |
-| **AC-00-03** | No existen modelos de negocio definidos en esta unidad inicial. | **CUMPLIDO** |
+---
 
-### 3.7 Verificación del Sistema
+### 5. Verificación
+Se comprobó la versión activa de Django y la integridad del proyecto generado sin incidencias identificadas.
 
-Se ejecutaron las instrucciones de verificación estipuladas en la guía técnica del ISS-00:
-
+**Scripts:**
 ```bash
 python -m django --version
 python manage.py check
 ```
 
-**Salida obtenida:**
-```text
-5.2.17
-System check identified no issues (0 silenced).
+**Evidencia:**
+![Verificación de Django y Check del proyecto](capturas/ISS-00_verificacion_check.png)
+
+---
+
+## Unidad ISS-01: Settings y selección de motor
+
+### 1. Instalación de paquetes del sistema y drivers
+Los paquetes contienen las herramientas necesarias para realizar las conexiones entre Django y los 4 motores de bases de datos relacionales del laboratorio (**PostgreSQL**, **MySQL**, **SQL Server** y **Oracle**). En Ubuntu/WSL se instalaron primero las cabeceras de compilación de MySQL (`build-essential`, `pkg-config`, `default-libmysqlclient-dev`, `python3.12-dev`) y posteriormente los drivers en `.venv`, listándolos dentro del archivo `requirements.txt`.
+
+**Scripts:**
+```bash
+# Compilador y cabeceras de MySQL para Ubuntu/WSL
+apt install -y build-essential pkg-config default-libmysqlclient-dev python3.12-dev
+
+# Entorno activo e instalación de drivers
+source .venv/bin/activate
+which python
+python -m pip install "python-dotenv==1.2.3"
+python -m pip install "psycopg[binary]==3.3.6"
+python -m pip install "mysqlclient==2.3.0"
+python -m pip install "mssql-django==2.0.0"
+python -m pip install "oracledb==26.0.1"
+python -m pip freeze > requirements.txt
 ```
 
-**Evidencia de Verificación:**
-
-![Verificación de Django y Check del Proyecto](capturas/ISS-00_verificacion_check.png)
-
-### 3.8 Matriz GATE de la Unidad ISS-00
-
-| AC | Verificación | Evidencia | Resultado |
-|----|--------------|-----------|-----------|
-| **AC-00-01** | Versión de Django en entorno activo | `EVI-00-01` | **PASS** |
-| **AC-00-02** | Archivos del proyecto generados (`manage.py`, `config/urls.py`) | `EVI-00-02` | **PASS** |
-| **AC-00-03** | Ausencia de modelos de negocio (inspección de árbol) | Inspección del árbol | **PASS** |
-
-> **Condición GATE:** Todas las condiciones de aceptación se encuentran en **PASS**. La unidad **ISS-00** queda formalmente cerrada y el entorno habilitado para avanzar a la unidad **ISS-01**.
+**Evidencia:**
+![Instalación de paquetes del sistema](capturas/ISS-01_01_dependencias_sistema_mysql.png)
+![Drivers instalados en requirements.txt](capturas/ISS-01_02_instalacion_drivers_motores.png)
 
 ---
 
-### 3.9 Evidencias Visuales (EVI)
+### 2. Transformación de la Estructura de Archivos
+Se eliminó el archivo plano generado automáticamente `config/settings.py` y se creó el paquete `config/settings/` con su respectivo archivo `__init__.py`. 
 
-#### 📸 Evidencia 1 (`EVI-00-01`): Instalación de Django 5.2.17 en `.venv`
+Adicionalmente se crearon `.env.example` con la plantilla de variables, `.env` con las credenciales reales de la cafetería TazaNorte, `config/database.py` para la selección dinámica de motores y `config/project_python.py` para el manejo de intérprete.
 
-- **Archivo de captura:** `capturas/ISS-00_EVI-01_django_instalado.png`
-- **Descripción:** Captura de pantalla de la terminal en WSL2 mostrando el prompt con el entorno virtual activo `(.venv)`, la ejecución de `python -m django --version` con salida `5.2.17` y el contenido de `requirements.txt`.
-- **Criterio que valida:** AC-00-01.
+**Scripts:**
+```bash
+rm config/settings.py
+mkdir -p config/settings
+```
 
-![EVI-00-01: Django 5.2.17 instalado en .venv](capturas/ISS-00_EVI-01_django_instalado.png)
-
----
-
-#### 📸 Evidencia 2 (`EVI-00-02`): Árbol del proyecto `config/` generado por la CLI y chequeo del sistema
-
-- **Archivo de captura:** `capturas/ISS-00_EVI-02_arbol_config.png`
-- **Descripción:** Captura de pantalla de la terminal en WSL2 mostrando la ejecución exitosa de `python manage.py check` (`System check identified no issues`) y el listado de archivos en `config/` y `manage.py`.
-- **Criterio que valida:** AC-00-02 y AC-00-03.
-
-![EVI-00-02: Árbol config generado y manage.py check](capturas/ISS-00_EVI-02_arbol_config.png)
+**Evidencia:**
+![Transformación a paquete config/settings/](capturas/ISS-01_03_paquete_config_settings.png)
 
 ---
 
+### 3. Definición de las variables de entorno
+En `.env.example` se guardaron los nombres de las variables de entorno del proyecto sin credenciales sensibles. En `.env` se guardaron los valores reales correspondientes a los contenedores Docker de TazaNorte y se inyectó la clave generada con `get_random_secret_key()`.
+
+**Contenido de `.env.example`:**
+```env
+# Copie este archivo a .env y complete los valores.
+# .env no se versiona.
+DJANGO_SECRET_KEY=
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver
+
+# Motor activo. Uno solo por ejecución: postgresql | mysql | mssql | oracle
+DB_ENGINE=postgresql
+
+POSTGRES_DB=tazanorte
+POSTGRES_USER=admin_user
+POSTGRES_PASSWORD=AdminPassword123*
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+
+MYSQL_DB=TazaNorte
+MYSQL_USER=admin_user
+MYSQL_PASSWORD=AdminPassword123*
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+
+MSSQL_DB=tazanorte
+MSSQL_USER=sa
+MSSQL_PASSWORD=AdminPassword123*
+MSSQL_HOST=127.0.0.1
+MSSQL_PORT=1433
+
+ORACLE_DB=XEPDB1
+ORACLE_USER=ADMIN_USER
+ORACLE_PASSWORD=AdminPassword123*
+ORACLE_HOST=127.0.0.1
+ORACLE_PORT=1521
+ORACLE_SERVICE_NAME=XEPDB1
+
+# Laboratorio académico. En producción liste orígenes explícitos.
+CORS_ALLOW_ALL_ORIGINS=True
+```
+
+**Evidencia:**
+![Definición de variables en .env](capturas/ISS-01_04_configuracion_env_secret_key.png)
 
 ---
 
-## 4. Unidad ISS-01 · Settings y Selección del Motor — Capa 🛠 CONSTRUIR
+### 4. Módulo de selección de base de datos
+Dentro de `config/database.py` se elaboró el script de selección de base de datos dinámico a través de `database_from_environ(env)`.
 
-- **Guía de estudio:** [ISS-01 · 🧠 Aprender](https://tecnogua.com/academic/site/backend2026/django/aprendizaje/ISS-01-aprendizaje/)
-- **Manual de construcción:** [ISS-01 · 🛠 Construir](https://tecnogua.com/academic/site/backend2026/django/manual/02-ISS-01-settings-y-seleccion-del-motor/)
+**Código de `config/database.py`:**
+```python
+"""Selección del motor de base de datos a partir del entorno.
 
-### 4.1 Objetivo
+Un solo alias, default, queda activo en cada ejecución.
+"""
 
-Habilitar la selección dinámica de un solo motor de base de datos relacional por proceso (`postgresql`, `mysql`, `mssql`, `oracle`) mediante variables en `.env`, sin modificar código fuente ni escribir SQL.
+from django.core.exceptions import ImproperlyConfigured
 
-### 4.2 Requisitos y Dependencias Instaladas
+ALLOWED_ENGINES = ("postgresql", "mysql", "mssql", "oracle")
 
-Se instalaron los paquetes de compilación del sistema en Ubuntu para `mysqlclient` (`build-essential`, `pkg-config`, `default-libmysqlclient-dev`, `python3.12-dev`) y los 5 paquetes principales en `.venv`:
-- `python-dotenv==1.2.3`: Carga de variables de entorno antes de importar `settings`.
-- `psycopg[binary]==3.3.6`: Driver moderno para PostgreSQL.
-- `mysqlclient==2.3.0`: Driver nativo C para MySQL 8.0.
-- `mssql-django==2.0.0`: Backend y driver para Microsoft SQL Server 2022.
-- `oracledb==26.0.1`: Driver oficial de Oracle Database XE 21c (reemplazo de `cx_Oracle`).
 
-### 4.3 Arquitectura del Selector Multimotor (`config/database.py`)
+def _required(env, key):
+    value = env.get(key)
+    if value is None or str(value).strip() == "":
+        raise ImproperlyConfigured(
+            f"Falta la variable de entorno {key} para DB_ENGINE={env.get('DB_ENGINE')}."
+        )
+    return str(value).strip()
 
-El archivo `config/database.py` expone `database_from_environ(env)` que traduce `DB_ENGINE` a un único diccionario `DATABASES["default"]`:
-- **PostgreSQL:** Configura `ENGINE="django.db.backends.postgresql"` y valida credenciales obligatorias (`POSTGRES_DB`, `USER`, `PASSWORD`, `HOST`, `PORT`).
-- **MySQL:** Configura `ENGINE="django.db.backends.mysql"`, juego de caracteres `utf8mb4` y variables `MYSQL_*`.
-- **SQL Server:** Configura `ENGINE="mssql"` con `ODBC Driver 18 for SQL Server` y `TrustServerCertificate=yes`.
-- **Oracle:** Configura `ENGINE="django.db.backends.oracle"`, compone el DSN con `SERVICE_NAME` y deja `PORT=""` para evitar confusión con SID.
 
-### 4.4 Modularización de Settings y Gestión de Intérprete
+def _postgresql(env):
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _required(env, "POSTGRES_DB"),
+        "USER": _required(env, "POSTGRES_USER"),
+        "PASSWORD": _required(env, "POSTGRES_PASSWORD"),
+        "HOST": _required(env, "POSTGRES_HOST"),
+        "PORT": _required(env, "POSTGRES_PORT"),
+    }
 
-1. **Paquete `config/settings/`:** Se eliminó el archivo plano `settings.py` y se modularizó como paquete con `__init__.py`, validando la presencia obligatoria de `DJANGO_SECRET_KEY` antes de inicializar la aplicación.
-2. **Selector de Intérprete (`config/project_python.py`):** Define `use_project_python()`, la cual re-ejecuta `manage.py` dentro de `.venv/bin/python` si se invoca con el Python del sistema.
-3. **Puntos de entrada actualizados:** `manage.py`, `config/wsgi.py` y `config/asgi.py` integran `load_dotenv()` de manera preventiva.
 
-### 4.5 Criterios de Aceptación (AC)
+def _mysql(env):
+    return {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": _required(env, "MYSQL_DB"),
+        "USER": _required(env, "MYSQL_USER"),
+        "PASSWORD": _required(env, "MYSQL_PASSWORD"),
+        "HOST": _required(env, "MYSQL_HOST"),
+        "PORT": _required(env, "MYSQL_PORT"),
+        "OPTIONS": {"charset": "utf8mb4"},
+    }
 
-| Código | Criterio de Aceptación | Estado |
-|--------|------------------------|--------|
-| **AC-01-01** | `postgresql`, `mysql`, `mssql` y `oracle` producen el `ENGINE` documentado. | **CUMPLIDO** |
-| **AC-01-02** | Un motor desconocido falla con `ImproperlyConfigured`. | **CUMPLIDO** |
-| **AC-01-03** | Falta una variable obligatoria y la configuración falla antes de conectar. | **CUMPLIDO** |
-| **AC-01-04** | El DSN de Oracle contiene `SERVICE_NAME`. | **CUMPLIDO** |
 
-### 4.6 Matriz GATE de la Unidad ISS-01
+def _mssql(env):
+    return {
+        "ENGINE": "mssql",
+        "NAME": _required(env, "MSSQL_DB"),
+        "USER": _required(env, "MSSQL_USER"),
+        "PASSWORD": _required(env, "MSSQL_PASSWORD"),
+        "HOST": _required(env, "MSSQL_HOST"),
+        "PORT": _required(env, "MSSQL_PORT"),
+        "OPTIONS": {
+            "driver": "ODBC Driver 18 for SQL Server",
+            "extra_params": "TrustServerCertificate=yes",
+        },
+    }
 
-| AC | Verificación | Evidencia | Resultado |
-|----|--------------|-----------|-----------|
-| **AC-01-01** | Test unitario por motor (`DatabaseSelectionTests`) | `EVI-01-01` | **PASS** |
-| **AC-01-02** | Test de motor inválido con `ImproperlyConfigured` | `EVI-01-01` | **PASS** |
-| **AC-01-03** | Test de variable obligatoria vacía | `EVI-01-01` | **PASS** |
-| **AC-01-04** | Aserción de `SERVICE_NAME` en DSN de Oracle | `EVI-01-01` | **PASS** |
 
-> **Condición GATE:** Todas las condiciones de aceptación se encuentran en **PASS**. La unidad **ISS-01** queda formalmente superada y el sistema multidialecto verificado.
+def _oracle(env):
+    host = _required(env, "ORACLE_HOST")
+    port = _required(env, "ORACLE_PORT")
+    service = _required(env, "ORACLE_SERVICE_NAME")
+    dsn = (
+        f"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={host})(PORT={port}))"
+        f"(CONNECT_DATA=(SERVICE_NAME={service})))"
+    )
+    return {
+        "ENGINE": "django.db.backends.oracle",
+        "NAME": dsn,
+        "USER": _required(env, "ORACLE_USER"),
+        "PASSWORD": _required(env, "ORACLE_PASSWORD"),
+        "HOST": host,
+        "PORT": "",
+    }
 
-### 4.7 Evidencias Visuales de la Unidad ISS-01
 
-#### 📸 Evidencia GATE (`EVI-01-01`): Ejecución Exitosa de Tests de Selección de Motor
-- **Archivo de captura:** `capturas/ISS-01_EVI-01_test_seleccion_motor.png`
-- **Comandos:** `python manage.py test config && python manage.py check`
-- **Descripción:** Ejecución de los 6 tests unitarios de `DatabaseSelectionTests` con resultado `OK` y chequeo del sistema sin observaciones (`0 silenced`).
+def database_from_environ(env):
+    engine = str(env.get("DB_ENGINE", "postgresql")).strip().lower()
+    if engine not in ALLOWED_ENGINES:
+        allowed = ", ".join(ALLOWED_ENGINES)
+        raise ImproperlyConfigured(
+            f"DB_ENGINE='{engine}' no es válido. Valores permitidos: {allowed}."
+        )
 
-![EVI-01-01: DatabaseSelectionTests PASS y check limpio](capturas/ISS-01_EVI-01_test_seleccion_motor.png)
+    builders = {
+        "postgresql": _postgresql,
+        "mysql": _mysql,
+        "mssql": _mssql,
+        "oracle": _oracle,
+    }
+    return {"default": builders[engine](env)}
+```
 
-#### 📸 Evidencias de Proceso de Construcción:
-- **Paso 1 (Dependencias del sistema):** `![Dependencias MySQL](capturas/ISS-01_01_dependencias_sistema_mysql.png)`
-- **Paso 2 (Instalación de Drivers):** `![Drivers Instalados](capturas/ISS-01_02_instalacion_drivers_motores.png)`
-- **Paso 3 (Paquete config/settings):** `![Paquete settings](capturas/ISS-01_03_paquete_config_settings.png)`
-- **Paso 4 (Configuración .env):** `![Configuración .env](capturas/ISS-01_04_configuracion_env_secret_key.png)`
-- **Paso 5 (Selector config/database.py):** `![Selector database.py](capturas/ISS-01_05_selector_config_database.png)`
-- **Paso 6 (Inicialización settings):** `![Settings __init__.py](capturas/ISS-01_06_settings_init_multimotor.png)`
-- **Paso 7 (Intérprete project_python.py):** `![Intérprete venv](capturas/ISS-01_07_project_python_venv.png)`
-- **Paso 8 (Parches manage/wsgi/asgi):** `![Parches puntos de entrada](capturas/ISS-01_08_parches_manage_wsgi_asgi.png)`
-- **Paso 9 (Tests unitarios):** `![Tests unitarios](capturas/ISS-01_09_test_unitarios_database.png)`
+**Evidencias:**
+![Módulo de selección de base de datos database.py](capturas/ISS-01_05_selector_config_database.png)
 
 ---
 
-## 5. Bitácora de Issues y Commits Realizados
+### 5. Paquete de configuración
+Dentro del fichero `config/settings/__init__.py` se cargan las variables de entorno, se asegura la presencia de `DJANGO_SECRET_KEY` y se configura `DATABASES`.
+
+**Contenido del fichero `config/settings/__init__.py`:**
+```python
+import os
+from pathlib import Path
+
+# python-dotenv, instalado en este ISS. Lee .env antes de SECRET_KEY y DATABASES.
+from dotenv import load_dotenv
+
+from config.database import database_from_environ
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured("Defina DJANGO_SECRET_KEY en el archivo .env.")
+
+DEBUG = os.environ.get("DJANGO_DEBUG", "False").strip().lower() in {"1", "true", "yes", "on"}
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+DATABASES = database_from_environ(os.environ)
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+LANGUAGE_CODE = "es"
+TIME_ZONE = "America/Bogota"
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = "static/"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+```
+
+**Evidencia:**
+![Configuración de settings/__init__.py](capturas/ISS-01_06_settings_init_multimotor.png)
+
+---
+
+### 6. Re-Ejecución del intérprete
+En el fichero `config/project_python.py` se almacena un script de prevención que evita que la ejecución de `manage.py` fuera del entorno virtual `.venv` resulte en errores, re-lanzando el proceso con `.venv/bin/python`.
+
+**Contenido del fichero `config/project_python.py`:**
+```python
+import os
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def use_project_python():
+    venv_root = PROJECT_ROOT / ".venv"
+    venv_python = venv_root / "bin" / "python"
+    if not venv_python.is_file():
+        return
+    try:
+        if Path(sys.prefix).resolve() == venv_root.resolve():
+            return
+    except OSError:
+        return
+    os.execv(venv_python, [str(venv_python), *sys.argv])
+```
+
+**Evidencia:**
+![Re-ejecución del intérprete con project_python.py](capturas/ISS-01_07_project_python_venv.png)
+
+---
+
+### 7. Parches en puntos de entrada en el sistema
+Se integraron `use_project_python()` y `load_dotenv()` al inicio de `manage.py`, `config/wsgi.py` y `config/asgi.py`.
+
+**Evidencias:**
+![Parches en manage.py, wsgi.py y asgi.py](capturas/ISS-01_08_parches_manage_wsgi_asgi.png)
+
+---
+
+### 8. Pruebas unitarias de selección de motor (GATE EVI-01-01)
+Se creó la suite de pruebas unitarias en `config/tests.py` mediante `DatabaseSelectionTests` con `SimpleTestCase`, validando:
+- Selección correcta del backend para PostgreSQL, MySQL, SQL Server y Oracle.
+- DSN de Oracle con `SERVICE_NAME`.
+- Lanzamiento de `ImproperlyConfigured` ante motores no soportados o variables obligatorias vacías.
+
+**Comando de verificación:**
+```bash
+python manage.py test config
+python manage.py check
+```
+
+**Resultado:**
+```text
+Found 6 test(s).
+System check identified no issues (0 silenced).
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK
+```
+
+**Evidencias:**
+![Suite tests.py creada](capturas/ISS-01_09_test_unitarios_database.png)
+![Ejecución de tests en verde y check de Django](capturas/ISS-01_EVI-01_test_seleccion_motor.png)
+
+---
+
+## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
 |-------|------------------------|-------------|--------|
-| **ISS-00** | Entorno y proyecto Django: `.venv`, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
-| **ISS-01** | Settings y selección de motor: drivers, `config/database.py`, `config/settings/`, `tests.py` | `494db4c` | **COMPLETADO** |
+| **ISS-00** | Creación del entorno virtual, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
+| **ISS-01** | Settings y selección de motor: drivers, `database.py`, `settings/`, `project_python.py`, `tests.py` | `494db4c` | **COMPLETADO** |
