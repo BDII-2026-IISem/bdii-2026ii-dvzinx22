@@ -45,6 +45,13 @@
   - [2. Implementación de Vista en apps/product/views.py](#2-implementación-de-vista-en-appsproductviewspy)
   - [3. Pruebas Automatizadas en apps/product/tests.py](#3-pruebas-automatizadas-en-appsproducttestspy)
   - [4. Verificación y Ejecución de la Suite (GATE)](#4-verificación-y-ejecución-de-la-suite-gate)
+- [Unidad ISS-11: Registro de venta con APIView](#unidad-iss-11-registro-de-venta-con-apiview)
+  - [1. Transacción Atómica en apps/sale/managers.py](#1-transacción-atómica-en-appssalemanagerspy)
+  - [2. Serializers de Registro en apps/sale/serializers.py](#2-serializers-de-registro-en-appssaleserializerspy)
+  - [3. Vistas de Registro en apps/sale/views.py](#3-vistas-de-registro-en-appssaleviewspy)
+  - [4. Enrutamiento en apps/sale/urls.py y config/urls.py](#4-enrutamiento-en-appssaleurlspy-y-configurlspy)
+  - [5. Pruebas Automatizadas y GATE en apps/sale/tests.py](#5-pruebas-automatizadas-y-gate-en-appssaletestspy)
+  - [6. Verificación en Consola (GATE EVI-11-01)](#6-verificación-en-consola-gate-evi-11-01)
 - [Bitácora de Commits Realizados](#bitácora-de-commits-realizados)
 
 ---
@@ -1555,7 +1562,649 @@ System check identified no issues (0 silenced).
 
 ---
 
+
+---
+
+## Unidad ISS-11: Registro de venta con APIView
+
+En esta unidad se implementa el proceso transaccional de registro de ventas para la cafetería **TazaNorte**. El requerimiento central exige que la creación de la cabecera de venta, el detalle de productos (`ProductSale`), el cálculo de totales, la captura del precio histórico y el descuento de inventario se ejecuten de manera estrictamente atómica: si cualquier paso falla, se revierte toda la operación (ROLLBACK), impidiendo inconsistencias de stock o ventas huérfanas.
+
+---
+
+### 1. Transacción Atómica en `apps/sale/managers.py`
+
+#### Contexto Técnico
+Se implementa el método `register` dentro de `SaleQuerySet` envuelto en `transaction.atomic()`. Se aplican bloqueos pesimistas (`select_for_update()`) sobre el cliente y sobre los productos ordenados por ID (evitando interbloqueos/deadlocks), se valida que cliente y productos pertenezcan a estados activos, se calculan subtotales y descuentos, y se descuenta el inventario de forma segura antes del commit.
+
+#### Código Antiguo (Antes de los cambios)
+```python
+from django.db import models
+
+class SaleQuerySet(models.QuerySet):
+    pass
+
+class SaleManager(models.Manager.from_queryset(SaleQuerySet)):
+    pass
+```
+
+#### Instrucciones de Cambio
+* **UBICAR:**
+```python
+from django.db import models
+```
+* **REEMPLAZAR POR:**
+```python
+from decimal import Decimal
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from apps.common.status import RecordStatus
+from apps.product.models import Product
+```
+* **UBICAR:**
+```python
+class SaleQuerySet(models.QuerySet):
+    pass
+```
+* **REEMPLAZAR POR:**
+```python
+class SaleQuerySet(models.QuerySet):
+    def register(self, *, client, sale_date, items, discounts):
+        if not items:
+            raise ValidationError({"items": ["La venta requiere al menos un producto."]})
+        discounts = Decimal(discounts).quantize(Decimal("0.01"))
+        if discounts < 0:
+            raise ValidationError({"discounts": ["El descuento no puede ser negativo."]})
+        quantities = {}
+        for item in items:
+            quantity = int(item["quantity"])
+            if quantity < 1:
+                raise ValidationError({"items": ["La cantidad debe ser al menos 1."]})
+            product_id = item["product_id"]
+            quantities[product_id] = quantities.get(product_id, 0) + quantity
+        with transaction.atomic():
+            locked_client = client.__class__.objects.select_for_update().get(pk=client.pk)
+            if locked_client.status != RecordStatus.ACTIVE:
+                raise ValidationError({"client_id": ["El cliente debe estar active."]})
+            locked_products = {
+                product.id: product
+                for product in Product.objects.select_for_update()
+                .select_related("product_type")
+                .filter(pk__in=quantities)
+                .order_by("id")
+            }
+            if len(locked_products) != len(quantities):
+                raise ValidationError({"items": ["Hay productos que no existen."]})
+            for product_id, quantity in quantities.items():
+                product = locked_products[product_id]
+                if product.status != RecordStatus.ACTIVE:
+                    raise ValidationError(
+                        {"items": [f"El producto {product.name} no está active."]}
+                    )
+                if product.product_type.status != RecordStatus.ACTIVE:
+                    raise ValidationError(
+                        {"items": [f"El tipo de {product.name} no está active."]}
+                    )
+                if product.stock < quantity:
+                    raise ValidationError(
+                        {"items": [f"Stock insuficiente para {product.name}."]}
+                    )
+            sale = self.model(
+                client=locked_client,
+                sale_date=sale_date,
+                subtotal=Decimal("0.00"),
+                tax=Decimal("0.00"),
+                discounts=discounts,
+                total=Decimal("0.00"),
+                status=RecordStatus.INACTIVE,
+            )
+            sale.save()
+            subtotal = Decimal("0.00")
+            for item in items:
+                product = locked_products[item["product_id"]]
+                unit_price = product.price
+                quantity = int(item["quantity"])
+                line_total = (unit_price * quantity).quantize(Decimal("0.01"))
+                sale.lines.create(
+                    product=product,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                    status=RecordStatus.ACTIVE,
+                )
+                subtotal += line_total
+            subtotal = subtotal.quantize(Decimal("0.01"))
+            if discounts > subtotal:
+                raise ValidationError(
+                    {"discounts": ["El descuento no puede superar el subtotal."]}
+                )
+            tax = Decimal("0.00")
+            total = (subtotal + tax - discounts).quantize(Decimal("0.01"))
+            sale.subtotal = subtotal
+            sale.tax = tax
+            sale.discounts = discounts
+            sale.total = total
+            sale.status = RecordStatus.ACTIVE
+            sale.save(
+                update_fields=[
+                    "subtotal",
+                    "tax",
+                    "discounts",
+                    "total",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            for product_id, quantity in quantities.items():
+                product = locked_products[product_id]
+                product.stock -= quantity
+                product.save(update_fields=["stock", "updated_at"])
+            return sale
+```
+
+#### Código Actualizado Completo (`apps/sale/managers.py`)
+```python
+from decimal import Decimal
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from apps.common.status import RecordStatus
+from apps.product.models import Product
+
+
+class SaleQuerySet(models.QuerySet):
+    def register(self, *, client, sale_date, items, discounts):
+        if not items:
+            raise ValidationError({"items": ["La venta requiere al menos un producto."]})
+        discounts = Decimal(discounts).quantize(Decimal("0.01"))
+        if discounts < 0:
+            raise ValidationError({"discounts": ["El descuento no puede ser negativo."]})
+        quantities = {}
+        for item in items:
+            quantity = int(item["quantity"])
+            if quantity < 1:
+                raise ValidationError({"items": ["La cantidad debe ser al menos 1."]})
+            product_id = item["product_id"]
+            quantities[product_id] = quantities.get(product_id, 0) + quantity
+        with transaction.atomic():
+            locked_client = client.__class__.objects.select_for_update().get(pk=client.pk)
+            if locked_client.status != RecordStatus.ACTIVE:
+                raise ValidationError({"client_id": ["El cliente debe estar active."]})
+            locked_products = {
+                product.id: product
+                for product in Product.objects.select_for_update()
+                .select_related("product_type")
+                .filter(pk__in=quantities)
+                .order_by("id")
+            }
+            if len(locked_products) != len(quantities):
+                raise ValidationError({"items": ["Hay productos que no existen."]})
+            for product_id, quantity in quantities.items():
+                product = locked_products[product_id]
+                if product.status != RecordStatus.ACTIVE:
+                    raise ValidationError(
+                        {"items": [f"El producto {product.name} no está active."]}
+                    )
+                if product.product_type.status != RecordStatus.ACTIVE:
+                    raise ValidationError(
+                        {"items": [f"El tipo de {product.name} no está active."]}
+                    )
+                if product.stock < quantity:
+                    raise ValidationError(
+                        {"items": [f"Stock insuficiente para {product.name}."]}
+                    )
+            sale = self.model(
+                client=locked_client,
+                sale_date=sale_date,
+                subtotal=Decimal("0.00"),
+                tax=Decimal("0.00"),
+                discounts=discounts,
+                total=Decimal("0.00"),
+                status=RecordStatus.INACTIVE,
+            )
+            sale.save()
+            subtotal = Decimal("0.00")
+            for item in items:
+                product = locked_products[item["product_id"]]
+                unit_price = product.price
+                quantity = int(item["quantity"])
+                line_total = (unit_price * quantity).quantize(Decimal("0.01"))
+                sale.lines.create(
+                    product=product,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                    status=RecordStatus.ACTIVE,
+                )
+                subtotal += line_total
+            subtotal = subtotal.quantize(Decimal("0.01"))
+            if discounts > subtotal:
+                raise ValidationError(
+                    {"discounts": ["El descuento no puede superar el subtotal."]}
+                )
+            tax = Decimal("0.00")
+            total = (subtotal + tax - discounts).quantize(Decimal("0.01"))
+            sale.subtotal = subtotal
+            sale.tax = tax
+            sale.discounts = discounts
+            sale.total = total
+            sale.status = RecordStatus.ACTIVE
+            sale.save(
+                update_fields=[
+                    "subtotal",
+                    "tax",
+                    "discounts",
+                    "total",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            for product_id, quantity in quantities.items():
+                product = locked_products[product_id]
+                product.stock -= quantity
+                product.save(update_fields=["stock", "updated_at"])
+            return sale
+
+
+class SaleManager(models.Manager.from_queryset(SaleQuerySet)):
+    pass
+```
+
+---
+
+### 2. Serializers de Registro en `apps/sale/serializers.py`
+
+#### Contexto Técnico
+Se definen serializers dedicados para el payload de entrada: `SaleItemSerializer` (valida el identificador del producto y cantidad mínima 1) y `SaleRegisterSerializer` (valida cliente, fecha, descuentos no negativos y la lista de ítems). En su método `create()`, delega la ejecución de la regla de negocio atómica directamente en `Sale.objects.register()`, capturando excepciones de validación de Django para mapearlas a respuestas HTTP 400 de DRF.
+
+#### Código Antiguo (Antes de los cambios)
+```python
+from rest_framework import serializers
+from apps.sale.models import ProductSale, Sale
+
+class ProductSaleSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    class Meta:
+        model = ProductSale
+        fields = [ ... ]
+
+class SaleSerializer(serializers.ModelSerializer):
+    client_name = serializers.CharField(source="client.name", read_only=True)
+    lines = ProductSaleSerializer(many=True, read_only=True)
+    class Meta:
+        model = Sale
+        fields = [ ... ]
+```
+
+#### Instrucciones de Cambio
+* **ENCIMA DE:** `from rest_framework import serializers`
+* **AGREGAR:**
+```python
+from decimal import Decimal
+from django.core.exceptions import ValidationError as DjangoValidationError
+```
+* **DEBAJO DE LOS IMPORTS EXISTENTES, AGREGAR:**
+```python
+from apps.client.models import Client
+from apps.product.models import Product
+```
+* **AL FINAL DEL ARCHIVO, AGREGAR:**
+```python
+class SaleItemSerializer(serializers.Serializer):
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        source="product",
+    )
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class SaleRegisterSerializer(serializers.Serializer):
+    client_id = serializers.PrimaryKeyRelatedField(
+        queryset=Client.objects.all(),
+        source="client",
+    )
+    sale_date = serializers.DateTimeField()
+    discounts = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        required=False,
+        default=Decimal("0.00"),
+    )
+    items = SaleItemSerializer(many=True, allow_empty=False)
+
+    def create(self, validated_data):
+        items = [
+            {"product_id": item["product"].id, "quantity": item["quantity"]}
+            for item in validated_data["items"]
+        ]
+        try:
+            return Sale.objects.register(
+                client=validated_data["client"],
+                sale_date=validated_data["sale_date"],
+                discounts=validated_data["discounts"],
+                items=items,
+            )
+        except DjangoValidationError as exc:
+            if getattr(exc, "message_dict", None):
+                raise serializers.ValidationError(exc.message_dict) from exc
+            raise serializers.ValidationError(exc.messages) from exc
+```
+
+#### Código Actualizado Completo (`apps/sale/serializers.py`)
+```python
+from decimal import Decimal
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import serializers
+from apps.client.models import Client
+from apps.product.models import Product
+from apps.sale.models import ProductSale, Sale
+
+
+class ProductSaleSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+
+    class Meta:
+        model = ProductSale
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "quantity",
+            "unit_price",
+            "line_total",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class SaleSerializer(serializers.ModelSerializer):
+    client_name = serializers.CharField(source="client.name", read_only=True)
+    lines = ProductSaleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Sale
+        fields = [
+            "id",
+            "client",
+            "client_name",
+            "sale_date",
+            "subtotal",
+            "tax",
+            "discounts",
+            "total",
+            "status",
+            "lines",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class SaleItemSerializer(serializers.Serializer):
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        source="product",
+    )
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class SaleRegisterSerializer(serializers.Serializer):
+    client_id = serializers.PrimaryKeyRelatedField(
+        queryset=Client.objects.all(),
+        source="client",
+    )
+    sale_date = serializers.DateTimeField()
+    discounts = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        required=False,
+        default=Decimal("0.00"),
+    )
+    items = SaleItemSerializer(many=True, allow_empty=False)
+
+    def create(self, validated_data):
+        items = [
+            {"product_id": item["product"].id, "quantity": item["quantity"]}
+            for item in validated_data["items"]
+        ]
+        try:
+            return Sale.objects.register(
+                client=validated_data["client"],
+                sale_date=validated_data["sale_date"],
+                discounts=validated_data["discounts"],
+                items=items,
+            )
+        except DjangoValidationError as exc:
+            if getattr(exc, "message_dict", None):
+                raise serializers.ValidationError(exc.message_dict) from exc
+            raise serializers.ValidationError(exc.messages) from exc
+```
+
+---
+
+### 3. Vistas de Registro en `apps/sale/views.py`
+
+#### Contexto Técnico
+Se implementa `SaleRegisterAPIView(APIView)` con permiso `AllowAny` para validar el payload de la venta y retornar la entidad persistida serializada con status HTTP 201 Created. Adicionalmente, se crea `SaleCollectionAPIView` como punto de entrada de colección que delega el verbo `POST` en el handler de registro.
+
+#### Código Antiguo
+*(Archivo nuevo en la unidad ISS-11).*
+
+#### Código Actualizado Completo (`apps/sale/views.py`)
+```python
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from apps.sale.models import Sale
+from apps.sale.serializers import SaleRegisterSerializer, SaleSerializer
+
+
+class SaleRegisterAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SaleRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        sale = Sale.objects.prefetch_related("lines__product").get(pk=sale.pk)
+        return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
+
+
+class SaleCollectionAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        handler = SaleRegisterAPIView()
+        handler.request = request
+        handler.format_kwarg = None
+        handler.args = ()
+        handler.kwargs = {}
+        return handler.post(request)
+```
+
+---
+
+### 4. Enrutamiento en `apps/sale/urls.py` y `config/urls.py`
+
+#### Contexto Técnico
+Dado que la venta no utiliza ViewSet convencional sino vistas explícitas orientadas a transacciones, se crea `apps/sale/urls.py` mapeando `sales/` hacia `SaleCollectionAPIView.as_view()` y se incluye bajo el prefijo `api/` en `config/urls.py`.
+
+#### Código Actualizado Completo (`apps/sale/urls.py`)
+```python
+from django.urls import path
+from apps.sale.views import SaleCollectionAPIView
+
+urlpatterns = [
+    path("sales/", SaleCollectionAPIView.as_view(), name="sale-collection"),
+]
+```
+
+#### Inclusión en `config/urls.py`
+```python
+from django.contrib import admin
+from django.urls import include, path
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include("apps.client.urls")),
+    path("api/", include("apps.product.urls")),
+    path("api/", include("apps.sale.urls")),
+]
+```
+
+---
+
+### 5. Pruebas Automatizadas y GATE en `apps/sale/tests.py`
+
+#### Contexto Técnico
+Se implementa la suite `SaleTransactionTests(APITestCase)` para verificar exhaustivamente los 5 criterios de aceptación de la unidad:
+* **AC-11-01**: Cálculo exacto de subtotal, impuesto (0.00), descuento y total final (23.00), con status `active`.
+* **AC-11-02**: Preservación del precio histórico (al alterar el precio en catálogo a 99.00, la línea de venta conserva el valor capturado).
+* **AC-11-03**: Rechazo con HTTP 400 y rollback completo si la cantidad solicitada supera el stock disponible.
+* **AC-11-04**: Rollback atómico completo ante fallo de guardado en el modelo Product: ninguna venta ni línea queda registrada en base de datos.
+* **AC-11-05**: Rechazo con HTTP 400 y rollback si el cliente asociado se encuentra inactivo (`RecordStatus.INACTIVE`).
+
+#### Código del Test Agregado (`apps/sale/tests.py`)
+```python
+class SaleTransactionTests(APITestCase):
+    def setUp(self):
+        self.buyer = Client.objects.create(name="Comprador", status=RecordStatus.ACTIVE)
+        product_type = ProductType.objects.create(name="Abarrote", status=RecordStatus.ACTIVE)
+        self.water = Product.objects.create(
+            product_type=product_type,
+            name="Agua",
+            price=Decimal("10.00"),
+            stock=5,
+            status=RecordStatus.ACTIVE,
+        )
+        self.bread = Product.objects.create(
+            product_type=product_type,
+            name="Pan",
+            price=Decimal("4.50"),
+            stock=2,
+            status=RecordStatus.ACTIVE,
+        )
+
+    def _payload(self, items, discounts="0.00"):
+        return {
+            "clientId": self.buyer.id,
+            "saleDate": timezone.now().isoformat(),
+            "discounts": discounts,
+            "items": items,
+        }
+
+    def test_register_snapshots_price_and_discounts_stock(self):
+        """AC-11-01 y AC-11-02: Totales correctos, snapshot de precio y descuento de inventario."""
+        response = self.client.post(
+            "/api/sales/",
+            self._payload(
+                [
+                    {"productId": self.water.id, "quantity": 2},
+                    {"productId": self.bread.id, "quantity": 1},
+                ],
+                discounts="1.50",
+            ),
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["tax"], "0.00")
+        self.assertEqual(response.data["subtotal"], "24.50")
+        self.assertEqual(response.data["total"], "23.00")
+        self.assertEqual(response.data["status"], "active")
+        water_line = next(
+            line for line in response.data["lines"] if line["product"] == self.water.id
+        )
+        self.assertEqual(water_line["unit_price"], "10.00")
+        self.water.refresh_from_db()
+        self.bread.refresh_from_db()
+        self.assertEqual(self.water.stock, 3)
+        self.assertEqual(self.bread.stock, 1)
+
+        # AC-11-02: Precio histórico se mantiene si el catálogo cambia después
+        self.water.price = Decimal("99.00")
+        self.water.save()
+        sale_obj = Sale.objects.get(pk=response.data["id"])
+        line = sale_obj.lines.get(product=self.water)
+        self.assertEqual(line.unit_price, Decimal("10.00"))
+
+    def test_insufficient_stock_rolls_back(self):
+        """AC-11-03: Stock insuficiente responde 400 y no crea la venta."""
+        response = self.client.post(
+            "/api/sales/",
+            self._payload([{"productId": self.bread.id, "quantity": 3}]),
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Sale.objects.count(), 0)
+        self.bread.refresh_from_db()
+        self.assertEqual(self.bread.stock, 2)
+
+    def test_stock_failure_rolls_back_the_sale(self):
+        """AC-11-04: Fallo inesperado en guardado revierte Sale y ProductSale completamente."""
+        original = Product.save
+
+        def fail_stock(product, *args, **kwargs):
+            update_fields = kwargs.get("update_fields")
+            if update_fields and "stock" in update_fields:
+                raise RuntimeError("fallo de stock")
+            return original(product, *args, **kwargs)
+
+        with patch.object(Product, "save", fail_stock):
+            with self.assertRaises(RuntimeError):
+                self.client.post(
+                    "/api/sales/",
+                    self._payload([{"productId": self.water.id, "quantity": 1}]),
+                    format="json",
+                )
+        self.assertEqual(Sale.objects.count(), 0)
+        self.assertEqual(ProductSale.objects.count(), 0)
+
+    def test_inactive_client_is_rejected(self):
+        """AC-11-05: Cliente inactivo responde 400 y no crea venta."""
+        self.buyer.status = RecordStatus.INACTIVE
+        self.buyer.save()
+        response = self.client.post(
+            "/api/sales/",
+            self._payload([{"productId": self.water.id, "quantity": 1}]),
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Sale.objects.count(), 0)
+```
+
+---
+
+### 6. Verificación en Consola (GATE EVI-11-01)
+
+#### Comandos de Ejecución
+```bash
+# Ejecución específica de pruebas de transacción de venta
+python manage.py test apps.sale.tests.SaleTransactionTests
+
+# Ejecución de la suite completa de la app sale
+python manage.py test apps.sale
+```
+
+#### Salida de Terminal
+```text
+Creating test database for alias 'default'...
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 0.478s
+
+OK
+Destroying test database for alias 'default'...
+Found 10 test(s).
+System check identified no issues (0 silenced).
+```
+
+---
+
 ## Bitácora de Commits Realizados
+
 
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
