@@ -57,6 +57,11 @@
   - [2. Enrutamiento en apps/sale/urls.py](#2-enrutamiento-en-appssaleurlspy)
   - [3. Pruebas Automatizadas y GATE en apps/sale/tests.py](#3-pruebas-automatizadas-y-gate-en-appssaletestspy)
   - [4. Verificación en Consola (GATE EVI-12-01)](#4-verificación-en-consola-gate-evi-12-01)
+- [Unidad ISS-13: Django Admin](#unidad-iss-13-django-admin)
+  - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
+  - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
+  - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
+  - [4. Verificación en Consola y Validación del Sistema (GATE EVI-13-01)](#4-verificación-en-consola-y-validación-del-sistema-gate-evi-13-01)
 - [Bitácora de Commits Realizados](#bitácora-de-commits-realizados)
 
 ---
@@ -2539,7 +2544,272 @@ System check identified no issues (0 silenced).
 
 ---
 
+---
+
+## Unidad ISS-13: Django Admin
+
+En esta unidad se configura el panel de administración oficial de Django para permitir la exploración, gestión y auditoría operativa de los datos de la cafetería **TazaNorte**. Se implementa un diseño defensivo:
+* Los modelos comerciales (`Client`, `ProductType`, `Product`) cuentan con formularios agrupados (`fieldsets`), filtros laterales (`list_filter`), búsqueda optimizada (`search_fields`) y edición rápida de estado (`list_editable`).
+* Se implementa `autocomplete_fields` para relaciones foráneas evitando desplegables masivos.
+* **Integridad transaccional**: Para `Sale` y `ProductSale`, se deshabilitan estrictamente los permisos de creación y borrado manual en el admin (`has_add_permission = False` y `has_delete_permission = False`), y el inline de detalle (`ProductSaleInline`) se define en modo solo lectura (`readonly_fields`). Esto previene que se vulneren las reglas de negocio atómicas (`register` con validación de inventario y `void` con restitución de stock).
+
+---
+
+### 1. Panel de Administración de Clientes (`apps/client/admin.py`)
+
+#### Contexto Técnico
+Se registra el modelo `Client` organizando los datos de contacto y auditoría en secciones plegables, habilitando búsqueda por nombre, teléfono y correo electrónico. Se omite cualquier campo de contraseña, ya que los clientes de la cafetería no son usuarios autenticables del sistema.
+
+#### Código Antiguo (Antes de los cambios)
+```python
+from django.contrib import admin
+
+# Register your models here.
+```
+
+#### Código Actualizado Completo (`apps/client/admin.py`)
+```python
+from django.contrib import admin
+from apps.client.models import Client
+
+
+@admin.register(Client)
+class ClientAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "email",
+        "phone",
+        "status",
+        "created_at",
+    )
+    list_filter = ("status",)
+    search_fields = ("name", "email", "phone")
+    list_editable = ("status",)
+    ordering = ("name", "id")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (
+            "Información del Cliente",
+            {"fields": ("name", "email", "phone")},
+        ),
+        ("Estado", {"fields": ("status",)}),
+        (
+            "Auditoría",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
+    )
+```
+
+---
+
+### 2. Panel del Catálogo de Menú (`apps/product/admin.py`)
+
+#### Contexto Técnico
+Se registran `ProductType` y `Product`. Se optimiza la carga con `select_related("product_type")` en `get_queryset()` y se habilita `autocomplete_fields = ("product_type",)` para asociar categorías rápidamente mediante búsqueda dinámica.
+
+#### Código Antiguo (Antes de los cambios)
+```python
+from django.contrib import admin
+
+# Register your models here.
+```
+
+#### Código Actualizado Completo (`apps/product/admin.py`)
+```python
+from django.contrib import admin
+from apps.product.models import Product, ProductType
+
+
+@admin.register(ProductType)
+class ProductTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "status", "created_at")
+    list_filter = ("status",)
+    search_fields = ("name", "description")
+    list_editable = ("status",)
+    ordering = ("name", "id")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        ("Categoría de Menú", {"fields": ("name", "description")}),
+        ("Estado", {"fields": ("status",)}),
+        (
+            "Auditoría",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
+    )
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "product_type",
+        "price",
+        "stock",
+        "status",
+        "created_at",
+    )
+    list_filter = ("status", "product_type")
+    search_fields = ("name", "description")
+    list_editable = ("price", "stock", "status")
+    ordering = ("name", "id")
+    autocomplete_fields = ("product_type",)
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        ("Información del Producto", {"fields": ("name", "product_type", "description")}),
+        ("Comercial", {"fields": ("price", "stock")}),
+        ("Estado", {"fields": ("status",)}),
+        (
+            "Auditoría",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("product_type")
+```
+
+---
+
+### 3. Panel de Ventas y Detalle en Solo Lectura (`apps/sale/admin.py`)
+
+#### Contexto Técnico
+Se registra `Sale` junto con su tabular inline `ProductSaleInline`. Ambas clases bloquean la inserción y eliminación manual (`has_add_permission = False` y `has_delete_permission = False`) para obligar a que las ventas y cancelaciones fluyan únicamente por la API REST transaccional (`POST /api/sales/` y `DELETE /api/sales/<pk>/`), protegiendo el stock de la cafetería.
+
+#### Código Antiguo (Antes de los cambios)
+```python
+from django.contrib import admin
+
+# Register your models here.
+```
+
+#### Código Actualizado Completo (`apps/sale/admin.py`)
+```python
+from django.contrib import admin
+from apps.sale.models import ProductSale, Sale
+
+
+class ProductSaleInline(admin.TabularInline):
+    """Muestra las líneas de detalle de la venta de solo lectura en TazaNorte."""
+    model = ProductSale
+    extra = 0
+    can_delete = False
+    show_change_link = True
+    fields = ("product", "quantity", "unit_price", "line_total", "status")
+    readonly_fields = ("product", "quantity", "unit_price", "line_total", "status")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Sale)
+class SaleAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "client",
+        "sale_date",
+        "subtotal",
+        "tax",
+        "discounts",
+        "total",
+        "status",
+    )
+    list_filter = ("status", "sale_date")
+    search_fields = ("client__name", "client__email")
+    ordering = ("-sale_date", "-id")
+    date_hierarchy = "sale_date"
+    readonly_fields = (
+        "client",
+        "sale_date",
+        "subtotal",
+        "tax",
+        "discounts",
+        "total",
+        "status",
+        "created_at",
+        "updated_at",
+    )
+    fieldsets = (
+        ("Información de la Venta", {"fields": ("client", "sale_date", "status")}),
+        ("Valores y Totales", {"fields": ("subtotal", "tax", "discounts", "total")}),
+        (
+            "Auditoría",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
+    )
+    inlines = (ProductSaleInline,)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("client").prefetch_related("lines__product")
+
+
+@admin.register(ProductSale)
+class ProductSaleAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "sale",
+        "product",
+        "quantity",
+        "unit_price",
+        "line_total",
+        "status",
+    )
+    list_filter = ("status",)
+    search_fields = ("sale__id", "product__name")
+    ordering = ("-sale__sale_date", "id")
+    readonly_fields = (
+        "sale",
+        "product",
+        "quantity",
+        "unit_price",
+        "line_total",
+        "status",
+        "created_at",
+        "updated_at",
+    )
+    fieldsets = (
+        ("Línea de Venta", {"fields": ("sale", "product", "quantity", "unit_price", "line_total")}),
+        ("Estado", {"fields": ("status",)}),
+        (
+            "Auditoría",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("sale", "product")
+```
+
+---
+
+### 4. Verificación en Consola y Validación del Sistema (GATE EVI-13-01)
+
+#### Comandos de Ejecución
+```bash
+# Verificación de integridad del sistema y autocompletado en admin
+python manage.py check
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+```
+
+---
+
 ## Bitácora de Commits Realizados
+
 
 
 
