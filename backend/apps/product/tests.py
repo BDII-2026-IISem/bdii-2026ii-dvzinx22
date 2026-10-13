@@ -149,3 +149,31 @@ class ProductApiTests(APITestCase):
         self.assertEqual(self.client.post("/api/products/", payload, format="json").status_code, 201)
         self.assertEqual(self.client.post("/api/products/", payload, format="json").status_code, 400)
         self.assertEqual(Product.objects.get(name="Café Filtrado").price, Decimal("4000.00"))
+
+    def test_product_crud_and_available_filter(self):
+        """ISS-10: ListAPIView filtra productos activos con categoría activa."""
+        empty_initial = self.client.get("/api/products/available/")
+        self.assertEqual(empty_initial.status_code, 200)
+        self.assertEqual(empty_initial.data, [])
+
+        created = self.client.post(
+            "/api/products/",
+            {
+                "productTypeId": self.product_type.id,
+                "name": "Café Latte Especial",
+                "price": "4500.00",
+                "status": "active",
+            },
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+
+        available = self.client.get("/api/products/available/")
+        self.assertEqual(available.status_code, 200)
+        self.assertEqual(len(available.data), 1)
+        self.assertEqual(available.data[0]["name"], "Café Latte Especial")
+
+        pk = created.data["id"]
+        self.client.delete(f"/api/products/{pk}/")
+        empty = self.client.get("/api/products/available/")
+        self.assertEqual(empty.data, [])

@@ -40,11 +40,11 @@
 - [Unidad ISS-07: Serializers y JSON camelCase](#unidad-iss-07-serializers-y-json-camelcase)
 - [Unidad ISS-08: Client con ModelViewSet](#unidad-iss-08-client-con-modelviewset)
 - [Unidad ISS-09: Catálogo con ModelViewSet](#unidad-iss-09-catálogo-con-modelviewset)
-  - [1. Construcción de paquetes](#1-construcción-de-paquetes)
-  - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
-  - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
-  - [4. Agregación de las apps a settings/__init__.py](#4-agregación-de-las-apps-a-settings__init__py)
-  - [5. Prueba de aceptación y GATE (EVI-02-01)](#5-prueba-de-aceptación-y-gate-evi-02-01)
+- [Unidad ISS-10: Disponibles con ListAPIView](#unidad-iss-10-disponibles-con-listapiview)
+  - [1. Ajustes de Rutas en apps/product/urls.py](#1-ajustes-de-rutas-en-appsproducturlspy)
+  - [2. Implementación de Vista en apps/product/views.py](#2-implementación-de-vista-en-appsproductviewspy)
+  - [3. Pruebas Automatizadas en apps/product/tests.py](#3-pruebas-automatizadas-en-appsproducttestspy)
+  - [4. Verificación y Ejecución de la Suite (GATE)](#4-verificación-y-ejecución-de-la-suite-gate)
 - [Bitácora de Commits Realizados](#bitácora-de-commits-realizados)
 
 ---
@@ -1292,7 +1292,271 @@ System check identified no issues (0 silenced).
 
 ---
 
+
+---
+
+## Unidad ISS-10: Disponibles con ListAPIView
+
+En esta unidad se implementa un endpoint especializado y optimizado de lectura para el catálogo de **TazaNorte**, permitiendo consultar únicamente los productos que se encuentran habilitados para la venta (activos y pertenecientes a categorías activas). Se utiliza `ListAPIView` de Django REST Framework junto con una ruta literal antepuesta al router.
+
+---
+
+### 1. Ajustes de Rutas en `apps/product/urls.py`
+
+#### Contexto Técnico
+Se antepone la ruta literal `products/available/` a las generadas por `SimpleRouter`. Al situar la ruta antes de `router.urls`, se garantiza semánticamente que `available` sea interpretado como una colección filtrada especializada y no como un identificador de producto (`pk`).
+
+#### Código Antiguo (Antes de los cambios)
+```python
+from rest_framework.routers import SimpleRouter
+from apps.product.views import ProductTypeViewSet, ProductViewSet
+
+router = SimpleRouter(use_regex_path=False)
+router.register("product-types", ProductTypeViewSet, basename="product-type")
+router.register("products", ProductViewSet, basename="product")
+
+urlpatterns = router.urls
+```
+
+#### Instrucciones de Cambio
+* **UBICAR:**
+```python
+from rest_framework.routers import SimpleRouter
+```
+* **REEMPLAZAR POR:**
+```python
+from django.urls import path
+from rest_framework.routers import SimpleRouter
+```
+* **UBICAR** el import de las vistas y **AGREGAR:** `AvailableProductListAPIView`.
+* **REEMPLAZAR:**
+```python
+urlpatterns = router.urls
+```
+* **POR:**
+```python
+urlpatterns = [
+    path(
+        "products/available/",
+        AvailableProductListAPIView.as_view(),
+        name="product-available",
+    ),
+]
+urlpatterns += router.urls
+```
+
+#### Código Actualizado Completo (`apps/product/urls.py`)
+```python
+from django.urls import path
+from rest_framework.routers import SimpleRouter
+from apps.product.views import (
+    AvailableProductListAPIView,
+    ProductTypeViewSet,
+    ProductViewSet,
+)
+
+router = SimpleRouter(use_regex_path=False)
+router.register("product-types", ProductTypeViewSet, basename="product-type")
+router.register("products", ProductViewSet, basename="product")
+
+urlpatterns = [
+    path(
+        "products/available/",
+        AvailableProductListAPIView.as_view(),
+        name="product-available",
+    ),
+]
+urlpatterns += router.urls
+```
+
+---
+
+### 2. Implementación de Vista en `apps/product/views.py`
+
+#### Contexto Técnico
+Se crea la vista `AvailableProductListAPIView` heredando de `ListAPIView`. Se optimiza la consulta a nivel de base de datos utilizando `select_related("product_type")` (evitando consultas N+1) y se filtra estrictamente por `status=RecordStatus.ACTIVE` tanto en el producto como en su categoría asociada.
+
+#### Código Antiguo (Antes de los cambios)
+```python
+from rest_framework import viewsets
+from rest_framework.permissions import AllowAny
+from apps.common.status import RecordStatus
+from apps.product.models import Product, ProductType
+from apps.product.serializers import ProductSerializer, ProductTypeSerializer
+
+
+class CatalogViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    lookup_value_converter = "int"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status_value = self.request.query_params.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+        return queryset
+
+    def perform_destroy(self, instance):
+        instance.status = RecordStatus.INACTIVE
+        instance.save(update_fields=["status", "updated_at"])
+
+
+class ProductTypeViewSet(CatalogViewSet):
+    queryset = ProductType.objects.all()
+    serializer_class = ProductTypeSerializer
+
+
+class ProductViewSet(CatalogViewSet):
+    queryset = Product.objects.select_related("product_type")
+    serializer_class = ProductSerializer
+```
+
+#### Instrucciones de Cambio
+* **UBICAR:**
+```python
+from rest_framework import viewsets
+```
+* **AGREGAR:**
+```python
+from rest_framework.generics import ListAPIView
+```
+* **AL FINAL DEL ARCHIVO, AGREGAR:**
+```python
+class AvailableProductListAPIView(ListAPIView):
+    """Lista de productos activos con categoría activa para la venta en TazaNorte."""
+    permission_classes = [AllowAny]
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        return Product.objects.select_related("product_type").filter(
+            status=RecordStatus.ACTIVE,
+            product_type__status=RecordStatus.ACTIVE,
+        )
+```
+
+#### Código Actualizado Completo (`apps/product/views.py`)
+```python
+from rest_framework import viewsets
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import AllowAny
+from apps.common.status import RecordStatus
+from apps.product.models import Product, ProductType
+from apps.product.serializers import ProductSerializer, ProductTypeSerializer
+
+
+class CatalogViewSet(viewsets.ModelViewSet):
+    """ViewSet base para el catálogo de TazaNorte con baja lógica y filtro por estado."""
+    permission_classes = [AllowAny]
+    lookup_value_converter = "int"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status_value = self.request.query_params.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+        return queryset
+
+    def perform_destroy(self, instance):
+        instance.status = RecordStatus.INACTIVE
+        instance.save(update_fields=["status", "updated_at"])
+
+
+class ProductTypeViewSet(CatalogViewSet):
+    """CRUD de categorías de menú en TazaNorte."""
+    queryset = ProductType.objects.all()
+    serializer_class = ProductTypeSerializer
+
+
+class ProductViewSet(CatalogViewSet):
+    """CRUD de productos de cafetería en TazaNorte con carga ansiosa de categoría."""
+    queryset = Product.objects.select_related("product_type")
+    serializer_class = ProductSerializer
+
+
+class AvailableProductListAPIView(ListAPIView):
+    """Lista de productos activos con categoría activa para la venta en TazaNorte."""
+    permission_classes = [AllowAny]
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        return Product.objects.select_related("product_type").filter(
+            status=RecordStatus.ACTIVE,
+            product_type__status=RecordStatus.ACTIVE,
+        )
+```
+
+---
+
+### 3. Pruebas Automatizadas en `apps/product/tests.py`
+
+#### Contexto Técnico
+Se incorpora la prueba de aceptación para verificar:
+1. Respuesta inicial vacía cuando no existen productos activos en el menú.
+2. Alta de un producto activo y su aparición inmediata en `/api/products/available/`.
+3. Verificación de exclusión automática cuando el producto es dado de baja lógica (`DELETE`).
+
+#### Instrucción de Cambio
+* **AL FINAL DE `class ProductApiTests`, AGREGAR:**
+```python
+    def test_product_crud_and_available_filter(self):
+        """ISS-10: ListAPIView filtra productos activos con categoría activa."""
+        empty_initial = self.client.get("/api/products/available/")
+        self.assertEqual(empty_initial.status_code, 200)
+        self.assertEqual(empty_initial.data, [])
+
+        created = self.client.post(
+            "/api/products/",
+            {
+                "productTypeId": self.product_type.id,
+                "name": "Café Latte Especial",
+                "price": "4500.00",
+                "status": "active",
+            },
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+
+        available = self.client.get("/api/products/available/")
+        self.assertEqual(available.status_code, 200)
+        self.assertEqual(len(available.data), 1)
+        self.assertEqual(available.data[0]["name"], "Café Latte Especial")
+
+        pk = created.data["id"]
+        self.client.delete(f"/api/products/{pk}/")
+        empty = self.client.get("/api/products/available/")
+        self.assertEqual(empty.data, [])
+```
+
+---
+
+### 4. Verificación y Ejecución de la Suite (GATE)
+
+#### Comandos de Ejecución
+```bash
+# Prueba unitaria específica de productos disponibles
+python manage.py test apps.product.tests.ProductApiTests.test_product_crud_and_available_filter
+
+# Suite completa de la app product (10 pruebas)
+python manage.py test apps.product
+```
+
+#### Resultado de la Verificación en Consola
+```text
+Creating test database for alias 'default'...
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 0.198s
+
+OK
+Destroying test database for alias 'default'...
+Found 10 test(s).
+System check identified no issues (0 silenced).
+```
+
+---
+
 ## Bitácora de Commits Realizados
+
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
 |-------|------------------------|-------------|--------|
@@ -1306,3 +1570,4 @@ System check identified no issues (0 silenced).
 | **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `4ab39a6` | **COMPLETADO** |
 | **ISS-08** | Client CRUD: ModelViewSet con baja lógica, SimpleRouter (/api/clients/) y suite GATE | `a459875` | **COMPLETADO** |
 | **ISS-09** | Catálogo CRUD: ViewSets con baja lógica, SimpleRouter (/api/products/ y /api/product-types/) y suite GATE | `9ccca92` | **COMPLETADO** |
+| **ISS-10** | Disponibles con ListAPIView: endpoint /api/products/available/ con filtro de activos y suite de tests | `334778` | **COMPLETADO** |
