@@ -39,6 +39,7 @@
 - [Unidad ISS-06: Sale y ProductSale](#unidad-iss-06-sale-y-productsale)
 - [Unidad ISS-07: Serializers y JSON camelCase](#unidad-iss-07-serializers-y-json-camelcase)
 - [Unidad ISS-08: Client con ModelViewSet](#unidad-iss-08-client-con-modelviewset)
+- [Unidad ISS-09: Catálogo con ModelViewSet](#unidad-iss-09-catálogo-con-modelviewset)
   - [1. Construcción de paquetes](#1-construcción-de-paquetes)
   - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
   - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
@@ -1243,6 +1244,54 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-09: Catálogo con ModelViewSet
+
+### 1. Implementación de CatalogViewSet, ProductTypeViewSet y ProductViewSet
+Se construyeron las vistas de la API para el catálogo comercial de la cafetería **TazaNorte** en `apps/product/views.py`. Siguiendo el principio de diseño limpio y DRY, se definió la clase base `CatalogViewSet(viewsets.ModelViewSet)` que encapsula:
+* **Filtro dinámico de estado**: Lectura del query param `?status=` para discriminar registros activos o inactivos.
+* **Baja lógica (Soft Delete)**: Sobrescritura de `perform_destroy()` para marcar `status = RecordStatus.INACTIVE` preservando el historial de datos.
+* **Carga optimizada**: `ProductViewSet` utiliza `select_related("product_type")` para evitar consultas N+1 al consultar la categoría asociada a cada producto.
+* **Enrutamiento**: Se registraron las rutas `/api/product-types/` y `/api/products/` en `apps/product/urls.py` con `SimpleRouter(use_regex_path=False)` y se conectaron al enrutador principal en `config/urls.py`.
+
+**Scripts:**
+```bash
+# apps/product/views.py
+# apps/product/urls.py
+# config/urls.py
+python manage.py check
+```
+
+**Evidencia:**
+![Creación de ViewSets del catálogo y configuración de rutas](capturas/ISS-09_01_viewset_y_rutas_product.png)
+
+---
+
+### 2. Suite de pruebas de API y GATE (EVI-09-01 / AC-09-01 a AC-09-03)
+Se construyeron y ejecutaron las pruebas automatizadas de integración HTTP con `APITestCase` en `apps/product/tests.py`, verificando el ciclo completo de endpoints para el catálogo:
+* **AC-09-01**: `POST /api/products/` con un producto activo y existencias persiste en el catálogo, se puede consultar, actualizar parcialmente y aplicar baja lógica (`DELETE 204`).
+* **AC-09-02**: El intento de registrar un producto con nombre repetido responde **400 Bad Request**.
+* **AC-09-03**: Los valores asignados por defecto al dar de alta sin especificar son `status = "inactive"` y `stock = 0`, y la eliminación de una categoría con productos asignados se bloquea mediante `RestrictedError`.
+* **CRUD de categorías**: Verificación completa del ciclo de vida de tipos de producto (`POST`, `GET`, `PATCH` y `DELETE` lógico).
+
+**Scripts:**
+```bash
+python manage.py test apps.product
+```
+
+**Resultado:**
+```text
+Ran 9 tests in 0.203s
+
+OK
+Destroying test database for alias 'default'...
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Pruebas de aceptación del catálogo de productos y tipos](capturas/ISS-09_02_test_product_api_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
@@ -1256,3 +1305,4 @@ System check identified no issues (0 silenced).
 | **ISS-06** | Ventas TazaNorte: modelos `Sale` y `ProductSale`, precio histórico, void, migraciones y suite GATE | `645ec19` | **COMPLETADO** |
 | **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `4ab39a6` | **COMPLETADO** |
 | **ISS-08** | Client CRUD: ModelViewSet con baja lógica, SimpleRouter (/api/clients/) y suite GATE | `a459875` | **COMPLETADO** |
+| **ISS-09** | Catálogo CRUD: ViewSets con baja lógica, SimpleRouter (/api/products/ y /api/product-types/) y suite GATE | `e1fa379` | **COMPLETADO** |
