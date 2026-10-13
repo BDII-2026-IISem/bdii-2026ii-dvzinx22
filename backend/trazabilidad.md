@@ -36,6 +36,7 @@
 - [Unidad ISS-03: Custom User antes de la primera migración](#unidad-iss-03-custom-user-antes-de-la-primera-migración)
 - [Unidad ISS-04: Modelo Client](#unidad-iss-04-modelo-client)
 - [Unidad ISS-05: ProductType y Product](#unidad-iss-05-producttype-y-product)
+- [Unidad ISS-06: Sale y ProductSale](#unidad-iss-06-sale-y-productsale)
   - [1. Construcción de paquetes](#1-construcción-de-paquetes)
   - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
   - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
@@ -955,6 +956,182 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-06: Sale y ProductSale
+
+### 1. Manager y modelos Sale y ProductSale para TazaNorte
+Se implementaron los modelos transaccionales de venta en `apps/sale/models.py` y su respectivo manager personalizado en `apps/sale/managers.py` (`SaleManager`, `SaleQuerySet`). La arquitectura modela la relación cabecera-detalle sin emplear un `ManyToManyField` plano:
+* **`Sale`**: Cabecera del ticket de venta en **TazaNorte**, con clave foránea obligatoria hacia `Client` (`on_delete=models.RESTRICT`), montos no negativos (`sales_amounts_non_neg`), estado validado (`sales_status_valid`) y método transaccional atómico `void()` para anulación y restitución de stock a inventario.
+* **`ProductSale`**: Detalle del ticket con clave foránea hacia `Product` y `Sale` (ambas con `RESTRICT`), persistencia inmutable del precio unitario histórico (`unit_price`) y recálculo automático de `line_total = quantity * unit_price` en el método `save()`.
+
+**Scripts:**
+```bash
+cat << 'EOF' > apps/sale/managers.py
+from django.db import models
+
+class SaleQuerySet(models.QuerySet):
+    pass
+
+class SaleManager(models.Manager.from_queryset(SaleQuerySet)):
+    pass
+EOF
+
+cat << 'EOF' > apps/sale/models.py
+from decimal import Decimal
+from django.core.validators import MinValueValidator
+from django.db import models, transaction
+from apps.client.models import Client
+from apps.common.models import StoreLabModel
+from apps.common.status import RecordStatus
+from apps.product.models import Product
+from apps.sale.managers import SaleManager
+
+class Sale(StoreLabModel):
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.RESTRICT,
+        related_name="sales",
+        db_column="client_id",
+    )
+    sale_date = models.DateTimeField()
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    tax = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    discounts = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+
+    objects = SaleManager()
+
+    class Meta:
+        db_table = "sales"
+        verbose_name = "venta"
+        verbose_name_plural = "ventas"
+        ordering = ["-sale_date", "-id"]
+        constraints = [
+            StoreLabModel.status_constraint("sales_status_valid"),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(subtotal__gte=0)
+                    & models.Q(tax__gte=0)
+                    & models.Q(discounts__gte=0)
+                    & models.Q(total__gte=0)
+                ),
+                name="sales_amounts_non_neg",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Venta {self.pk}"
+
+    def void(self):
+        with transaction.atomic():
+            sale = Sale.objects.select_for_update().get(pk=self.pk)
+            if sale.status == RecordStatus.INACTIVE:
+                return sale
+            lines = sale.lines.select_related("product").select_for_update().order_by("product_id")
+            for line in lines:
+                if line.status != RecordStatus.ACTIVE:
+                    continue
+                product = Product.objects.select_for_update().get(pk=line.product_id)
+                product.stock += line.quantity
+                product.save(update_fields=["stock", "updated_at"])
+                line.status = RecordStatus.INACTIVE
+                line.save(update_fields=["status", "updated_at"])
+            sale.status = RecordStatus.INACTIVE
+            sale.save(update_fields=["status", "updated_at"])
+            return sale
+
+class ProductSale(StoreLabModel):
+    sale = models.ForeignKey(
+        Sale,
+        on_delete=models.RESTRICT,
+        related_name="lines",
+        db_column="sale_id",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.RESTRICT,
+        related_name="sale_lines",
+        db_column="product_id",
+    )
+    quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    line_total = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        db_table = "product_sales"
+        verbose_name = "detalle de venta"
+        verbose_name_plural = "detalles de venta"
+        ordering = ["id"]
+        constraints = [
+            StoreLabModel.status_constraint("product_sales_status_valid"),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(quantity__gte=1)
+                    & models.Q(unit_price__gte=0)
+                    & models.Q(line_total__gte=0)
+                ),
+                name="psale_amounts_valid",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.product} x {self.quantity}"
+
+    def save(self, *args, **kwargs):
+        self.line_total = (self.unit_price * self.quantity).quantize(Decimal("0.01"))
+        super().save(*args, **kwargs)
+EOF
+
+python manage.py check
+```
+
+**Evidencia:**
+![Creación de manager y modelos Sale y ProductSale](capturas/ISS-06_01_modelos_sale_y_productsale.png)
+
+---
+
+### 2. Generación y aplicación de migraciones (EVI-06-01)
+Se generó la migración inicial `sale.0001_initial` y se ejecutó `migrate` contra PostgreSQL (`tazanorte`), creando físicamente las tablas `sales` y `product_sales` con sus restricciones de integridad relacional.
+
+**Scripts:**
+```bash
+python manage.py makemigrations sale
+python manage.py migrate
+python manage.py showmigrations sale
+```
+
+**Evidencia:**
+![Aplicación de migraciones de sale en PostgreSQL](capturas/ISS-06_EVI-01_migracion_sale.png)
+
+---
+
+### 3. Suite de pruebas unitarias y GATE (EVI-06-02 / AC-06-01 a AC-06-04)
+Se construyeron y ejecutaron las pruebas automatizadas en `apps/sale/tests.py` validando la totalidad de los criterios de aceptación:
+* **AC-06-01**: Existencia y configuración de las tablas físicas `sales` y `product_sales`.
+* **AC-06-02**: Las relaciones foráneas usan **`RESTRICT`** protegiendo clientes y productos de borrados accidentales.
+* **AC-06-03**: `line_total` se autocalcula en el método `save()`.
+* **AC-06-04**: No se utiliza `ManyToManyField` simple hacia `Product`.
+* **EVI-06-02**: Preservación del precio histórico (al alterar el precio actual del catálogo de café, los tickets históricos conservan su importe).
+* **Anulación**: El método `void()` revierte el ticket a inactivo y devuelve las unidades al stock del producto.
+
+**Scripts:**
+```bash
+python manage.py test apps.sale
+```
+
+**Resultado:**
+```text
+Ran 6 tests in 0.109s
+
+OK
+Destroying test database for alias 'default'...
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Pruebas unitarias de integridad de venta y precio histórico](capturas/ISS-06_02_test_sale_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
@@ -965,3 +1142,4 @@ System check identified no issues (0 silenced).
 | **ISS-03** | Custom User antes de la primera migración: `RecordStatus`, modelo `User`, migraciones y suite de pruebas | `a7414c1` | **COMPLETADO** |
 | **ISS-04** | Modelo Client: modelos base `TimeStampedModel`/`StoreLabModel`, `Client`, migraciones y suite GATE | `b2c2dab` | **COMPLETADO** |
 | **ISS-05** | Catálogo TazaNorte: modelos `ProductType` y `Product`, FK restrict, migraciones y suite GATE | `d502e56` | **COMPLETADO** |
+| **ISS-06** | Ventas TazaNorte: modelos `Sale` y `ProductSale`, precio histórico, void, migraciones y suite GATE | `85774db` | **COMPLETADO** |
