@@ -52,6 +52,11 @@
   - [4. Enrutamiento en apps/sale/urls.py y config/urls.py](#4-enrutamiento-en-appssaleurlspy-y-configurlspy)
   - [5. Pruebas Automatizadas y GATE en apps/sale/tests.py](#5-pruebas-automatizadas-y-gate-en-appssaletestspy)
   - [6. Verificación en Consola (GATE EVI-11-01)](#6-verificación-en-consola-gate-evi-11-01)
+- [Unidad ISS-12: Consulta y anulación de ventas](#unidad-iss-12-consulta-y-anulación-de-ventas)
+  - [1. Vistas de Consulta y Anulación en apps/sale/views.py](#1-vistas-de-consulta-y-anulación-en-appssaleviewspy)
+  - [2. Enrutamiento en apps/sale/urls.py](#2-enrutamiento-en-appssaleurlspy)
+  - [3. Pruebas Automatizadas y GATE en apps/sale/tests.py](#3-pruebas-automatizadas-y-gate-en-appssaletestspy)
+  - [4. Verificación en Consola (GATE EVI-12-01)](#4-verificación-en-consola-gate-evi-12-01)
 - [Bitácora de Commits Realizados](#bitácora-de-commits-realizados)
 
 ---
@@ -2212,7 +2217,324 @@ System check identified no issues (0 silenced).
 
 ---
 
+---
+
+## Unidad ISS-12: Consulta y anulación de ventas
+
+En esta unidad se completan las operaciones sobre el ciclo de vida de ventas de **TazaNorte**: consulta del listado general (`GET /api/sales/`), consulta del detalle completo con sus líneas de productos (`GET /api/sales/<int:pk>/`) y anulación lógica mediante baja controlada (`DELETE /api/sales/<int:pk>/`), la cual invoca el método atómico `Sale.void()` garantizando la restitución del stock de inventario, la idempotencia de la operación y la integridad histórica de los registros contables.
+
+---
+
+### 1. Vistas de Consulta y Anulación en `apps/sale/views.py`
+
+#### Contexto Técnico
+Se define `SaleReadViewSet` utilizando una composición limpia de mixins de DRF (`ListModelMixin`, `RetrieveModelMixin`, `DestroyModelMixin` y `GenericViewSet`), restringiendo los verbos permitidos sin exponer métodos no deseados como `create` o `update`. En `perform_destroy()`, se delega en `instance.void()`, y en `SaleCollectionAPIView` se agrega el método `get()` para listar ventas ordenadas cronológicamente (`-sale_date`, `-id`) evitando consultas N+1 con `select_related("client")` y `prefetch_related("lines__product")`.
+
+#### Código Antiguo (Antes de los cambios - ISS-11)
+```python
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from apps.sale.models import Sale
+from apps.sale.serializers import SaleRegisterSerializer, SaleSerializer
+
+
+class SaleRegisterAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SaleRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        sale = Sale.objects.prefetch_related("lines__product").get(pk=sale.pk)
+        return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
+
+
+class SaleCollectionAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        handler = SaleRegisterAPIView()
+        handler.request = request
+        handler.format_kwarg = None
+        handler.args = ()
+        handler.kwargs = {}
+        return handler.post(request)
+```
+
+#### Instrucciones de Cambio
+* **UBICAR:**
+```python
+from rest_framework import status
+```
+* **REEMPLAZAR POR:**
+```python
+from rest_framework import mixins, status, viewsets
+```
+* **ENTRE `SaleRegisterAPIView` Y `SaleCollectionAPIView`, AGREGAR:**
+```python
+class SaleReadViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = (
+        Sale.objects.select_related("client")
+        .prefetch_related("lines__product")
+        .order_by("-sale_date", "-id")
+    )
+    serializer_class = SaleSerializer
+    permission_classes = [AllowAny]
+    lookup_value_converter = "int"
+
+    def perform_destroy(self, instance):
+        instance.void()
+```
+* **DENTRO DE `SaleCollectionAPIView`, AGREGAR EL MÉTODO `get`:**
+```python
+    def get(self, request, *args, **kwargs):
+        sales = SaleReadViewSet.queryset.all()
+        return Response(SaleSerializer(sales, many=True).data)
+```
+
+#### Código Actualizado Completo (`apps/sale/views.py`)
+```python
+from rest_framework import mixins, status, viewsets
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from apps.sale.models import Sale
+from apps.sale.serializers import SaleRegisterSerializer, SaleSerializer
+
+
+class SaleRegisterAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SaleRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sale = serializer.save()
+        sale = Sale.objects.prefetch_related("lines__product").get(pk=sale.pk)
+        return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
+
+
+class SaleReadViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Lectura y anulación lógica de ventas en TazaNorte.
+
+    GET /api/sales/         -> listado (ListModelMixin.list)
+    GET /api/sales/<pk>/    -> detalle (RetrieveModelMixin.retrieve)
+    DELETE /api/sales/<pk>/ -> anulación (DestroyModelMixin.destroy -> Sale.void)
+    """
+
+    queryset = (
+        Sale.objects.select_related("client")
+        .prefetch_related("lines__product")
+        .order_by("-sale_date", "-id")
+    )
+    serializer_class = SaleSerializer
+    permission_classes = [AllowAny]
+    lookup_value_converter = "int"
+
+    def perform_destroy(self, instance):
+        instance.void()
+
+
+class SaleCollectionAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        sales = SaleReadViewSet.queryset.all()
+        return Response(SaleSerializer(sales, many=True).data)
+
+    def post(self, request, *args, **kwargs):
+        handler = SaleRegisterAPIView()
+        handler.request = request
+        handler.format_kwarg = None
+        handler.args = ()
+        handler.kwargs = {}
+        return handler.post(request)
+```
+
+---
+
+### 2. Enrutamiento en `apps/sale/urls.py`
+
+#### Contexto Técnico
+Se publica la ruta de detalle `sales/<int:pk>/` vinculada explícitamente a los métodos `get` (`retrieve`) y `delete` (`destroy`) de `SaleReadViewSet`, preservando la ruta de colección `sales/`.
+
+#### Código Antiguo (Antes de los cambios - ISS-11)
+```python
+from django.urls import path
+from apps.sale.views import SaleCollectionAPIView
+
+urlpatterns = [
+    path("sales/", SaleCollectionAPIView.as_view(), name="sale-collection"),
+]
+```
+
+#### Instrucciones de Cambio
+* **UBICAR:**
+```python
+from apps.sale.views import SaleCollectionAPIView
+```
+* **REEMPLAZAR POR:**
+```python
+from apps.sale.views import SaleCollectionAPIView, SaleReadViewSet
+```
+* **AL FINAL DE `urlpatterns`, AGREGAR:**
+```python
+    path(
+        "sales/<int:pk>/",
+        SaleReadViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        name="sale-detail",
+    ),
+```
+
+#### Código Actualizado Completo (`apps/sale/urls.py`)
+```python
+from django.urls import path
+from apps.sale.views import SaleCollectionAPIView, SaleReadViewSet
+
+urlpatterns = [
+    path("sales/", SaleCollectionAPIView.as_view(), name="sale-collection"),
+    path(
+        "sales/<int:pk>/",
+        SaleReadViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        name="sale-detail",
+    ),
+]
+```
+
+---
+
+### 3. Pruebas Automatizadas y GATE en `apps/sale/tests.py`
+
+#### Contexto Técnico
+Se implementa la suite `SaleReadAndVoidTests(APITestCase)` validando los 5 criterios de aceptación de la unidad:
+* **AC-12-01**: `GET /api/sales/` responde 200 y lista las ventas persistidas.
+* **AC-12-02**: `GET /api/sales/<pk>/` responde 200, incluye las líneas de detalle y preserva el precio unitario histórico de cada producto aunque varíe el catálogo posteriormente.
+* **AC-12-03**: `DELETE /api/sales/<pk>/` anula la venta (HTTP 204 No Content), cambia su estado a `inactive` y restituye el stock correspondiente a los productos.
+* **AC-12-04**: La anulación es estrictamente idempotente: una llamada posterior responde 204 sin duplicar el incremento de existencias.
+* **AC-12-05**: La anulación lógica no elimina físicamente las líneas de la venta (`ProductSale`), garantizando trazabilidad y auditoría.
+
+#### Código del Test Agregado (`apps/sale/tests.py`)
+```python
+class SaleReadAndVoidTests(APITestCase):
+    def setUp(self):
+        self.buyer = Client.objects.create(name="Cliente Mostrador TazaNorte", status=RecordStatus.ACTIVE)
+        product_type = ProductType.objects.create(name="Bebidas Calientes", status=RecordStatus.ACTIVE)
+        self.coffee = Product.objects.create(
+            product_type=product_type,
+            name="Café Espresso Especial",
+            price=Decimal("5000.00"),
+            stock=10,
+            status=RecordStatus.ACTIVE,
+        )
+
+    def _register_sale(self, quantity=2):
+        response = self.client.post(
+            "/api/sales/",
+            {
+                "clientId": self.buyer.id,
+                "saleDate": timezone.now().isoformat(),
+                "discounts": "0.00",
+                "items": [{"productId": self.coffee.id, "quantity": quantity}],
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        return response.data["id"]
+
+    def test_list_returns_the_registered_sale(self):
+        """AC-12-01: GET /api/sales/ lista las ventas registradas."""
+        sale_id = self._register_sale()
+        response = self.client.get("/api/sales/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any(row["id"] == sale_id for row in response.data))
+
+    def test_detail_includes_lines_and_historical_price(self):
+        """AC-12-02: GET /api/sales/<pk>/ detalle incluye líneas y preserva precio histórico."""
+        sale_id = self._register_sale(quantity=2)
+        # Cambiar el precio del producto posteriormente en catálogo
+        self.coffee.price = Decimal("8000.00")
+        self.coffee.save()
+
+        response = self.client.get(f"/api/sales/{sale_id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["lines"]), 1)
+        self.assertEqual(response.data["lines"][0]["unit_price"], "5000.00")
+        self.assertEqual(response.data["lines"][0]["line_total"], "10000.00")
+
+    def test_void_cancels_sale_and_restores_stock(self):
+        """AC-12-03: DELETE /api/sales/<pk>/ anula venta (204) y restituye el stock."""
+        sale_id = self._register_sale(quantity=3)
+        self.coffee.refresh_from_db()
+        self.assertEqual(self.coffee.stock, 7)
+
+        response = self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(response.status_code, 204)
+
+        sale = Sale.objects.get(pk=sale_id)
+        self.assertEqual(sale.status, RecordStatus.INACTIVE)
+        self.coffee.refresh_from_db()
+        self.assertEqual(self.coffee.stock, 10)
+
+    def test_void_is_idempotent(self):
+        """AC-12-04: Segunda llamada a DELETE /api/sales/<pk>/ responde 204 sin duplicar stock."""
+        sale_id = self._register_sale(quantity=2)
+        first = self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(first.status_code, 204)
+
+        second = self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(second.status_code, 204)
+
+        self.coffee.refresh_from_db()
+        self.assertEqual(self.coffee.stock, 10)
+
+    def test_void_does_not_delete_product_sales(self):
+        """AC-12-05: La anulación no elimina físicamente las líneas de venta (ProductSale)."""
+        sale_id = self._register_sale(quantity=2)
+        self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(ProductSale.objects.filter(sale_id=sale_id).count(), 1)
+```
+
+---
+
+### 4. Verificación en Consola (GATE EVI-12-01)
+
+#### Comandos de Ejecución
+```bash
+# Ejecución específica de pruebas de consulta y anulación de ventas
+python manage.py test apps.sale.tests.SaleReadAndVoidTests
+
+# Ejecución de la suite completa de la app sale (15 pruebas)
+python manage.py test apps.sale
+```
+
+#### Salida de Terminal
+```text
+Creating test database for alias 'default'...
+...............
+----------------------------------------------------------------------
+Ran 15 tests in 0.573s
+
+OK
+Destroying test database for alias 'default'...
+Found 15 test(s).
+System check identified no issues (0 silenced).
+```
+
+---
+
 ## Bitácora de Commits Realizados
+
 
 
 

@@ -230,3 +230,82 @@ class SaleTransactionTests(APITestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Sale.objects.count(), 0)
+
+
+class SaleReadAndVoidTests(APITestCase):
+    def setUp(self):
+        self.buyer = Client.objects.create(name="Cliente Mostrador TazaNorte", status=RecordStatus.ACTIVE)
+        product_type = ProductType.objects.create(name="Bebidas Calientes", status=RecordStatus.ACTIVE)
+        self.coffee = Product.objects.create(
+            product_type=product_type,
+            name="Café Espresso Especial",
+            price=Decimal("5000.00"),
+            stock=10,
+            status=RecordStatus.ACTIVE,
+        )
+
+    def _register_sale(self, quantity=2):
+        response = self.client.post(
+            "/api/sales/",
+            {
+                "clientId": self.buyer.id,
+                "saleDate": timezone.now().isoformat(),
+                "discounts": "0.00",
+                "items": [{"productId": self.coffee.id, "quantity": quantity}],
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        return response.data["id"]
+
+    def test_list_returns_the_registered_sale(self):
+        """AC-12-01: GET /api/sales/ lista las ventas registradas."""
+        sale_id = self._register_sale()
+        response = self.client.get("/api/sales/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any(row["id"] == sale_id for row in response.data))
+
+    def test_detail_includes_lines_and_historical_price(self):
+        """AC-12-02: GET /api/sales/<pk>/ detalle incluye líneas y preserva precio histórico."""
+        sale_id = self._register_sale(quantity=2)
+        # Cambiar el precio del producto posteriormente en catálogo
+        self.coffee.price = Decimal("8000.00")
+        self.coffee.save()
+
+        response = self.client.get(f"/api/sales/{sale_id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["lines"]), 1)
+        self.assertEqual(response.data["lines"][0]["unit_price"], "5000.00")
+        self.assertEqual(response.data["lines"][0]["line_total"], "10000.00")
+
+    def test_void_cancels_sale_and_restores_stock(self):
+        """AC-12-03: DELETE /api/sales/<pk>/ anula venta (204) y restituye el stock."""
+        sale_id = self._register_sale(quantity=3)
+        self.coffee.refresh_from_db()
+        self.assertEqual(self.coffee.stock, 7)
+
+        response = self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(response.status_code, 204)
+
+        sale = Sale.objects.get(pk=sale_id)
+        self.assertEqual(sale.status, RecordStatus.INACTIVE)
+        self.coffee.refresh_from_db()
+        self.assertEqual(self.coffee.stock, 10)
+
+    def test_void_is_idempotent(self):
+        """AC-12-04: Segunda llamada a DELETE /api/sales/<pk>/ responde 204 sin duplicar stock."""
+        sale_id = self._register_sale(quantity=2)
+        first = self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(first.status_code, 204)
+
+        second = self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(second.status_code, 204)
+
+        self.coffee.refresh_from_db()
+        self.assertEqual(self.coffee.stock, 10)
+
+    def test_void_does_not_delete_product_sales(self):
+        """AC-12-05: La anulación no elimina físicamente las líneas de venta (ProductSale)."""
+        sale_id = self._register_sale(quantity=2)
+        self.client.delete(f"/api/sales/{sale_id}/")
+        self.assertEqual(ProductSale.objects.filter(sale_id=sale_id).count(), 1)
