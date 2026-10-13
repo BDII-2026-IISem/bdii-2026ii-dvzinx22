@@ -38,6 +38,7 @@
 - [Unidad ISS-05: ProductType y Product](#unidad-iss-05-producttype-y-product)
 - [Unidad ISS-06: Sale y ProductSale](#unidad-iss-06-sale-y-productsale)
 - [Unidad ISS-07: Serializers y JSON camelCase](#unidad-iss-07-serializers-y-json-camelcase)
+- [Unidad ISS-08: Client con ModelViewSet](#unidad-iss-08-client-con-modelviewset)
   - [1. Construcción de paquetes](#1-construcción-de-paquetes)
   - [2. Creación de apps/__init__.py](#2-creación-de-apps__init__py)
   - [3. Parche de name y label en las apps](#3-parche-de-name-y-label-en-las-apps)
@@ -1194,6 +1195,54 @@ System check identified no issues (0 silenced).
 
 ---
 
+## Unidad ISS-08: Client con ModelViewSet
+
+### 1. Implementación de ClientViewSet y enrutamiento REST
+Se publicó el CRUD completo y homogéneo del recurso clientes para **TazaNorte** mediante `ModelViewSet` en `apps/client/views.py`. En esta primera fase se opera bajo acceso abierto (`AllowAny`), implementando:
+* **Filtrado por estado**: Sobrescritura de `get_queryset()` para admitir filtros opcionales por query param (`?status=active` o `?status=inactive`).
+* **Baja lógica (Soft Delete)**: Sobrescritura de `perform_destroy()` para que al invocar `DELETE /api/clients/<id>/` no se destruya la fila física de la base de datos, sino que se altere su estado a `RecordStatus.INACTIVE`.
+* **Enrutamiento**: Configuración de `apps/client/urls.py` con `SimpleRouter(use_regex_path=False)` registrado con el prefijo `clients`, integrado en el enrutador global de Django bajo `path("api/", include("apps.client.urls"))` en `config/urls.py`.
+
+**Scripts:**
+```bash
+# apps/client/views.py
+# apps/client/urls.py
+# config/urls.py
+python manage.py check
+```
+
+**Evidencia:**
+![Creación de ClientViewSet y configuración de rutas](capturas/ISS-08_01_viewset_y_rutas_client.png)
+
+---
+
+### 2. Suite de pruebas de API y GATE (EVI-08-01 / AC-08-01 a AC-08-04)
+Se construyeron y ejecutaron las pruebas automatizadas de integración HTTP con `APITestCase` en `apps/client/tests.py`, verificando el ciclo completo del endpoint `/api/clients/`:
+* **AC-08-01**: `POST` con payload válido retorna **201 Created**, asigna estado inicial `inactive` y normaliza el email a minúsculas.
+* **AC-08-02**: El cliente recién registrado persiste de forma consistente en la tabla `clients` de PostgreSQL.
+* **AC-08-03**: `DELETE /api/clients/<id>/` responde **204 No Content** y preserva la fila en base de datos con `status = "inactive"`.
+* **AC-08-04**: El envío de cuerpos inválidos (nombre de 1 carácter o email duplicado) es rechazado con **400 Bad Request**.
+* **Operaciones adicionales**: Listado general (`GET /api/clients/`), consulta por clave primaria (`GET /api/clients/<id>/`) y actualización parcial (`PATCH`).
+
+**Scripts:**
+```bash
+python manage.py test apps.client
+```
+
+**Resultado:**
+```text
+Ran 13 tests in 0.218s
+
+OK
+Destroying test database for alias 'default'...
+System check identified no issues (0 silenced).
+```
+
+**Evidencia:**
+![Pruebas de aceptación del endpoint CRUD de clientes](capturas/ISS-08_02_test_client_crud_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
@@ -1206,3 +1255,4 @@ System check identified no issues (0 silenced).
 | **ISS-05** | Catálogo TazaNorte: modelos `ProductType` y `Product`, FK restrict, migraciones y suite GATE | `d502e56` | **COMPLETADO** |
 | **ISS-06** | Ventas TazaNorte: modelos `Sale` y `ProductSale`, precio histórico, void, migraciones y suite GATE | `645ec19` | **COMPLETADO** |
 | **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `4ab39a6` | **COMPLETADO** |
+| **ISS-08** | Client CRUD: ModelViewSet con baja lógica, SimpleRouter (/api/clients/) y suite GATE | `f1295dd` | **COMPLETADO** |
