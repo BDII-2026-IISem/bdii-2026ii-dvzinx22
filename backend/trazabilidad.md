@@ -59,6 +59,7 @@
   - [4. Verificación en Consola (GATE EVI-12-01)](#4-verificación-en-consola-gate-evi-12-01)
 - [Unidad ISS-13: Django Admin](#unidad-iss-13-django-admin)
 - [Unidad ISS-14: OpenAPI (drf-spectacular y Swagger UI)](#unidad-iss-14-openapi-drf-spectacular-y-swagger-ui)
+- [Unidad ISS-15: RefreshToken (SimpleJWT y tokens.py)](#unidad-iss-15-refreshtoken-simplejwt-y-tokenspy)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -3253,6 +3254,365 @@ OK
 
 ---
 
+## Unidad ISS-15: RefreshToken (SimpleJWT y tokens.py)
+
+Esta unidad implementa el modelo y la infraestructura criptográfica de persistencia para tokens de refresco (`RefreshToken`) bajo el esquema de seguridad de TazaNorte. Se integra `djangorestframework-simplejwt==5.5.1` para la emisión y verificación de access tokens en memoria/firma, mientras que la persistencia y control de rotación de refresh tokens se maneja en la base de datos propia (`refresh_tokens`), protegiendo el token contra filtraciones mediante hashing SHA-256 (`tokens.py`).
+
+### 1. `apps/security/tokens.py`
+
+*(Archivo nuevo en la unidad ISS-15).*
+
+#### Código
+```python
+import hashlib
+import secrets
+
+
+def generate_refresh_value():
+    return secrets.token_urlsafe(48)
+
+
+def hash_token(raw_token):
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+```
+
+---
+
+### 2. `apps/security/models.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-14)
+```python
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.db import models
+from apps.common.status import RecordStatus
+
+
+class StoreUserManager(UserManager):
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("status", RecordStatus.INACTIVE)
+        return super().create_user(username, email, password, **extra_fields)
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("status", RecordStatus.ACTIVE)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return super().create_superuser(username, email, password, **extra_fields)
+
+
+class User(AbstractUser):
+    email = models.EmailField("correo electrónico", max_length=150, unique=True)
+    status = models.CharField(
+        max_length=8,
+        choices=RecordStatus.choices,
+        default=RecordStatus.INACTIVE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = StoreUserManager()
+
+    class Meta:
+        db_table = "users"
+        verbose_name = "usuario"
+        verbose_name_plural = "usuarios"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=RecordStatus.values),
+                name="users_status_valid",
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        self.is_active = self.status == RecordStatus.ACTIVE
+        super().save(*args, **kwargs)
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.db import models
+from apps.common.status import RecordStatus
+```
+**REEMPLAZAR POR:**
+```python
+import uuid
+from django.conf import settings
+from django.utils import timezone
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.db import models
+from apps.common.status import RecordStatus
+```
+
+**UBICAR:**
+*(Al final del archivo, después de la clase `User`)*
+**AGREGAR:**
+```python
+class RefreshToken(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.RESTRICT,
+        related_name="refresh_tokens",
+        db_column="user_id",
+    )
+    token_hash = models.CharField(max_length=64, unique=True)
+    family_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    replaced_by = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="replacements",
+    )
+    status = models.CharField(
+        max_length=8,
+        choices=RecordStatus.choices,
+        default=RecordStatus.ACTIVE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "refresh_tokens"
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=RecordStatus.values),
+                name="refresh_tokens_status_valid",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} {self.family_id}"
+
+    @property
+    def is_usable(self):
+        return (
+            self.status == RecordStatus.ACTIVE
+            and self.revoked_at is None
+            and self.replaced_by_id is None
+            and self.expires_at > timezone.now()
+        )
+
+    @classmethod
+    def lifetime(cls):
+        return settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
+
+    @classmethod
+    def default_expiry(cls):
+        return timezone.now() + cls.lifetime()
+```
+
+#### Código Actualizado Completo
+```python
+import uuid
+from django.conf import settings
+from django.utils import timezone
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.db import models
+from apps.common.status import RecordStatus
+
+
+class StoreUserManager(UserManager):
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("status", RecordStatus.INACTIVE)
+        return super().create_user(username, email, password, **extra_fields)
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("status", RecordStatus.ACTIVE)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return super().create_superuser(username, email, password, **extra_fields)
+
+
+class User(AbstractUser):
+    email = models.EmailField("correo electrónico", max_length=150, unique=True)
+    status = models.CharField(
+        max_length=8,
+        choices=RecordStatus.choices,
+        default=RecordStatus.INACTIVE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = StoreUserManager()
+
+    class Meta:
+        db_table = "users"
+        verbose_name = "usuario"
+        verbose_name_plural = "usuarios"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=RecordStatus.values),
+                name="users_status_valid",
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        self.is_active = self.status == RecordStatus.ACTIVE
+        super().save(*args, **kwargs)
+
+
+class RefreshToken(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.RESTRICT,
+        related_name="refresh_tokens",
+        db_column="user_id",
+    )
+    token_hash = models.CharField(max_length=64, unique=True)
+    family_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    replaced_by = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="replacements",
+    )
+    status = models.CharField(
+        max_length=8,
+        choices=RecordStatus.choices,
+        default=RecordStatus.ACTIVE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "refresh_tokens"
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=RecordStatus.values),
+                name="refresh_tokens_status_valid",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} {self.family_id}"
+
+    @property
+    def is_usable(self):
+        return (
+            self.status == RecordStatus.ACTIVE
+            and self.revoked_at is None
+            and self.replaced_by_id is None
+            and self.expires_at > timezone.now()
+        )
+
+    @classmethod
+    def lifetime(cls):
+        return settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
+
+    @classmethod
+    def default_expiry(cls):
+        return timezone.now() + cls.lifetime()
+```
+
+---
+
+### 3. `config/settings/__init__.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-14)
+```python
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "corsheaders",
+    "drf_spectacular",
+    "apps.common",
+    "apps.client",
+    "apps.product",
+    "apps.sale",
+]
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from pathlib import Path
+from .database import DATABASES
+```
+**REEMPLAZAR POR:**
+```python
+from datetime import timedelta
+from pathlib import Path
+from .database import DATABASES
+```
+
+**UBICAR:**
+```python
+    "rest_framework",
+```
+**REEMPLAZAR POR:**
+```python
+    "rest_framework",
+    "rest_framework_simplejwt",
+```
+
+**UBICAR:**
+*(Al final del archivo)*
+**AGREGAR:**
+```python
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
+```
+
+---
+
+### Verificación y Ejecución de Migraciones y Pruebas GATE
+
+```bash
+python manage.py makemigrations security
+python manage.py migrate
+python manage.py test apps.security
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+Migrations for 'security':
+  apps/security/migrations/0002_refreshtoken.py
+    + Create model RefreshToken
+Operations to perform:
+  Apply all migrations: admin, auth, client, contenttypes, product, sale, security, sessions
+Running migrations:
+  Applying security.0002_refreshtoken... OK
+Ran 17 tests in 5.638s
+
+OK
+```
+
+**Evidencias:**
+![Definición criptográfica de tokens.py y clase RefreshToken](capturas/ISS-15_01_tokens_y_refreshtoken_model.png)
+![Configuración de SIMPLE_JWT y dependencias en settings](capturas/ISS-15_02_simplejwt_settings.png)
+![Verificación de migraciones aplicadas de RefreshToken en PostgreSQL](capturas/ISS-15_03_showmigrations_security.png)
+![Ejecución exitosa de la suite de pruebas unitarias de RefreshToken (GATE)](capturas/ISS-15_04_test_refreshtoken_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -3276,3 +3636,4 @@ OK
 | **ISS-12** | Consulta y anulación de ventas: `SaleReadViewSet`, `GET/DELETE /api/sales/<pk>/` y suite GATE | `179a19f` | **COMPLETADO** |
 | **ISS-13** | Configuración de Django Admin: `ClientAdmin`, `ProductAdmin`, `SaleAdmin` con inline seguro | `59e61ac` | **COMPLETADO** |
 | **ISS-14** | OpenAPI y Swagger UI: `drf-spectacular`, esquemas automáticos y documentación interactiva | `51483b2` | **COMPLETADO** |
+| **ISS-15** | RefreshToken: SimpleJWT, `tokens.py` (SHA-256), modelo `RefreshToken` y tests | `60e4c86` | **COMPLETADO** |

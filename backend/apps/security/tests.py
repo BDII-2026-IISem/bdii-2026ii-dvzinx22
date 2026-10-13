@@ -101,3 +101,84 @@ class AuthFlowTests(TestCase):
         self.assertTrue(admin.is_active)
         self.assertTrue(admin.is_staff)
         self.assertTrue(admin.is_superuser)
+
+
+from datetime import timedelta
+from django.utils import timezone
+from apps.security.models import RefreshToken
+from apps.security.tokens import generate_refresh_value, hash_token
+
+
+class RefreshTokenModelTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="barista",
+            email="barista@tazanorte.com",
+            password="securepassword123",
+        )
+        self.user.status = RecordStatus.ACTIVE
+        self.user.save()
+
+    def test_token_generation_and_hashing(self):
+        raw_token = generate_refresh_value()
+        self.assertTrue(len(raw_token) >= 48)
+        hashed = hash_token(raw_token)
+        self.assertEqual(len(hashed), 64)
+        self.assertNotEqual(raw_token, hashed)
+        self.assertEqual(hashed, hash_token(raw_token))
+
+    def test_refresh_token_creation_defaults(self):
+        raw_token = generate_refresh_value()
+        token_hash = hash_token(raw_token)
+        refresh = RefreshToken.objects.create(
+            user=self.user,
+            token_hash=token_hash,
+            expires_at=RefreshToken.default_expiry(),
+        )
+        self.assertEqual(refresh.status, RecordStatus.ACTIVE)
+        self.assertIsNotNone(refresh.family_id)
+        self.assertIsNone(refresh.revoked_at)
+        self.assertIsNone(refresh.replaced_by)
+        self.assertTrue(refresh.is_usable)
+
+    def test_refresh_token_revoked_is_not_usable(self):
+        refresh = RefreshToken.objects.create(
+            user=self.user,
+            token_hash=hash_token(generate_refresh_value()),
+            expires_at=RefreshToken.default_expiry(),
+            revoked_at=timezone.now(),
+        )
+        self.assertFalse(refresh.is_usable)
+
+    def test_refresh_token_expired_is_not_usable(self):
+        refresh = RefreshToken.objects.create(
+            user=self.user,
+            token_hash=hash_token(generate_refresh_value()),
+            expires_at=timezone.now() - timedelta(minutes=5),
+        )
+        self.assertFalse(refresh.is_usable)
+
+    def test_refresh_token_replaced_is_not_usable(self):
+        refresh_1 = RefreshToken.objects.create(
+            user=self.user,
+            token_hash=hash_token(generate_refresh_value()),
+            expires_at=RefreshToken.default_expiry(),
+        )
+        refresh_2 = RefreshToken.objects.create(
+            user=self.user,
+            token_hash=hash_token(generate_refresh_value()),
+            expires_at=RefreshToken.default_expiry(),
+        )
+        refresh_1.replaced_by = refresh_2
+        refresh_1.save()
+        self.assertFalse(refresh_1.is_usable)
+        self.assertTrue(refresh_2.is_usable)
+
+    def test_refresh_token_inactive_status_is_not_usable(self):
+        refresh = RefreshToken.objects.create(
+            user=self.user,
+            token_hash=hash_token(generate_refresh_value()),
+            expires_at=RefreshToken.default_expiry(),
+            status=RecordStatus.INACTIVE,
+        )
+        self.assertFalse(refresh.is_usable)

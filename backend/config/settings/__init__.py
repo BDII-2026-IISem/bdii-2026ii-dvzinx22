@@ -1,3 +1,4 @@
+from datetime import timedelta
 """Configuración de TazaNorte. El paquete sustituye al settings.py generado por startproject.
 DJANGO_SETTINGS_MODULE sigue siendo config.settings.
 """
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_simplejwt",
     "drf_spectacular",
     "corsheaders",
     "apps.security.apps.SecurityConfig",
@@ -129,3 +131,17 @@ SPECTACULAR_SETTINGS = {
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
     "SWAGGER_UI_SETTINGS": {"persistAuthorization": True},
 }
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
+
