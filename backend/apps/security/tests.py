@@ -182,3 +182,55 @@ class RefreshTokenModelTests(TestCase):
             status=RecordStatus.INACTIVE,
         )
         self.assertFalse(refresh.is_usable)
+
+
+from django.db import IntegrityError
+from apps.security.models import Role, RoleUser, Resource, ResourceRole, HttpMethod
+
+
+class RbacModelTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="cajero",
+            email="cajero@tazanorte.com",
+            password="cajeropassword123",
+        )
+        self.role = Role.objects.create(
+            name="Cajero",
+            description="Rol de atención y registro de ventas",
+        )
+        self.resource = Resource.objects.create(
+            name="Venta Register",
+            method=HttpMethod.POST,
+            route="api/sales/",
+        )
+
+    def test_role_defaults_and_str(self):
+        self.assertEqual(self.role.status, RecordStatus.INACTIVE)
+        self.assertEqual(str(self.role), "Cajero")
+
+    def test_role_unique_name(self):
+        with self.assertRaises(IntegrityError):
+            Role.objects.create(name="Cajero")
+
+    def test_role_user_assignment_and_uniqueness(self):
+        ru = RoleUser.objects.create(role=self.role, user=self.user)
+        self.assertEqual(ru.status, RecordStatus.INACTIVE)
+        with self.assertRaises(IntegrityError):
+            RoleUser.objects.create(role=self.role, user=self.user)
+
+    def test_resource_defaults_and_uniqueness(self):
+        self.assertEqual(self.resource.status, RecordStatus.INACTIVE)
+        self.assertEqual(str(self.resource), "POST api/sales/")
+        with self.assertRaises(IntegrityError):
+            Resource.objects.create(
+                name="Venta Register Duplicate",
+                method=HttpMethod.POST,
+                route="api/sales/",
+            )
+
+    def test_resource_role_grant_and_uniqueness(self):
+        rr = ResourceRole.objects.create(resource=self.resource, role=self.role)
+        self.assertEqual(rr.status, RecordStatus.INACTIVE)
+        with self.assertRaises(IntegrityError):
+            ResourceRole.objects.create(resource=self.resource, role=self.role)
