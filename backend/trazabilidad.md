@@ -3614,6 +3614,11 @@ OK
 
 **Evidencias:**
 ![Definición criptográfica de tokens.py y clase RefreshToken](capturas/ISS-15_01_tokens_y_refreshtoken_model.png)
+
+> [!NOTE]
+> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
+> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
+
 ![Configuración de SIMPLE_JWT y dependencias en settings](capturas/ISS-15_02_simplejwt_settings.png)
 ![Verificación de migraciones aplicadas de RefreshToken en PostgreSQL](capturas/ISS-15_03_showmigrations_security.png)
 ![Ejecución exitosa de la suite de pruebas unitarias de RefreshToken (GATE)](capturas/ISS-15_04_test_refreshtoken_gate.png)
@@ -4071,6 +4076,11 @@ OK
 
 **Evidencias:**
 ![Modelos de autorización RBAC (Role, RoleUser, Resource, ResourceRole)](capturas/ISS-16_01_rbac_models_code.png)
+
+> [!NOTE]
+> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
+> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
+
 ![Migraciones de tablas roles, role_users, resources y resource_roles](capturas/ISS-16_02_makemigrations_y_migrate.png)
 ![Ejecución exitosa de la suite de pruebas unitarias RBAC (GATE)](capturas/ISS-16_03_test_rbac_models_gate.png)
 
@@ -4968,6 +4978,11 @@ Destroying test database for alias 'default'...
 
 **Evidencias:**
 ![Autenticación JWT personalizada y clase StoreLabJWTAuthentication](capturas/ISS-20_01_authentication_class.png)
+
+> [!NOTE]
+> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
+> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
+
 ![Vista ProfileAPIView y ProfileSerializer](capturas/ISS-20_02_profile_view_y_serializer.png)
 ![Pruebas automatizadas de perfil JWT y rechazo a inactivos (GATE)](capturas/ISS-20_03_test_profile_gate.png)
 ![Endpoint /api/auth/profile/ en Swagger UI](capturas/ISS-20_04_swagger_profile_endpoint.png)
@@ -5138,6 +5153,11 @@ Destroying test database for alias 'default'...
 
 **Evidencias:**
 ![Permiso HasResourceAccess con evaluación completa de cadena RBAC](capturas/ISS-21_01_has_resource_access_permission.png)
+
+> [!NOTE]
+> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
+> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
+
 ![Verificación de integridad del sistema](capturas/ISS-21_02_system_check.png)
 ![Pruebas automatizadas de autorización RBAC (GATE)](capturas/ISS-21_03_test_rbac_permission_gate.png)
 
@@ -5300,6 +5320,11 @@ Destroying test database for alias 'default'...
 **Evidencias:**
 ![Helpers grant y grant_crud en testing.py](capturas/ISS-22_01_grant_helpers_testing.png)
 ![Protección RBAC en vistas de client, product y sale](capturas/ISS-22_02_views_rbac_protection.png)
+
+> [!NOTE]
+> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
+> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
+
 ![Suite de pruebas de negocio con RBAC en Verde (39 tests OK)](capturas/ISS-22_03_test_business_rbac_gate.png)
 ![Prueba de denegación por defecto 401 y 403](capturas/ISS-22_04_test_deny_by_default.png)
 
@@ -5556,6 +5581,11 @@ System check identified no issues (0 silenced).
 
 #### Evidencia 1: UserSerializer con contraseña segura write-only y set_password
 ![UserSerializer Password Write-Only](capturas/ISS-23_01_user_serializer_password.png)
+
+> [!NOTE]
+> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
+> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
+
 
 #### Evidencia 2: SoftDeleteModelViewSet y ViewSets de la Matriz RBAC
 ![RBAC ViewSets Soft Delete](capturas/ISS-23_02_rbac_viewsets_soft_delete.png)
