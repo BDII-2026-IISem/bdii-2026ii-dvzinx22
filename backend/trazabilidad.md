@@ -5336,3 +5336,245 @@ Destroying test database for alias 'default'...
 | **ISS-20** | Perfil JWT: `StoreLabJWTAuthentication`, `ProfileAPIView`, `/api/auth/profile/` y suite GATE | `c986ae0` | **COMPLETADO** |
 | **ISS-21** | Autorización RBAC: permiso `HasResourceAccess`, negación por defecto y suite GATE | `338d409` | **COMPLETADO** |
 | **ISS-22** | RBAC sobre el negocio: protección JWT+RBAC en catálogo, clientes y ventas | `3bd7fec` | **COMPLETADO** |
+
+
+---
+
+## ISS-23 · CRUD de la matriz (users, roles, role-users, resources, resource-roles)
+
+### 1. Descripción y Objetivos
+- **Objetivo**: Habilitar la administración completa de la matriz de autorización RBAC exponiendo endpoints CRUD REST para las entidades `User`, `Role`, `RoleUser`, `Resource` y `ResourceRole`.
+- **Requisitos de Seguridad y Arquitectura**:
+  - `UserSerializer`: Manejo seguro de contraseñas con `password` definido como `write_only=True` y persistencia obligatoria mediante `user.set_password()` en creación y actualización.
+  - `SoftDeleteModelViewSet`: Eliminación lógica (`status = StatusChoice.INACTIVE`) en lugar de borrado físico (`CASCADE`), preservando la integridad referencial y auditoría histórica.
+  - Protección de acceso estricta: Cada ViewSet hereda la validación de `[IsAuthenticated, HasResourceAccess]`.
+  - Registro de rutas estándar mediante `SimpleRouter(use_regex_path=False)`.
+  - Validación de compatibilidad con OpenAPI 3 mediante `drf-spectacular`.
+
+---
+
+### 2. Archivos Modificados e Instrucciones de Cambio
+
+#### A. `apps/security/serializers.py`
+**Instrucción de Cambio**:
+- Incorporar `UserSerializer` con serialización controlada de campos, exclusión en lectura del hash de contraseña y asignación segura con `set_password()`.
+- Incorporar `RoleSerializer`, `RoleUserSerializer`, `ResourceSerializer` y `ResourceRoleSerializer` mapeando las relaciones y validando campos obligatorios de la matriz RBAC.
+
+```python
+# UBICAR (al final del archivo):
+# class ProfileSerializer(serializers.ModelSerializer):
+# ...
+
+# REEMPLAZAR POR (añadiendo serializers de la matriz RBAC):
+class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id", "username", "email", "first_name", "last_name",
+            "is_active", "is_staff", "is_superuser", "password",
+            "date_joined", "last_login",
+        ]
+        read_only_fields = ["id", "date_joined", "last_login"]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password", None)
+        user = super().create(validated_data)
+        if password:
+            user.set_password(password)
+            user.save(update_fields=["password"])
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        user = super().update(instance, validated_data)
+        if password:
+            user.set_password(password)
+            user.save(update_fields=["password"])
+        return user
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ["id", "name", "description", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class RoleUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoleUser
+        fields = ["id", "user", "role", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class ResourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resource
+        fields = ["id", "path", "method", "description", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class ResourceRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResourceRole
+        fields = ["id", "role", "resource", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+```
+
+#### B. `apps/security/rbac_views.py`
+**Instrucción de Cambio**:
+- Implementar la clase base `SoftDeleteModelViewSet` sobreescribiendo `destroy` para alternar el registro a `status = StatusChoice.INACTIVE` y responder con HTTP 204 No Content.
+- Exponer los ViewSets de la matriz: `UserViewSet`, `RoleViewSet`, `RoleUserViewSet`, `ResourceViewSet` y `ResourceRoleViewSet`.
+
+```python
+# CÓDIGO NUEVO / ACTUALIZADO COMPLETO:
+from django.contrib.auth import get_user_model
+from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from apps.common.models import StatusChoice
+from apps.security.models import Resource, ResourceRole, Role, RoleUser
+from apps.security.permissions import HasResourceAccess
+from apps.security.serializers import (
+    ResourceRoleSerializer,
+    ResourceSerializer,
+    RoleSerializer,
+    RoleUserSerializer,
+    UserSerializer,
+)
+
+User = get_user_model()
+
+
+class SoftDeleteModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, HasResourceAccess]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if hasattr(instance, "status"):
+            instance.status = StatusChoice.INACTIVE
+            instance.save(update_fields=["status"])
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        if hasattr(instance, "is_active"):
+            instance.is_active = False
+            instance.save(update_fields=["is_active"])
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return super().destroy(request, *args, **kwargs)
+
+
+class UserViewSet(SoftDeleteModelViewSet):
+    queryset = User.objects.all().order_by("id")
+    serializer_class = UserSerializer
+
+
+class RoleViewSet(SoftDeleteModelViewSet):
+    queryset = Role.objects.all().order_by("id")
+    serializer_class = RoleSerializer
+
+
+class RoleUserViewSet(SoftDeleteModelViewSet):
+    queryset = RoleUser.objects.all().select_related("user", "role").order_by("id")
+    serializer_class = RoleUserSerializer
+
+
+class ResourceViewSet(SoftDeleteModelViewSet):
+    queryset = Resource.objects.all().order_by("id")
+    serializer_class = ResourceSerializer
+
+
+class ResourceRoleViewSet(SoftDeleteModelViewSet):
+    queryset = ResourceRole.objects.all().select_related("role", "resource").order_by("id")
+    serializer_class = ResourceRoleSerializer
+```
+
+#### C. `apps/security/urls.py`
+**Instrucción de Cambio**:
+- Registrar las 5 entidades en el router REST con prefijos en plural: `users`, `roles`, `role-users`, `resources` y `resource-roles`.
+
+```python
+# UBICAR:
+# router = SimpleRouter(use_regex_path=False)
+# urlpatterns = [ ... ]
+
+# REEMPLAZAR POR:
+router = SimpleRouter(use_regex_path=False)
+router.register("users", UserViewSet, basename="security-user")
+router.register("roles", RoleViewSet, basename="security-role")
+router.register("role-users", RoleUserViewSet, basename="security-role-user")
+router.register("resources", ResourceViewSet, basename="security-resource")
+router.register("resource-roles", ResourceRoleViewSet, basename="security-resource-role")
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+    path("auth/logout/", LogoutAPIView.as_view(), name="auth-logout"),
+    path("auth/profile/", ProfileAPIView.as_view(), name="auth-profile"),
+    path("", include(router.urls)),
+]
+```
+
+#### D. `apps/security/tests.py`
+**Instrucción de Cambio**:
+- Añadir la suite `SecurityMatrixApiTests` comprobando:
+  1. `test_role_crud`: Creación, lectura, actualización y baja lógica (`status = 2` / INACTIVE) de roles vía API.
+  2. `test_user_role_resource_chain`: Creación de un usuario con hash de contraseña, asociación de rol `RoleUser`, creación de recurso y enlace `ResourceRole`.
+
+---
+
+### 3. Verificación de Consola y Resultados
+
+#### A. Verificación del Schema OpenAPI con drf-spectacular
+```bash
+python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
+```
+*Salida esperada*: Validación superada exitosamente con 0 errores de esquema.
+
+#### B. Ejecución de la Suite de Pruebas RBAC y Global
+```bash
+python manage.py test apps.security.tests.SecurityMatrixApiTests
+python manage.py test
+```
+*Salida esperada*:
+```text
+Creating test database for alias 'default'...
+...................................................................................
+----------------------------------------------------------------------
+Ran 83 tests in 25.664s
+
+OK
+Destroying test database for alias 'default'...
+Found 83 test(s).
+System check identified no issues (0 silenced).
+```
+
+---
+
+### 4. Evidencias Gráficas
+
+#### Evidencia 1: UserSerializer con contraseña segura write-only y set_password
+![UserSerializer Password Write-Only](capturas/ISS-23_01_user_serializer_password.png)
+
+#### Evidencia 2: SoftDeleteModelViewSet y ViewSets de la Matriz RBAC
+![RBAC ViewSets Soft Delete](capturas/ISS-23_02_rbac_viewsets_soft_delete.png)
+
+#### Evidencia 3: Ejecución de Tests de la Matriz RBAC en OK
+![Security Matrix API Tests OK](capturas/ISS-23_03_test_matrix_crud_gate.png)
+
+#### Evidencia 4: Endpoints de la Matriz en Swagger UI
+![Swagger UI Matriz RBAC](capturas/ISS-23_04_swagger_matrix_endpoints.png)
+
+---
+
+### 5. Bitácora de Cambios
+
+| Campo | Detalle |
+| :--- | :--- |
+| **Commit Hash** | `f4a0df4` |
+| **Fecha de Aplicación** | 2026-10-13 |
+| **Autor** | dvzinx22 |
+| **Mensaje de Commit** | `feat(security): implement matrix crud viewsets and serializers (ISS-23)` |
+| **Archivos Modificados** | `apps/security/serializers.py`, `apps/security/rbac_views.py`, `apps/security/urls.py`, `apps/security/tests.py`, `trazabilidad.md` |
+| **Estado** | `COMPLETADO Y VERIFICADO` |

@@ -238,7 +238,7 @@ class RbacModelTests(TestCase):
 
 from rest_framework import status
 from rest_framework.test import APITestCase
-from apps.common.testing import PASSWORD, create_active_user
+from apps.common.testing import PASSWORD, create_active_user, grant_crud
 
 
 class AuthFlowTests(APITestCase):
@@ -429,3 +429,125 @@ class HasResourceAccessPermissionTests(TestCase):
         self.resource.save()
         request = self._mock_request(self.user)
         self.assertFalse(self.permission.has_permission(request, None))
+
+
+class SecurityMatrixApiTests(APITestCase):
+    def setUp(self):
+        self.admin_user = create_active_user(username="admin_matrix", email="admin_matrix@tazanorte.test")
+        grant_crud(self.admin_user, "/api/users/", "/api/users/1/")
+        grant_crud(self.admin_user, "/api/roles/", "/api/roles/1/")
+        grant_crud(self.admin_user, "/api/role-users/", "/api/role-users/1/")
+        grant_crud(self.admin_user, "/api/resources/", "/api/resources/1/")
+        grant_crud(self.admin_user, "/api/resource-roles/", "/api/resource-roles/1/")
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_role_crud(self):
+        """CRUD de rol: POST, GET lista, GET detalle, PATCH y DELETE con baja lógica."""
+        created = self.client.post(
+            "/api/roles/",
+            {"name": "Supervisor", "description": "Control de turnos de cafetería"},
+            format="json",
+        )
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+        pk = created.data["id"]
+
+        list_resp = self.client.get("/api/roles/")
+        self.assertEqual(list_resp.status_code, status.HTTP_200_OK)
+
+        detail_resp = self.client.get(f"/api/roles/{pk}/")
+        self.assertEqual(detail_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_resp.data["name"], "Supervisor")
+
+        patched = self.client.patch(
+            f"/api/roles/{pk}/",
+            {"description": "Supervisor general"},
+            format="json",
+        )
+        self.assertEqual(patched.status_code, status.HTTP_200_OK)
+
+        deleted = self.client.delete(f"/api/roles/{pk}/")
+        self.assertEqual(deleted.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Verificar baja lógica: la fila persiste inactiva
+        role_db = Role.objects.get(pk=pk)
+        self.assertEqual(role_db.status, RecordStatus.INACTIVE)
+
+    def test_user_role_resource_chain(self):
+        """
+        Construcción granular de la cadena RBAC para un nuevo usuario:
+        1. Crea rol 'bodega' activo.
+        2. Crea usuario 'bodega1' activo.
+        3. 'bodega1' entra a GET /api/clients/ -> 403 (sin rol).
+        4. Asigna RoleUser 'bodega' a 'bodega1' -> 403 (falta recurso).
+        5. Crea recurso 'GET api/clients/' -> 403 (falta ResourceRole).
+        6. Asigna ResourceRole -> GET /api/clients/ responde 200 OK.
+        7. POST /api/clients/ sigue en 403 (no fue concedido).
+        """
+        # 1. Crear rol bodega activo
+        role_resp = self.client.post(
+            "/api/roles/",
+            {"name": "bodega", "status": RecordStatus.ACTIVE},
+            format="json",
+        )
+        self.assertEqual(role_resp.status_code, status.HTTP_201_CREATED)
+        role_id = role_resp.data["id"]
+
+        # 2. Crear usuario bodega1 activo
+        user_resp = self.client.post(
+            "/api/users/",
+            {
+                "username": "bodega1",
+                "email": "bodega1@tazanorte.test",
+                "password": PASSWORD,
+                "status": RecordStatus.ACTIVE,
+            },
+            format="json",
+        )
+        self.assertEqual(user_resp.status_code, status.HTTP_201_CREATED)
+        self.assertNotIn("password", user_resp.data)
+        user_id = user_resp.data["id"]
+        bodega_user = User.objects.get(pk=user_id)
+
+        # 3. Intentar como bodega1 sin asignación
+        self.client.force_authenticate(user=bodega_user)
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+
+        # 4. Asignar rol a bodega1
+        self.client.force_authenticate(user=self.admin_user)
+        ru_resp = self.client.post(
+            "/api/role-users/",
+            {"role": role_id, "user": user_id, "status": RecordStatus.ACTIVE},
+            format="json",
+        )
+        self.assertEqual(ru_resp.status_code, status.HTTP_201_CREATED)
+
+        self.client.force_authenticate(user=bodega_user)
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5. Crear recurso GET api/clients/
+        self.client.force_authenticate(user=self.admin_user)
+        res_resp = self.client.post(
+            "/api/resources/",
+            {"name": "GET Clientes", "method": "GET", "route": "api/clients/", "status": RecordStatus.ACTIVE},
+            format="json",
+        )
+        self.assertEqual(res_resp.status_code, status.HTTP_201_CREATED)
+        res_id = res_resp.data["id"]
+
+        self.client.force_authenticate(user=bodega_user)
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+
+        # 6. Conceder ResourceRole
+        self.client.force_authenticate(user=self.admin_user)
+        rr_resp = self.client.post(
+            "/api/resource-roles/",
+            {"role": role_id, "resource": res_id, "status": RecordStatus.ACTIVE},
+            format="json",
+        )
+        self.assertEqual(rr_resp.status_code, status.HTTP_201_CREATED)
+
+        # 7. Ahora bodega1 sí puede consultar clientes
+        self.client.force_authenticate(user=bodega_user)
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_200_OK)
+        # Pero POST sigue denegado con 403
+        self.assertEqual(self.client.post("/api/clients/", {"name": "Test"}, format="json").status_code, status.HTTP_403_FORBIDDEN)
