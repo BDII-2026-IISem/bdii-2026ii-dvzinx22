@@ -61,6 +61,7 @@
 - [Unidad ISS-14: OpenAPI (drf-spectacular y Swagger UI)](#unidad-iss-14-openapi-drf-spectacular-y-swagger-ui)
 - [Unidad ISS-15: RefreshToken (SimpleJWT y tokens.py)](#unidad-iss-15-refreshtoken-simplejwt-y-tokenspy)
 - [Unidad ISS-16: Role, RoleUser, Resource y ResourceRole](#unidad-iss-16-role-roleuser-resource-y-resourcerole)
+- [Unidad ISS-17: Login OPEN](#unidad-iss-17-login-open)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -4070,6 +4071,266 @@ OK
 
 ---
 
+## Unidad ISS-17: Login OPEN
+
+Esta unidad abre el primer acceso público (**OPEN**) de la Fase II de seguridad y autenticación en **TazaNorte**. Permite autenticar usuarios activos mediante su `username` o `email` junto con su `password`, generando un Access Token JWT firmado en memoria y persistiendo un Refresh Token único protegido con hash SHA-256 en la base de datos (`refresh_tokens`). La vista `LoginAPIView` se define con `authentication_classes = []` y `permission_classes = [AllowAny]` para permitir el inicio de sesión sin requerir token previo ni ser bloqueado por tokens expirados.
+
+### 1. `apps/common/testing.py`
+
+*(Archivo nuevo en la unidad ISS-17).*
+
+#### Código
+```python
+from apps.common.status import RecordStatus
+from apps.security.models import User
+
+PASSWORD = "TazaNorte-Test-1"
+
+
+def create_active_user(username="ana", email="ana@tazanorte.test", password=PASSWORD):
+    return User.objects.create_user(
+        username=username,
+        email=email,
+        password=password,
+        status=RecordStatus.ACTIVE,
+    )
+```
+
+---
+
+### 2. `apps/security/serializers.py`
+
+*(Archivo nuevo en la unidad ISS-17).*
+
+#### Código
+```python
+from rest_framework import serializers
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False, allow_blank=False)
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        if not attrs.get("username") and not attrs.get("email"):
+            raise serializers.ValidationError(
+                "Informe username o email junto con password."
+            )
+        return attrs
+
+
+class RefreshSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+
+class TokenPairSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    token_type = serializers.CharField()
+    access_expires_in = serializers.IntegerField()
+```
+
+---
+
+### 3. `apps/security/auth_views.py`
+
+*(Archivo nuevo en la unidad ISS-17).*
+
+#### Código
+```python
+import uuid
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken
+from drf_spectacular.utils import extend_schema
+
+from apps.common.status import RecordStatus
+from apps.security.models import RefreshToken
+from apps.security.serializers import LoginSerializer, TokenPairSerializer
+from apps.security.tokens import generate_refresh_value, hash_token
+
+User = get_user_model()
+
+
+def token_payload(user, raw_refresh):
+    access = AccessToken.for_user(user)
+    lifetime = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+    return {
+        "access": str(access),
+        "refresh": raw_refresh,
+        "token_type": "Bearer",
+        "access_expires_in": lifetime,
+    }
+
+
+def issue_refresh(user, family_id=None):
+    raw_refresh = generate_refresh_value()
+    stored = RefreshToken.objects.create(
+        user=user,
+        token_hash=hash_token(raw_refresh),
+        family_id=family_id or uuid.uuid4(),
+        expires_at=RefreshToken.default_expiry(),
+        status=RecordStatus.ACTIVE,
+    )
+    return stored, raw_refresh
+
+
+class LoginAPIView(APIView):
+    """
+    Endpoint OPEN de autenticación por username o email para TazaNorte.
+    Retorna el par Access Token (JWT en memoria) y Refresh Token (hasheado en BD).
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={200: TokenPairSerializer},
+        description="Autentica usuarios en TazaNorte por username o correo y retorna tokens de acceso y refresco.",
+        tags=["auth"],
+    )
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        user = _find_user(data.get("username"), data.get("email"))
+        invalid = Response(
+            {"detail": "Credenciales inválidas."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+        if user is None or user.status != RecordStatus.ACTIVE:
+            return invalid
+        if not user.check_password(data["password"]):
+            return invalid
+        _stored, raw_refresh = issue_refresh(user)
+        return Response(token_payload(user, raw_refresh), status=status.HTTP_200_OK)
+
+
+def _find_user(username, email):
+    if username and email:
+        return User.objects.filter(username=username, email__iexact=email).first()
+    if username:
+        return User.objects.filter(username=username).first()
+    if email:
+        return User.objects.filter(email__iexact=email).first()
+    return None
+```
+
+---
+
+### 4. `apps/security/urls.py`
+
+*(Archivo nuevo en la unidad ISS-17).*
+
+#### Código
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+]
+```
+
+---
+
+### 5. `config/urls.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-16)
+```python
+from django.contrib import admin
+from django.urls import path, include
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("api/", include("apps.client.urls")),
+    path("api/", include("apps.product.urls")),
+    path("api/", include("apps.sale.urls")),
+]
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+    path("api/", include("apps.sale.urls")),
+```
+**REEMPLAZAR POR:**
+```python
+    path("api/", include("apps.sale.urls")),
+    path("api/", include("apps.security.urls")),
+```
+
+#### Código Actualizado Completo
+```python
+from django.contrib import admin
+from django.urls import path, include
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("api/", include("apps.client.urls")),
+    path("api/", include("apps.product.urls")),
+    path("api/", include("apps.sale.urls")),
+    path("api/", include("apps.security.urls")),
+]
+```
+
+---
+
+### Verificación y Ejecución de Pruebas GATE
+
+```bash
+python manage.py check
+python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
+python manage.py test apps.security.tests.AuthFlowTests
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+Creating test database for alias 'default'...
+..
+----------------------------------------------------------------------
+Ran 2 tests in 1.925s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+**Evidencias:**
+![Vistas y serializers de autenticación abierta (Login OPEN)](capturas/ISS-17_01_auth_views_y_serializers.png)
+![Ruta auth-login y verificación de URLs](capturas/ISS-17_02_urls_y_check.png)
+![Pruebas automatizadas de autenticación GATE (AuthFlowTests)](capturas/ISS-17_03_test_auth_flow_gate.png)
+![Endpoint /api/auth/login/ documentado en Swagger UI](capturas/ISS-17_04_swagger_login_endpoint.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -4095,3 +4356,4 @@ OK
 | **ISS-14** | OpenAPI y Swagger UI: `drf-spectacular`, esquemas automáticos y documentación interactiva | `51483b2` | **COMPLETADO** |
 | **ISS-15** | RefreshToken: SimpleJWT, `tokens.py` (SHA-256), modelo `RefreshToken` y tests | `60e4c86` | **COMPLETADO** |
 | **ISS-16** | Modelos RBAC: `Role`, `RoleUser`, `Resource`, `ResourceRole`, migraciones y tests | `110c431` | **COMPLETADO** |
+| **ISS-17** | Login OPEN: `LoginAPIView`, `/api/auth/login/`, JWT tokens y suite `AuthFlowTests` | `9bdae68` | **COMPLETADO** |

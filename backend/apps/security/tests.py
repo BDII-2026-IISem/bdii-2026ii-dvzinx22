@@ -63,7 +63,7 @@ class DatabaseSelectionTests(SimpleTestCase):
             database_from_environ(env)
 
 
-class AuthFlowTests(TestCase):
+class UserAuthModelTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username="testuser",
@@ -234,3 +234,55 @@ class RbacModelTests(TestCase):
         self.assertEqual(rr.status, RecordStatus.INACTIVE)
         with self.assertRaises(IntegrityError):
             ResourceRole.objects.create(resource=self.resource, role=self.role)
+
+
+from rest_framework import status
+from rest_framework.test import APITestCase
+from apps.common.testing import PASSWORD, create_active_user
+
+
+class AuthFlowTests(APITestCase):
+    def setUp(self):
+        self.user = create_active_user()
+
+    def test_login_with_username_and_email(self):
+        by_username = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": PASSWORD},
+            format="json",
+        )
+        self.assertEqual(by_username.status_code, status.HTTP_200_OK)
+        self.assertIn("access", by_username.data)
+        self.assertIn("refresh", by_username.data)
+        self.assertNotIn("password", by_username.data)
+        stored = RefreshToken.objects.get(user=self.user)
+        self.assertEqual(stored.token_hash, hash_token(by_username.data["refresh"]))
+
+        by_email = self.client.post(
+            "/api/auth/login/",
+            {"email": "ANA@tazanorte.test", "password": PASSWORD},
+            format="json",
+        )
+        self.assertEqual(by_email.status_code, status.HTTP_200_OK)
+
+    def test_inactive_user_and_bad_password_are_401(self):
+        self.user.status = RecordStatus.INACTIVE
+        self.user.save()
+        inactive = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": PASSWORD},
+            format="json",
+        )
+        self.assertEqual(inactive.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(inactive.data.get("detail"), "Credenciales inválidas.")
+
+        # Test bad password
+        self.user.status = RecordStatus.ACTIVE
+        self.user.save()
+        bad_pw = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": "wrongpassword999"},
+            format="json",
+        )
+        self.assertEqual(bad_pw.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(bad_pw.data.get("detail"), "Credenciales inválidas.")
