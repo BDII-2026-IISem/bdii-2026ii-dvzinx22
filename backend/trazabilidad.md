@@ -65,6 +65,7 @@
 - [Unidad ISS-18: Refresh con rotación](#unidad-iss-18-refresh-con-rotación)
 - [Unidad ISS-19: Logout](#unidad-iss-19-logout)
 - [Unidad ISS-20: Perfil JWT con token](#unidad-iss-20-perfil-jwt-con-token)
+- [Unidad ISS-21: HasResourceAccess](#unidad-iss-21-hasresourceaccess)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -4972,6 +4973,175 @@ Destroying test database for alias 'default'...
 
 ---
 
+## Unidad ISS-21: HasResourceAccess
+
+Esta unidad implementa la regla de autorización granular de **TazaNorte** mediante la clase `HasResourceAccess` (heredera de `BasePermission` de DRF). A diferencia de los permisos tradicionales de Django (`auth_permission`), este permiso inspecciona en tiempo de ejecución el método HTTP (`GET`, `POST`, `PUT`, `DELETE`, normalizando `HEAD` a `GET` y exceptuando `OPTIONS` para el preflight de CORS) y el patrón de ruta resuelto (`request.resolver_match.route`, ej: `api/clients/<int:pk>/`). Aplica una política estricta de **negación por defecto**, requiriendo que cada uno de los eslabones de la cadena esté activo:
+$$\text{Usuario activo} \rightarrow \text{RoleUser activo} \rightarrow \text{Role activo} \rightarrow \text{ResourceRole activo} \rightarrow \text{Resource activo}$$
+Si cualquier eslabón se desactiva o falta la concesión, deniega el acceso con `403 Forbidden` (`"No tiene autorización para ejecutar esta operación."`).
+
+### 1. `apps/security/permissions.py`
+
+*(Archivo nuevo en la unidad ISS-21).*
+
+#### Código
+```python
+from rest_framework.permissions import BasePermission
+
+from apps.common.status import RecordStatus
+from apps.security.models import ResourceRole
+
+
+class HasResourceAccess(BasePermission):
+    message = "No tiene autorización para ejecutar esta operación."
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if getattr(user, "status", None) != RecordStatus.ACTIVE:
+            return False
+        if request.method.upper() == "OPTIONS":
+            return True
+
+        match = request.resolver_match
+        if match is None:
+            return False
+        method = request.method.upper()
+        if method == "HEAD":
+            method = "GET"
+        return ResourceRole.objects.filter(
+            status=RecordStatus.ACTIVE,
+            resource__status=RecordStatus.ACTIVE,
+            resource__method=method,
+            resource__route=match.route,
+            role__status=RecordStatus.ACTIVE,
+            role__assignments__user=user,
+            role__assignments__status=RecordStatus.ACTIVE,
+        ).exists()
+```
+
+---
+
+### 2. `apps/security/tests.py`
+
+#### Adición de Suite de Pruebas de Permisos RBAC
+```python
+class HasResourceAccessPermissionTests(TestCase):
+    def setUp(self):
+        self.permission = HasResourceAccess()
+        self.user = User.objects.create_user(
+            username="barista_rbac",
+            email="barista_rbac@tazanorte.com",
+            password="securepassword123",
+            status=RecordStatus.ACTIVE,
+        )
+        self.role = Role.objects.create(
+            name="Barista",
+            status=RecordStatus.ACTIVE,
+        )
+        self.resource = Resource.objects.create(
+            name="Available Products",
+            method=HttpMethod.GET,
+            route="api/products/available/",
+            status=RecordStatus.ACTIVE,
+        )
+        self.role_user = RoleUser.objects.create(
+            role=self.role,
+            user=self.user,
+            status=RecordStatus.ACTIVE,
+        )
+        self.resource_role = ResourceRole.objects.create(
+            resource=self.resource,
+            role=self.role,
+            status=RecordStatus.ACTIVE,
+        )
+
+    def _mock_request(self, user, method="GET", route="api/products/available/"):
+        request = MagicMock()
+        request.user = user
+        request.method = method
+        match = MagicMock()
+        match.route = route
+        request.resolver_match = match
+        return request
+
+    def test_anonymous_user_is_denied(self):
+        anon = MagicMock()
+        anon.is_authenticated = False
+        request = self._mock_request(anon)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_user_is_denied(self):
+        self.user.status = RecordStatus.INACTIVE
+        self.user.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_options_method_is_allowed_for_active_user(self):
+        request = self._mock_request(self.user, method="OPTIONS")
+        self.assertTrue(self.permission.has_permission(request, None))
+
+    def test_active_grant_chain_is_allowed(self):
+        request = self._mock_request(self.user, method="GET", route="api/products/available/")
+        self.assertTrue(self.permission.has_permission(request, None))
+
+    def test_head_method_evaluates_as_get(self):
+        request = self._mock_request(self.user, method="HEAD", route="api/products/available/")
+        self.assertTrue(self.permission.has_permission(request, None))
+
+    def test_inactive_role_denies_permission(self):
+        self.role.status = RecordStatus.INACTIVE
+        self.role.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_role_user_denies_permission(self):
+        self.role_user.status = RecordStatus.INACTIVE
+        self.role_user.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_resource_role_denies_permission(self):
+        self.resource_role.status = RecordStatus.INACTIVE
+        self.resource_role.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_resource_denies_permission(self):
+        self.resource.status = RecordStatus.INACTIVE
+        self.resource.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+```
+
+---
+
+### Verificación y Ejecución de Pruebas GATE
+
+```bash
+python manage.py check
+python manage.py test apps.security.tests.HasResourceAccessPermissionTests
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+Creating test database for alias 'default'...
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 3.140s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+**Evidencias:**
+![Permiso HasResourceAccess con evaluación completa de cadena RBAC](capturas/ISS-21_01_has_resource_access_permission.png)
+![Verificación de integridad del sistema](capturas/ISS-21_02_system_check.png)
+![Pruebas automatizadas de autorización RBAC (GATE)](capturas/ISS-21_03_test_rbac_permission_gate.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -5001,3 +5171,4 @@ Destroying test database for alias 'default'...
 | **ISS-18** | Refresh con rotación: `RefreshAPIView`, `/api/auth/refresh/` y suite de reuso | `439ecb9` | **COMPLETADO** |
 | **ISS-19** | Logout: `LogoutAPIView`, `/api/auth/logout/` y suite de revocación de sesión | `10c3db9` | **COMPLETADO** |
 | **ISS-20** | Perfil JWT: `StoreLabJWTAuthentication`, `ProfileAPIView`, `/api/auth/profile/` y suite GATE | `c986ae0` | **COMPLETADO** |
+| **ISS-21** | Autorización RBAC: permiso `HasResourceAccess`, negación por defecto y suite GATE | `338d409` | **COMPLETADO** |

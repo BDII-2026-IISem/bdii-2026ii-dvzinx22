@@ -337,3 +337,95 @@ class AuthFlowTests(APITestCase):
         self.user.save()
         denied = self.client.get("/api/auth/profile/")
         self.assertEqual(denied.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+from unittest.mock import MagicMock
+from apps.security.permissions import HasResourceAccess
+
+
+class HasResourceAccessPermissionTests(TestCase):
+    def setUp(self):
+        self.permission = HasResourceAccess()
+        self.user = User.objects.create_user(
+            username="barista_rbac",
+            email="barista_rbac@tazanorte.com",
+            password="securepassword123",
+            status=RecordStatus.ACTIVE,
+        )
+        self.role = Role.objects.create(
+            name="Barista",
+            status=RecordStatus.ACTIVE,
+        )
+        self.resource = Resource.objects.create(
+            name="Available Products",
+            method=HttpMethod.GET,
+            route="api/products/available/",
+            status=RecordStatus.ACTIVE,
+        )
+        self.role_user = RoleUser.objects.create(
+            role=self.role,
+            user=self.user,
+            status=RecordStatus.ACTIVE,
+        )
+        self.resource_role = ResourceRole.objects.create(
+            resource=self.resource,
+            role=self.role,
+            status=RecordStatus.ACTIVE,
+        )
+
+    def _mock_request(self, user, method="GET", route="api/products/available/"):
+        request = MagicMock()
+        request.user = user
+        request.method = method
+        match = MagicMock()
+        match.route = route
+        request.resolver_match = match
+        return request
+
+    def test_anonymous_user_is_denied(self):
+        anon = MagicMock()
+        anon.is_authenticated = False
+        request = self._mock_request(anon)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_user_is_denied(self):
+        self.user.status = RecordStatus.INACTIVE
+        self.user.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_options_method_is_allowed_for_active_user(self):
+        request = self._mock_request(self.user, method="OPTIONS")
+        self.assertTrue(self.permission.has_permission(request, None))
+
+    def test_active_grant_chain_is_allowed(self):
+        request = self._mock_request(self.user, method="GET", route="api/products/available/")
+        self.assertTrue(self.permission.has_permission(request, None))
+
+    def test_head_method_evaluates_as_get(self):
+        request = self._mock_request(self.user, method="HEAD", route="api/products/available/")
+        self.assertTrue(self.permission.has_permission(request, None))
+
+    def test_inactive_role_denies_permission(self):
+        self.role.status = RecordStatus.INACTIVE
+        self.role.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_role_user_denies_permission(self):
+        self.role_user.status = RecordStatus.INACTIVE
+        self.role_user.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_resource_role_denies_permission(self):
+        self.resource_role.status = RecordStatus.INACTIVE
+        self.resource_role.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
+
+    def test_inactive_resource_denies_permission(self):
+        self.resource.status = RecordStatus.INACTIVE
+        self.resource.save()
+        request = self._mock_request(self.user)
+        self.assertFalse(self.permission.has_permission(request, None))
