@@ -238,7 +238,7 @@ class RbacModelTests(TestCase):
 
 from rest_framework import status
 from rest_framework.test import APITestCase
-from apps.common.testing import PASSWORD, create_active_user, grant_crud
+from apps.common.testing import PASSWORD, create_active_user, grant, grant_crud
 
 
 class AuthFlowTests(APITestCase):
@@ -551,3 +551,50 @@ class SecurityMatrixApiTests(APITestCase):
         self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_200_OK)
         # Pero POST sigue denegado con 403
         self.assertEqual(self.client.post("/api/clients/", {"name": "Test"}, format="json").status_code, status.HTTP_403_FORBIDDEN)
+
+
+class RbacTests(APITestCase):
+    def setUp(self):
+        self.user = create_active_user()
+        self.client.force_authenticate(user=self.user)
+
+    def test_missing_grant_is_403_and_missing_identity_is_401(self):
+        denied = self.client.get("/api/clients/")
+        self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
+        self.client.force_authenticate(user=None)
+        anonymous = self.client.get("/api/clients/")
+        self.assertEqual(anonymous.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_any_inactive_link_denies(self):
+        role = grant(self.user, "GET", "/api/clients/")
+        allowed = self.client.get("/api/clients/")
+        self.assertEqual(allowed.status_code, status.HTTP_200_OK)
+
+        # 1. Rol inactive -> 403
+        role.status = RecordStatus.INACTIVE
+        role.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+        role.status = RecordStatus.ACTIVE
+        role.save(update_fields=["status"])
+
+        # 2. RoleUser inactive -> 403
+        ru = RoleUser.objects.get(role=role, user=self.user)
+        ru.status = RecordStatus.INACTIVE
+        ru.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+        ru.status = RecordStatus.ACTIVE
+        ru.save(update_fields=["status"])
+
+        # 3. ResourceRole inactive -> 403
+        rr = ResourceRole.objects.get(role=role)
+        rr.status = RecordStatus.INACTIVE
+        rr.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+        rr.status = RecordStatus.ACTIVE
+        rr.save(update_fields=["status"])
+
+        # 4. Resource inactive -> 403
+        resource = rr.resource
+        resource.status = RecordStatus.INACTIVE
+        resource.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)

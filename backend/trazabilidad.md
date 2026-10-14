@@ -5871,3 +5871,153 @@ python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
 | **Mensaje de Commit** | `feat(security): add seed_rbac command and spectacular bearer scheme (ISS-24)` |
 | **Archivos Modificados** | `apps/security/schema.py`, `apps/security/apps.py`, `apps/security/rbac_views.py`, `apps/security/management/commands/seed_rbac.py`, `trazabilidad.md` |
 | **Estado** | `COMPLETADO Y VERIFICADO` |
+
+
+---
+
+## ISS-25 · Pruebas 401 y 403 (Cierre de la Fase II · Auth con RBAC)
+
+### 1. Descripción y Objetivos
+- **Objetivo**: Formalizar mediante pruebas automatizadas rigurosas la distinción estricta de seguridad entre la ausencia de identidad (HTTP 401 Unauthorized) y la ausencia de autorización/permisos (HTTP 403 Forbidden), validando además que la desactivación de cualquiera de los cuatro eslabones de la cadena RBAC (`Role`, `RoleUser`, `ResourceRole`, `Resource`) revoca de inmediato el acceso.
+- **Criterios de Aceptación Cumplidos**:
+  - **AC-25-01**: La suite de pruebas completa se ejecuta y pasa en su totalidad (85 pruebas en OK).
+  - **AC-25-02**: Existe prueba explícita validando que la ausencia de credenciales produce HTTP 401.
+  - **AC-25-03**: Existe prueba explícita comprobando que un usuario autenticado sin concesión recibe HTTP 403.
+  - **AC-25-04**: El error 403 no aparece cuando falta el token (la petición anónima devuelve 401, garantizando el orden correcto de los interceptores de seguridad).
+  - **Eslabones Inactivos**: Desactivar individualmente cualquiera de los elementos de la cadena RBAC (`status = INACTIVE`) convierte inmediatamente una petición HTTP 200 en HTTP 403.
+
+---
+
+### 2. Archivos Modificados e Instrucciones de Cambio
+
+#### A. `apps/security/tests.py`
+**Instrucción de Cambio**:
+- Importar `grant` desde `apps.common.testing`.
+- Agregar la clase `RbacTests` al final del archivo cubriendo los casos de denegación por defecto, diferenciación 401 vs 403 y rotura de la cadena RBAC por eslabones inactivos.
+
+```python
+# UBICAR (al final del archivo):
+# class SecurityMatrixApiTests(APITestCase):
+# ...
+
+# REEMPLAZAR POR (añadiendo la suite RbacTests):
+class RbacTests(APITestCase):
+    def setUp(self):
+        self.user = create_active_user()
+        self.client.force_authenticate(user=self.user)
+
+    def test_missing_grant_is_403_and_missing_identity_is_401(self):
+        denied = self.client.get("/api/clients/")
+        self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
+        self.client.force_authenticate(user=None)
+        anonymous = self.client.get("/api/clients/")
+        self.assertEqual(anonymous.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_any_inactive_link_denies(self):
+        role = grant(self.user, "GET", "/api/clients/")
+        allowed = self.client.get("/api/clients/")
+        self.assertEqual(allowed.status_code, status.HTTP_200_OK)
+
+        # 1. Rol inactive -> 403
+        role.status = RecordStatus.INACTIVE
+        role.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+        role.status = RecordStatus.ACTIVE
+        role.save(update_fields=["status"])
+
+        # 2. RoleUser inactive -> 403
+        ru = RoleUser.objects.get(role=role, user=self.user)
+        ru.status = RecordStatus.INACTIVE
+        ru.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+        ru.status = RecordStatus.ACTIVE
+        ru.save(update_fields=["status"])
+
+        # 3. ResourceRole inactive -> 403
+        rr = ResourceRole.objects.get(role=role)
+        rr.status = RecordStatus.INACTIVE
+        rr.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+        rr.status = RecordStatus.ACTIVE
+        rr.save(update_fields=["status"])
+
+        # 4. Resource inactive -> 403
+        resource = rr.resource
+        resource.status = RecordStatus.INACTIVE
+        resource.save(update_fields=["status"])
+        self.assertEqual(self.client.get("/api/clients/").status_code, status.HTTP_403_FORBIDDEN)
+```
+
+---
+
+### 3. Verificación de Consola y Resultados
+
+#### A. Ejecución de la Suite RbacTests (GATE de 401 y 403)
+```bash
+python manage.py test apps.security.tests.RbacTests
+```
+*Salida*:
+```text
+Creating test database for alias 'default'...
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.755s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+#### B. Ejecución de la Suite Global del Backend (85 Tests en OK)
+```bash
+python manage.py test
+```
+*Salida*:
+```text
+Creating test database for alias 'default'...
+.....................................................................................
+----------------------------------------------------------------------
+Ran 85 tests in 25.677s
+
+OK
+Destroying test database for alias 'default'...
+Found 85 test(s).
+System check identified no issues (0 silenced).
+```
+
+---
+
+### 4. Cierre de la Fase II · Auth con RBAC
+
+Con la culminación de esta unidad, se consolida la arquitectura completa de seguridad de TazaNorte:
+
+| Nivel de Acceso | Mecanismo | Endpoints Protegidos |
+| :--- | :--- | :--- |
+| **OPEN** | Sin credenciales | `/api/auth/login/`, `/api/auth/refresh/`, `/api/auth/logout/`, `/api/schema/`, `/api/schema/swagger-ui/` |
+| **JWT con token** | `StoreLabJWTAuthentication` | `/api/auth/profile/` (GET / PATCH) |
+| **JWT con token + RBAC** | `StoreLabJWTAuthentication` + `HasResourceAccess` | Clientes, Categorías, Productos, Catálogo disponible, Ventas y CRUD de la Matriz (`users`, `roles`, `role-users`, `resources`, `resource-roles`) |
+
+---
+
+### 5. Evidencias Gráficas
+
+#### Evidencia 1: Suite RbacTests (401 vs 403 y Eslabones Inactivos)
+![RbacTests 401 y 403 en OK](capturas/ISS-25_01_test_rbac_suite.png)
+
+#### Evidencia 2: Suite Global de Pruebas (85 Tests en OK)
+![Suite Completa 85 Tests OK](capturas/ISS-25_02_test_full_suite_gate.png)
+
+#### Evidencia 3: Petición Autorizada con Token Bearer en Swagger UI
+![Swagger UI Petición 200 con Bearer](capturas/ISS-25_03_swagger_auth_flow_200.png)
+
+---
+
+### 6. Bitácora de Cambios
+
+| Campo | Detalle |
+| :--- | :--- |
+| **Commit Hash** | `c79c199` |
+| **Fecha de Aplicación** | 2026-10-13 |
+| **Autor** | dvzinx22 |
+| **Mensaje de Commit** | `test(security): add 401 vs 403 rbac tests and complete phase ii (ISS-25)` |
+| **Archivos Modificados** | `apps/security/tests.py`, `trazabilidad.md` |
+| **Estado** | `COMPLETADO Y VERIFICADO - CIERRE FASE II` |
