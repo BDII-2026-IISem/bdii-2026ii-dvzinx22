@@ -1,3 +1,4 @@
+from apps.common.testing import create_active_user, grant
 from decimal import Decimal
 from unittest.mock import patch
 from django.db.models import ManyToManyField, RestrictedError
@@ -128,6 +129,12 @@ class SaleModelTests(TestCase):
 
 class SaleTransactionTests(APITestCase):
     def setUp(self):
+        self.user = create_active_user(username="leo", email="leo@tazanorte.test")
+        grant(self.user, "GET", "/api/sales/")
+        grant(self.user, "POST", "/api/sales/")
+        grant(self.user, "GET", "/api/sales/1/")
+        grant(self.user, "DELETE", "/api/sales/1/")
+        self.client.force_authenticate(user=self.user)
         self.buyer = Client.objects.create(name="Comprador", status=RecordStatus.ACTIVE)
         product_type = ProductType.objects.create(name="Abarrote", status=RecordStatus.ACTIVE)
         self.water = Product.objects.create(

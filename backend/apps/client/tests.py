@@ -1,3 +1,4 @@
+from apps.common.testing import create_active_user, grant_crud
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
@@ -99,6 +100,11 @@ from rest_framework.test import APITestCase
 
 
 class ClientApiTests(APITestCase):
+    def setUp(self):
+        self.user = create_active_user()
+        grant_crud(self.user, "/api/clients/", "/api/clients/1/")
+        self.client.force_authenticate(user=self.user)
+
     def test_create_defaults_and_persists(self):
         """AC-08-01 y AC-08-02: POST válido responde 201 y persiste en la tabla."""
         response = self.client.post(
@@ -160,3 +166,15 @@ class ClientApiTests(APITestCase):
         )
         self.assertEqual(updated.status_code, status.HTTP_200_OK)
         self.assertEqual(updated.data["status"], "active")
+
+    def test_missing_grant_is_403_and_missing_identity_is_401(self):
+        """AC-22-02: Sin identidad responde 401, y con identidad pero sin concesión responde 403."""
+        self.client.force_authenticate(user=None)
+        unauth = self.client.get("/api/clients/")
+        self.assertEqual(unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Usuario nuevo sin concesión asignada
+        other_user = create_active_user(username="sin_permiso", email="sin_permiso@tazanorte.test")
+        self.client.force_authenticate(user=other_user)
+        forbidden = self.client.get("/api/clients/")
+        self.assertEqual(forbidden.status_code, status.HTTP_403_FORBIDDEN)

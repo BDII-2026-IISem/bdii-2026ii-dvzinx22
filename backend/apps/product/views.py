@@ -1,6 +1,8 @@
+from rest_framework.permissions import IsAuthenticated
+from apps.security.permissions import HasResourceAccess
 from rest_framework import viewsets
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import AllowAny
+
 from apps.common.status import RecordStatus
 from apps.product.models import Product, ProductType
 from apps.product.serializers import ProductSerializer, ProductTypeSerializer
@@ -8,7 +10,7 @@ from apps.product.serializers import ProductSerializer, ProductTypeSerializer
 
 class CatalogViewSet(viewsets.ModelViewSet):
     """ViewSet base para el catálogo de TazaNorte con baja lógica y filtro por estado."""
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, HasResourceAccess]
     lookup_value_converter = "int"
 
     def get_queryset(self):
@@ -37,7 +39,7 @@ class ProductViewSet(CatalogViewSet):
 
 class AvailableProductListAPIView(ListAPIView):
     """Lista de productos activos con categoría activa para la venta en TazaNorte."""
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, HasResourceAccess]
     serializer_class = ProductSerializer
 
     def get_queryset(self):

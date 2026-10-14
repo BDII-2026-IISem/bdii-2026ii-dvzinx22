@@ -1,3 +1,4 @@
+from apps.common.testing import create_active_user, grant, grant_crud
 from decimal import Decimal
 from django.db import IntegrityError
 from django.db.models import RestrictedError
@@ -69,6 +70,11 @@ from rest_framework.test import APITestCase
 
 class ProductApiTests(APITestCase):
     def setUp(self):
+        self.user = create_active_user(username="nora", email="nora@tazanorte.test")
+        grant_crud(self.user, "/api/product-types/", "/api/product-types/1/")
+        grant_crud(self.user, "/api/products/", "/api/products/1/")
+        grant(self.user, "GET", "/api/products/available/")
+        self.client.force_authenticate(user=self.user)
         self.product_type = ProductType.objects.create(
             name="Bebidas Calientes",
             description="Línea de cafés calientes de TazaNorte",

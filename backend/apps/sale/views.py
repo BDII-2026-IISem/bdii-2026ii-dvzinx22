@@ -1,3 +1,5 @@
+from rest_framework.permissions import IsAuthenticated
+from apps.security.permissions import HasResourceAccess
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import AllowAny
@@ -8,6 +10,7 @@ from apps.sale.serializers import SaleRegisterSerializer, SaleSerializer
 
 
 class SaleRegisterAPIView(APIView):
+    permission_classes = [IsAuthenticated, HasResourceAccess]
     permission_classes = [AllowAny]
 
     @extend_schema(
@@ -49,6 +52,7 @@ class SaleReadViewSet(
 
 
 class SaleCollectionAPIView(APIView):
+    permission_classes = [IsAuthenticated, HasResourceAccess]
     permission_classes = [AllowAny]
 
     @extend_schema(responses=SaleSerializer(many=True))

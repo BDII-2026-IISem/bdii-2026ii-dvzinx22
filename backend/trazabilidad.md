@@ -66,6 +66,7 @@
 - [Unidad ISS-19: Logout](#unidad-iss-19-logout)
 - [Unidad ISS-20: Perfil JWT con token](#unidad-iss-20-perfil-jwt-con-token)
 - [Unidad ISS-21: HasResourceAccess](#unidad-iss-21-hasresourceaccess)
+- [Unidad ISS-22: RBAC sobre el negocio](#unidad-iss-22-rbac-sobre-el-negocio)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -5142,6 +5143,168 @@ Destroying test database for alias 'default'...
 
 ---
 
+## Unidad ISS-22: RBAC sobre el negocio
+
+Esta unidad traslada todos los endpoints de negocio de la cafetería TazaNorte (`client`, `product`, `sale`) de la Fase I (abierta) al tercer y más seguro modo de acceso de la arquitectura: **JWT con token + RBAC**. A partir de ahora, cada operación exige simultáneamente que el llamador esté autenticado vía JWT (`IsAuthenticated`) y cuente con una concesión activa en la matriz de autorización para el método HTTP y patrón de ruta resuelto (`HasResourceAccess`). Las llamadas anónimas se rechazan con `401 Unauthorized`, y las llamadas autenticadas sin concesión se rechazan con `403 Forbidden`.
+
+### 1. `apps/common/testing.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-21)
+```python
+from apps.common.status import RecordStatus
+from apps.security.models import User
+
+PASSWORD = "TazaNorte-Test-1"
+
+
+def create_active_user(username="ana", email="ana@tazanorte.test", password=PASSWORD):
+    return User.objects.create_user(
+        username=username,
+        email=email,
+        password=password,
+        status=RecordStatus.ACTIVE,
+    )
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from apps.common.status import RecordStatus
+from apps.security.models import User
+```
+**REEMPLAZAR POR:**
+```python
+from django.urls import resolve
+
+from apps.common.status import RecordStatus
+from apps.security.models import Resource, ResourceRole, Role, RoleUser, User
+```
+
+**UBICAR:**
+*(Al final del archivo, después de la función `create_active_user`)*
+**AGREGAR:**
+```python
+def grant(user, method, path, role_name=None):
+    role, _created = Role.objects.get_or_create(
+        name=role_name or f"test-role-{user.pk}",
+        defaults={"description": "Rol de prueba", "status": RecordStatus.ACTIVE},
+    )
+    RoleUser.objects.get_or_create(
+        role=role,
+        user=user,
+        defaults={"status": RecordStatus.ACTIVE},
+    )
+    match = resolve(path)
+    resource, _created = Resource.objects.get_or_create(
+        method=method.upper(),
+        route=match.route,
+        defaults={
+            "name": f"{method.upper()} {match.route}",
+            "status": RecordStatus.ACTIVE,
+        },
+    )
+    ResourceRole.objects.get_or_create(
+        resource=resource,
+        role=role,
+        defaults={"status": RecordStatus.ACTIVE},
+    )
+    return role
+
+
+def grant_crud(user, collection, detail):
+    grant(user, "GET", collection)
+    grant(user, "POST", collection)
+    for method in ("GET", "PUT", "PATCH", "DELETE"):
+        grant(user, method, detail)
+```
+
+---
+
+### 2. `config/settings/__init__.py`
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.security.authentication.StoreLabJWTAuthentication",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+```
+**REEMPLAZAR POR:**
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.security.authentication.StoreLabJWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+```
+
+---
+
+### 3. Vistas de Negocio Protegidas con RBAC
+
+En `apps/client/views.py`, `apps/product/views.py` y `apps/sale/views.py`:
+- Se reemplaza `permission_classes = [AllowAny]` por:
+  ```python
+  from rest_framework.permissions import IsAuthenticated
+  from apps.security.permissions import HasResourceAccess
+
+  permission_classes = [IsAuthenticated, HasResourceAccess]
+  ```
+
+---
+
+### 4. `apps/client/tests.py`
+
+#### Prueba de Denegación por Defecto
+```python
+    def test_missing_grant_is_403_and_missing_identity_is_401(self):
+        """AC-22-02: Sin identidad responde 401, y con identidad pero sin concesión responde 403."""
+        self.client.force_authenticate(user=None)
+        unauth = self.client.get("/api/clients/")
+        self.assertEqual(unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Usuario nuevo sin concesión asignada
+        other_user = create_active_user(username="sin_permiso", email="sin_permiso@tazanorte.test")
+        self.client.force_authenticate(user=other_user)
+        forbidden = self.client.get("/api/clients/")
+        self.assertEqual(forbidden.status_code, status.HTTP_403_FORBIDDEN)
+```
+
+---
+
+### Verificación y Ejecución de Pruebas GATE
+
+```bash
+python manage.py check
+python manage.py test apps.client apps.product apps.sale
+python manage.py test apps.client.tests.ClientApiTests.test_missing_grant_is_403_and_missing_identity_is_401
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+Creating test database for alias 'default'...
+.......................................
+----------------------------------------------------------------------
+Ran 39 tests in 7.176s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+**Evidencias:**
+![Helpers grant y grant_crud en testing.py](capturas/ISS-22_01_grant_helpers_testing.png)
+![Protección RBAC en vistas de client, product y sale](capturas/ISS-22_02_views_rbac_protection.png)
+![Suite de pruebas de negocio con RBAC en Verde (39 tests OK)](capturas/ISS-22_03_test_business_rbac_gate.png)
+![Prueba de denegación por defecto 401 y 403](capturas/ISS-22_04_test_deny_by_default.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -5172,3 +5335,4 @@ Destroying test database for alias 'default'...
 | **ISS-19** | Logout: `LogoutAPIView`, `/api/auth/logout/` y suite de revocación de sesión | `10c3db9` | **COMPLETADO** |
 | **ISS-20** | Perfil JWT: `StoreLabJWTAuthentication`, `ProfileAPIView`, `/api/auth/profile/` y suite GATE | `c986ae0` | **COMPLETADO** |
 | **ISS-21** | Autorización RBAC: permiso `HasResourceAccess`, negación por defecto y suite GATE | `338d409` | **COMPLETADO** |
+| **ISS-22** | RBAC sobre el negocio: protección JWT+RBAC en catálogo, clientes y ventas | `3bd7fec` | **COMPLETADO** |
