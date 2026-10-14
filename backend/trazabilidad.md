@@ -198,7 +198,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-**Evidencia:**
+#### Evidencia: Activación del entorno virtual
 ![Activación del entorno virtual](capturas/ISS-00_EVI-01_django_instalado.png)
 
 ---
@@ -212,7 +212,7 @@ python -m pip install "Django==5.2.17"
 python -m pip freeze > requirements.txt
 ```
 
-**Evidencias:**
+#### Evidencia: Instalación de Django y requirements.txt
 ![Instalación de Django y requirements.txt](capturas/ISS-00_EVI-01_django_instalado.png)
 
 ---
@@ -225,7 +225,7 @@ Por medio de Django nos es posible la creación de una plantilla inicial de proy
 django-admin startproject config .
 ```
 
-**Evidencias:**
+#### Evidencia: Creación del proyecto config y estructura base
 ![Creación del proyecto config y estructura base](capturas/ISS-00_EVI-02_arbol_config.png)
 
 ---
@@ -250,7 +250,7 @@ htmlcov/
 .coverage
 ```
 
-**Evidencia:**
+#### Evidencia: Configuración del archivo .gitignore
 ![Configuración del archivo .gitignore](capturas/ISS-00_EVI-02_arbol_config.png)
 
 ---
@@ -264,7 +264,7 @@ python -m django --version
 python manage.py check
 ```
 
-**Evidencia:**
+#### Evidencia: Verificación de Django y Check del proyecto
 ![Verificación de Django y Check del proyecto](capturas/ISS-00_verificacion_check.png)
 
 ---
@@ -290,8 +290,10 @@ python -m pip install "oracledb==26.0.1"
 python -m pip freeze > requirements.txt
 ```
 
-**Evidencia:**
+#### Evidencia: Instalación de paquetes del sistema
 ![Instalación de paquetes del sistema](capturas/ISS-01_01_dependencias_sistema_mysql.png)
+
+#### Evidencia: Drivers instalados en requirements.txt
 ![Drivers instalados en requirements.txt](capturas/ISS-01_02_instalacion_drivers_motores.png)
 
 ---
@@ -307,7 +309,7 @@ rm config/settings.py
 mkdir -p config/settings
 ```
 
-**Evidencia:**
+#### Evidencia: Transformación a paquete config/settings/
 ![Transformación a paquete config/settings/](capturas/ISS-01_03_paquete_config_settings.png)
 
 ---
@@ -355,7 +357,7 @@ ORACLE_SERVICE_NAME=XEPDB1
 CORS_ALLOW_ALL_ORIGINS=True
 ```
 
-**Evidencia:**
+#### Evidencia: Definición de variables en .env
 ![Definición de variables en .env](capturas/ISS-01_04_configuracion_env_secret_key.png)
 
 ---
@@ -457,7 +459,7 @@ def database_from_environ(env):
     return {"default": builders[engine](env)}
 ```
 
-**Evidencias:**
+#### Evidencia: Módulo de selección de base de datos database.py
 ![Módulo de selección de base de datos database.py](capturas/ISS-01_05_selector_config_database.png)
 
 ---
@@ -549,7 +551,7 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 ```
 
-**Evidencia:**
+#### Evidencia: Configuración de settings/__init__.py
 ![Configuración de settings/__init__.py](capturas/ISS-01_06_settings_init_multimotor.png)
 
 ---
@@ -579,7 +581,7 @@ def use_project_python():
     os.execv(venv_python, [str(venv_python), *sys.argv])
 ```
 
-**Evidencia:**
+#### Evidencia: Re-ejecución del intérprete con project_python.py
 ![Re-ejecución del intérprete con project_python.py](capturas/ISS-01_07_project_python_venv.png)
 
 ---
@@ -587,7 +589,7 @@ def use_project_python():
 ### 7. Parches en puntos de entrada en el sistema
 Se integraron `use_project_python()` y `load_dotenv()` al inicio de `manage.py`, `config/wsgi.py` y `config/asgi.py`.
 
-**Evidencias:**
+#### Evidencia: Parches en manage.py, wsgi.py y asgi.py
 ![Parches en manage.py, wsgi.py y asgi.py](capturas/ISS-01_08_parches_manage_wsgi_asgi.png)
 
 ---
@@ -615,8 +617,10 @@ Ran 6 tests in 0.001s
 OK
 ```
 
-**Evidencias:**
+#### Evidencia: Suite tests.py creada
 ![Suite tests.py creada](capturas/ISS-01_09_test_unitarios_database.png)
+
+#### Evidencia: Ejecución de tests en verde y check de Django
 ![Ejecución de tests en verde y check de Django](capturas/ISS-01_EVI-01_test_seleccion_motor.png)
 
 ---
@@ -638,7 +642,7 @@ python manage.py startapp product apps/product
 python manage.py startapp sale apps/sale
 ```
 
-**Evidencias:**
+#### Evidencia: Creación de las aplicaciones client, product y sale
 ![Creación de las aplicaciones client, product y sale](capturas/ISS-02_01_creacion_apps.png)
 
 ---
@@ -653,7 +657,7 @@ cat > apps/__init__.py <<'EOF'
 EOF
 ```
 
-**Evidencia:**
+#### Evidencia: Creación de apps/__init__.py
 ![Creación de apps/__init__.py](capturas/ISS-02_01_creacion_apps.png)
 
 ---
@@ -694,7 +698,7 @@ class SaleConfig(AppConfig):
     label = 'sale'
 ```
 
-**Evidencia:**
+#### Evidencia: Parches en apps.py de client, product y sale
 ![Parches en apps.py de client, product y sale](capturas/ISS-02_02_parches_apps_config.png)
 
 ---
@@ -713,7 +717,7 @@ INSTALLED_APPS = [
 ]
 ```
 
-**Evidencia:**
+#### Evidencia: Registro de apps en INSTALLED_APPS
 ![Registro de apps en INSTALLED_APPS](capturas/ISS-02_03_settings_installed_apps.png)
 
 ---
@@ -731,7 +735,7 @@ python manage.py check
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Verificación exitosa con manage.py check
 ![Verificación exitosa con manage.py check](capturas/ISS-02_EVI-01_check_apps_registradas.png)
 
 ---
@@ -757,7 +761,7 @@ class RecordStatus(models.TextChoices):
     INACTIVE = "inactive", "Inactive"
 ```
 
-**Evidencia:**
+#### Evidencia: Creación de common y app security
 ![Creación de common y app security](capturas/ISS-03_01_creacion_common_y_security.png)
 
 ---
@@ -822,7 +826,7 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 ```
 
-**Evidencia:**
+#### Evidencia: Verificación de Custom User y configuración en settings
 ![Verificación de Custom User y configuración en settings](capturas/ISS-03_02_modelo_custom_user_y_settings.png)
 
 ---
@@ -837,7 +841,7 @@ python manage.py migrate
 python manage.py showmigrations security
 ```
 
-**Evidencia:**
+#### Evidencia: Aplicación de migraciones de security en PostgreSQL
 ![Aplicación de migraciones de security en PostgreSQL](capturas/ISS-03_EVI-01_migracion_security.png)
 
 ---
@@ -862,7 +866,7 @@ OK
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Suite de pruebas unitarias exitosa para security
 ![Suite de pruebas unitarias exitosa para security](capturas/ISS-03_03_test_verificacion.png)
 
 ---
@@ -933,7 +937,7 @@ EOF
 python manage.py check
 ```
 
-**Evidencia:**
+#### Evidencia: Creación de modelos en apps/common y apps/client
 ![Creación de modelos en apps/common y apps/client](capturas/ISS-04_01_modelos_common_y_client.png)
 
 ---
@@ -948,7 +952,7 @@ python manage.py migrate
 python manage.py showmigrations client
 ```
 
-**Evidencia:**
+#### Evidencia: Aplicación de migraciones de client en PostgreSQL
 ![Aplicación de migraciones de client en PostgreSQL](capturas/ISS-04_EVI-01_migracion_client.png)
 
 ---
@@ -976,7 +980,7 @@ Destroying test database for alias 'default'...
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas unitarias exitosas del modelo Client
 ![Pruebas unitarias exitosas del modelo Client](capturas/ISS-04_02_test_cliente_gate.png)
 
 ---
@@ -1046,7 +1050,7 @@ EOF
 python manage.py check
 ```
 
-**Evidencia:**
+#### Evidencia: Creación de modelos ProductType y Product
 ![Creación de modelos ProductType y Product](capturas/ISS-05_01_modelos_product_type_y_product.png)
 
 ---
@@ -1061,7 +1065,7 @@ python manage.py migrate
 python manage.py showmigrations product
 ```
 
-**Evidencia:**
+#### Evidencia: Aplicación de migraciones de product en PostgreSQL
 ![Aplicación de migraciones de product en PostgreSQL](capturas/ISS-05_EVI-01_migracion_product.png)
 
 ---
@@ -1088,7 +1092,7 @@ Destroying test database for alias 'default'...
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas unitarias de integridad de producto y tipo
 ![Pruebas unitarias de integridad de producto y tipo](capturas/ISS-05_02_test_product_gate.png)
 
 ---
@@ -1221,7 +1225,7 @@ EOF
 python manage.py check
 ```
 
-**Evidencia:**
+#### Evidencia: Creación de manager y modelos Sale y ProductSale
 ![Creación de manager y modelos Sale y ProductSale](capturas/ISS-06_01_modelos_sale_y_productsale.png)
 
 ---
@@ -1236,7 +1240,7 @@ python manage.py migrate
 python manage.py showmigrations sale
 ```
 
-**Evidencia:**
+#### Evidencia: Aplicación de migraciones de sale en PostgreSQL
 ![Aplicación de migraciones de sale en PostgreSQL](capturas/ISS-06_EVI-01_migracion_sale.png)
 
 ---
@@ -1264,7 +1268,7 @@ Destroying test database for alias 'default'...
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas unitarias de integridad de venta y precio histórico
 ![Pruebas unitarias de integridad de venta y precio histórico](capturas/ISS-06_02_test_sale_gate.png)
 
 ---
@@ -1281,7 +1285,7 @@ python -m pip freeze > requirements.txt
 python -m pip list | grep -E "djangorestframework|cors"
 ```
 
-**Evidencia:**
+#### Evidencia: Instalación de DRF, camelCase y CORS
 ![Instalación de DRF, camelCase y CORS](capturas/ISS-07_01_instalacion_drf_y_cors.png)
 
 ---
@@ -1300,7 +1304,7 @@ Se configuró `config/settings/__init__.py` registrando `rest_framework`, `corsh
 python manage.py check
 ```
 
-**Evidencia:**
+#### Evidencia: Configuración de serializers y verificación
 ![Configuración de serializers y verificación](capturas/ISS-07_02_serializers_y_settings.png)
 
 ---
@@ -1325,7 +1329,7 @@ Destroying test database for alias 'default'...
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas de serialización camelCase y normalización
 ![Pruebas de serialización camelCase y normalización](capturas/ISS-07_03_test_camelcase_gate.png)
 
 ---
@@ -1346,7 +1350,7 @@ Se publicó el CRUD completo y homogéneo del recurso clientes para **TazaNorte*
 python manage.py check
 ```
 
-**Evidencia:**
+#### Evidencia: Creación de ClientViewSet y configuración de rutas
 ![Creación de ClientViewSet y configuración de rutas](capturas/ISS-08_01_viewset_y_rutas_client.png)
 
 ---
@@ -1373,7 +1377,7 @@ Destroying test database for alias 'default'...
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas de aceptación del endpoint CRUD de clientes
 ![Pruebas de aceptación del endpoint CRUD de clientes](capturas/ISS-08_02_test_client_crud_gate.png)
 
 ---
@@ -1395,7 +1399,7 @@ Se construyeron las vistas de la API para el catálogo comercial de la cafeterí
 python manage.py check
 ```
 
-**Evidencia:**
+#### Evidencia: Creación de ViewSets del catálogo y configuración de rutas
 ![Creación de ViewSets del catálogo y configuración de rutas](capturas/ISS-09_01_viewset_y_rutas_product.png)
 
 ---
@@ -1421,7 +1425,7 @@ Destroying test database for alias 'default'...
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas de aceptación del catálogo de productos y tipos
 ![Pruebas de aceptación del catálogo de productos y tipos](capturas/ISS-09_02_test_product_api_gate.png)
 
 ---
@@ -1503,7 +1507,7 @@ urlpatterns = [
 urlpatterns += router.urls
 ```
 
-**Evidencia:**
+#### Evidencia: Configuración de ruta literal available y AvailableProductListAPIView
 ![Configuración de ruta literal available y AvailableProductListAPIView](capturas/ISS-10_01_available_urls_y_views.png)
 
 ---
@@ -1690,7 +1694,7 @@ Found 10 test(s).
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas de aceptación de productos disponibles
 ![Pruebas de aceptación de productos disponibles](capturas/ISS-10_02_test_disponibles_gate.png)
 
 ---
@@ -1938,7 +1942,7 @@ class SaleManager(models.Manager.from_queryset(SaleQuerySet)):
     pass
 ```
 
-**Evidencia:**
+#### Evidencia: Implementación del método register con transacción atómica
 ![Implementación del método register con transacción atómica](capturas/ISS-11_01_registro_sale_managers_y_views.png)
 
 ---
@@ -2334,7 +2338,7 @@ Found 10 test(s).
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas transaccionales de venta y validación de GATE
 ![Pruebas transaccionales de venta y validación de GATE](capturas/ISS-11_02_test_sale_transaction_gate.png)
 
 ---
@@ -2484,7 +2488,7 @@ class SaleCollectionAPIView(APIView):
         return handler.post(request)
 ```
 
-**Evidencia:**
+#### Evidencia: Vistas SaleReadViewSet y SaleCollectionAPIView con soporte GET y DELETE
 ![Vistas SaleReadViewSet y SaleCollectionAPIView con soporte GET y DELETE](capturas/ISS-12_01_salereadviewset_y_urls.png)
 
 ---
@@ -2656,7 +2660,7 @@ Found 15 test(s).
 System check identified no issues (0 silenced).
 ```
 
-**Evidencia:**
+#### Evidencia: Pruebas automatizadas de consulta y anulación de ventas (GATE)
 ![Pruebas automatizadas de consulta y anulación de ventas (GATE)](capturas/ISS-12_02_test_sale_read_and_void_gate.png)
 
 ---
@@ -3728,11 +3732,16 @@ Ran 17 tests in 5.638s
 OK
 ```
 
-**Evidencias:**
+#### Evidencia: Definición criptográfica de tokens.py y clase RefreshToken
 ![Definición criptográfica de tokens.py y clase RefreshToken](capturas/ISS-15_01_tokens_y_refreshtoken_model.png)
 
+#### Evidencia: Configuración de SIMPLE_JWT y dependencias en settings
 ![Configuración de SIMPLE_JWT y dependencias en settings](capturas/ISS-15_02_simplejwt_settings.png)
+
+#### Evidencia: Verificación de migraciones aplicadas de RefreshToken en PostgreSQL
 ![Verificación de migraciones aplicadas de RefreshToken en PostgreSQL](capturas/ISS-15_03_showmigrations_security.png)
+
+#### Evidencia: Ejecución exitosa de la suite de pruebas unitarias de RefreshToken (GATE)
 ![Ejecución exitosa de la suite de pruebas unitarias de RefreshToken (GATE)](capturas/ISS-15_04_test_refreshtoken_gate.png)
 
 ---
@@ -4186,10 +4195,13 @@ Ran 22 tests in 7.361s
 OK
 ```
 
-**Evidencias:**
+#### Evidencia: Modelos de autorización RBAC (Role, RoleUser, Resource, ResourceRole)
 ![Modelos de autorización RBAC (Role, RoleUser, Resource, ResourceRole)](capturas/ISS-16_01_rbac_models_code.png)
 
+#### Evidencia: Migraciones de tablas roles, role_users, resources y resource_roles
 ![Migraciones de tablas roles, role_users, resources y resource_roles](capturas/ISS-16_02_makemigrations_y_migrate.png)
+
+#### Evidencia: Ejecución exitosa de la suite de pruebas unitarias RBAC (GATE)
 ![Ejecución exitosa de la suite de pruebas unitarias RBAC (GATE)](capturas/ISS-16_03_test_rbac_models_gate.png)
 
 ---
@@ -5108,11 +5120,16 @@ OK
 Destroying test database for alias 'default'...
 ```
 
-**Evidencias:**
+#### Evidencia: Autenticación JWT personalizada y clase StoreLabJWTAuthentication
 ![Autenticación JWT personalizada y clase StoreLabJWTAuthentication](capturas/ISS-20_01_authentication_class.png)
 
+#### Evidencia: Vista ProfileAPIView y ProfileSerializer
 ![Vista ProfileAPIView y ProfileSerializer](capturas/ISS-20_02_profile_view_y_serializer.png)
+
+#### Evidencia: Pruebas automatizadas de perfil JWT y rechazo a inactivos (GATE)
 ![Pruebas automatizadas de perfil JWT y rechazo a inactivos (GATE)](capturas/ISS-20_03_test_profile_gate.png)
+
+#### Evidencia: Endpoint /api/auth/profile/ en Swagger UI
 ![Endpoint /api/auth/profile/ en Swagger UI](capturas/ISS-20_04_swagger_profile_endpoint.png)
 
 ---
@@ -5279,10 +5296,13 @@ OK
 Destroying test database for alias 'default'...
 ```
 
-**Evidencias:**
+#### Evidencia: Permiso HasResourceAccess con evaluación completa de cadena RBAC
 ![Permiso HasResourceAccess con evaluación completa de cadena RBAC](capturas/ISS-21_01_has_resource_access_permission.png)
 
+#### Evidencia: Verificación de integridad del sistema
 ![Verificación de integridad del sistema](capturas/ISS-21_02_system_check.png)
+
+#### Evidencia: Pruebas automatizadas de autorización RBAC (GATE)
 ![Pruebas automatizadas de autorización RBAC (GATE)](capturas/ISS-21_03_test_rbac_permission_gate.png)
 
 ---
@@ -5441,11 +5461,16 @@ OK
 Destroying test database for alias 'default'...
 ```
 
-**Evidencias:**
+#### Evidencia: Helpers grant y grant_crud en testing.py
 ![Helpers grant y grant_crud en testing.py](capturas/ISS-22_01_grant_helpers_testing.png)
+
+#### Evidencia: Protección RBAC en vistas de client, product y sale
 ![Protección RBAC en vistas de client, product y sale](capturas/ISS-22_02_views_rbac_protection.png)
 
+#### Evidencia: Suite de pruebas de negocio con RBAC en Verde (39 tests OK)
 ![Suite de pruebas de negocio con RBAC en Verde (39 tests OK)](capturas/ISS-22_03_test_business_rbac_gate.png)
+
+#### Evidencia: Prueba de denegación por defecto 401 y 403
 ![Prueba de denegación por defecto 401 y 403](capturas/ISS-22_04_test_deny_by_default.png)
 
 ---
