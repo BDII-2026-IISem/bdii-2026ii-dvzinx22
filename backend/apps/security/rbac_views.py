@@ -1,8 +1,23 @@
+from django.contrib.auth import get_user_model
+from rest_framework import status, viewsets
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
-from apps.security.serializers import ProfileSerializer
+from apps.common.status import RecordStatus
+from apps.security.models import Resource, ResourceRole, Role, RoleUser
+from apps.security.permissions import HasResourceAccess
+from apps.security.serializers import (
+    ProfileSerializer,
+    ResourceRoleSerializer,
+    ResourceSerializer,
+    RoleSerializer,
+    RoleUserSerializer,
+    UserSerializer,
+)
+
+User = get_user_model()
 
 
 class ProfileAPIView(RetrieveUpdateAPIView):
@@ -31,57 +46,44 @@ class ProfileAPIView(RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
-from rest_framework import viewsets
-from apps.common.status import RecordStatus
-from apps.security.permissions import HasResourceAccess
-from apps.security.models import User, Role, RoleUser, Resource, ResourceRole
-from apps.security.serializers import (
-    UserSerializer,
-    RoleSerializer,
-    RoleUserSerializer,
-    ResourceSerializer,
-    ResourceRoleSerializer,
-)
-
 
 class SoftDeleteModelViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet base para la matriz de autorización con soporte de baja lógica.
-    """
     permission_classes = [IsAuthenticated, HasResourceAccess]
+    lookup_value_converter = "int"
 
-    def perform_destroy(self, instance):
-        instance.status = RecordStatus.INACTIVE
-        instance.save(update_fields=["status", "updated_at"])
-
-    def get_queryset(self):
-        status_filter = self.request.query_params.get("status")
-        if status_filter:
-            return self.queryset.filter(status=status_filter)
-        return self.queryset.all()
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if hasattr(instance, "status"):
+            instance.status = RecordStatus.INACTIVE
+            instance.save(update_fields=["status"])
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        if hasattr(instance, "is_active"):
+            instance.is_active = False
+            instance.save(update_fields=["is_active"])
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return super().destroy(request, *args, **kwargs)
 
 
 class UserViewSet(SoftDeleteModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by("id")
     serializer_class = UserSerializer
 
 
 class RoleViewSet(SoftDeleteModelViewSet):
-    queryset = Role.objects.all()
+    queryset = Role.objects.all().order_by("id")
     serializer_class = RoleSerializer
 
 
 class RoleUserViewSet(SoftDeleteModelViewSet):
-    queryset = RoleUser.objects.all()
+    queryset = RoleUser.objects.all().select_related("user", "role").order_by("id")
     serializer_class = RoleUserSerializer
 
 
 class ResourceViewSet(SoftDeleteModelViewSet):
-    queryset = Resource.objects.all()
+    queryset = Resource.objects.all().order_by("id")
     serializer_class = ResourceSerializer
 
 
 class ResourceRoleViewSet(SoftDeleteModelViewSet):
-    queryset = ResourceRole.objects.all()
+    queryset = ResourceRole.objects.all().select_related("role", "resource").order_by("id")
     serializer_class = ResourceRoleSerializer
-

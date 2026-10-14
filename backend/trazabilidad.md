@@ -5578,3 +5578,296 @@ System check identified no issues (0 silenced).
 | **Mensaje de Commit** | `feat(security): implement matrix crud viewsets and serializers (ISS-23)` |
 | **Archivos Modificados** | `apps/security/serializers.py`, `apps/security/rbac_views.py`, `apps/security/urls.py`, `apps/security/tests.py`, `trazabilidad.md` |
 | **Estado** | `COMPLETADO Y VERIFICADO` |
+
+
+---
+
+## ISS-24 · Semilla RBAC y Swagger con Bearer
+
+### 1. Descripción y Objetivos
+- **Objetivo**: Implementar el comando de sincronización de rutas RBAC (`seed_rbac`) resolviendo dinámicamente las rutas registradas mediante `resolve(sample).route` para garantizar consistencia total con el evaluador de permisos, y configurar la extensión OpenAPI de autenticación Bearer (`StoreLabJWTScheme`) para drf-spectacular y Swagger UI.
+- **Criterios de Aceptación Cumplidos**:
+  - **AC-24-01**: `seed_rbac` ejecuta y finaliza sin error imprimiendo el mensaje esperado.
+  - **AC-24-02**: Las 53 rutas de recursos guardadas emplean el convertidor tipado `<int:pk>`.
+  - **AC-24-03**: `python manage.py spectacular --validate` finaliza con código de salida 0 e incluye el esquema `bearerAuth` (HTTP Bearer JWT).
+
+---
+
+### 2. Archivos Modificados e Instrucciones de Cambio
+
+#### A. `apps/security/schema.py`
+*(Archivo nuevo en la unidad ISS-24)*.
+
+**Código Completo**:
+```python
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
+
+
+class StoreLabJWTScheme(OpenApiAuthenticationExtension):
+    target_class = "apps.security.authentication.StoreLabJWTAuthentication"
+    name = "bearerAuth"
+
+    def get_security_definition(self, auto_schema):
+        return {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+```
+
+#### B. `apps/security/apps.py`
+**Instrucción de Cambio**:
+- Registrar el hook del ciclo de vida `ready(self)` para importar `apps.security.schema`, registrando la extensión de autenticación en Spectacular.
+
+```python
+# UBICAR:
+class SecurityConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.security"
+    label = "security"
+
+# REEMPLAZAR POR:
+class SecurityConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.security"
+    label = "security"
+
+    def ready(self):
+        from apps.security import schema  # noqa: F401
+```
+
+#### C. `apps/security/rbac_views.py`
+**Instrucción de Cambio**:
+- Añadir `lookup_value_converter = "int"` a la clase base `SoftDeleteModelViewSet` para estandarizar las rutas REST de detalle en la matriz hacia `<int:pk>`.
+
+```python
+# UBICAR:
+class SoftDeleteModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, HasResourceAccess]
+
+# REEMPLAZAR POR:
+class SoftDeleteModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, HasResourceAccess]
+    lookup_value_converter = "int"
+```
+
+#### D. `apps/security/management/commands/seed_rbac.py`
+*(Archivo nuevo en la unidad ISS-24)*.
+
+**Código Completo**:
+```python
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.urls import resolve
+
+from apps.common.status import RecordStatus
+from apps.security.models import Resource, ResourceRole, Role, RoleUser
+
+User = get_user_model()
+
+SAMPLES = [
+    # clients (6)
+    ("GET", "/api/clients/"),
+    ("POST", "/api/clients/"),
+    ("GET", "/api/clients/1/"),
+    ("PUT", "/api/clients/1/"),
+    ("PATCH", "/api/clients/1/"),
+    ("DELETE", "/api/clients/1/"),
+
+    # product-types (6)
+    ("GET", "/api/product-types/"),
+    ("POST", "/api/product-types/"),
+    ("GET", "/api/product-types/1/"),
+    ("PUT", "/api/product-types/1/"),
+    ("PATCH", "/api/product-types/1/"),
+    ("DELETE", "/api/product-types/1/"),
+
+    # products (6)
+    ("GET", "/api/products/"),
+    ("POST", "/api/products/"),
+    ("GET", "/api/products/1/"),
+    ("PUT", "/api/products/1/"),
+    ("PATCH", "/api/products/1/"),
+    ("DELETE", "/api/products/1/"),
+
+    # products/available (1)
+    ("GET", "/api/products/available/"),
+
+    # sales (4)
+    ("GET", "/api/sales/"),
+    ("POST", "/api/sales/"),
+    ("GET", "/api/sales/1/"),
+    ("DELETE", "/api/sales/1/"),
+
+    # users (6)
+    ("GET", "/api/users/"),
+    ("POST", "/api/users/"),
+    ("GET", "/api/users/1/"),
+    ("PUT", "/api/users/1/"),
+    ("PATCH", "/api/users/1/"),
+    ("DELETE", "/api/users/1/"),
+
+    # roles (6)
+    ("GET", "/api/roles/"),
+    ("POST", "/api/roles/"),
+    ("GET", "/api/roles/1/"),
+    ("PUT", "/api/roles/1/"),
+    ("PATCH", "/api/roles/1/"),
+    ("DELETE", "/api/roles/1/"),
+
+    # role-users (6)
+    ("GET", "/api/role-users/"),
+    ("POST", "/api/role-users/"),
+    ("GET", "/api/role-users/1/"),
+    ("PUT", "/api/role-users/1/"),
+    ("PATCH", "/api/role-users/1/"),
+    ("DELETE", "/api/role-users/1/"),
+
+    # resources (6)
+    ("GET", "/api/resources/"),
+    ("POST", "/api/resources/"),
+    ("GET", "/api/resources/1/"),
+    ("PUT", "/api/resources/1/"),
+    ("PATCH", "/api/resources/1/"),
+    ("DELETE", "/api/resources/1/"),
+
+    # resource-roles (6)
+    ("GET", "/api/resource-roles/"),
+    ("POST", "/api/resource-roles/"),
+    ("GET", "/api/resource-roles/1/"),
+    ("PUT", "/api/resource-roles/1/"),
+    ("PATCH", "/api/resource-roles/1/"),
+    ("DELETE", "/api/resource-roles/1/"),
+]
+
+
+class Command(BaseCommand):
+    help = "Sincroniza los recursos RBAC a partir de las rutas reales y concede el rol admin."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--username",
+            type=str,
+            default=None,
+            help="Nombre de usuario al que se le asignará el rol admin.",
+        )
+
+    def handle(self, *args, **options):
+        username = options.get("username")
+
+        admin_role, _created = Role.objects.get_or_create(
+            name="admin",
+            defaults={
+                "description": "Rol de administración con acceso total al sistema",
+                "status": RecordStatus.ACTIVE,
+            },
+        )
+        if not _created and admin_role.status != RecordStatus.ACTIVE:
+            admin_role.status = RecordStatus.ACTIVE
+            admin_role.save(update_fields=["status"])
+
+        seen_routes = set()
+        for method, sample_path in SAMPLES:
+            match = resolve(sample_path)
+            route = match.route
+            method_upper = method.upper()
+
+            if (method_upper, route) in seen_routes:
+                continue
+            seen_routes.add((method_upper, route))
+
+            resource, _res_created = Resource.objects.get_or_create(
+                method=method_upper,
+                route=route,
+                defaults={
+                    "name": f"{method_upper} {route}",
+                    "status": RecordStatus.ACTIVE,
+                },
+            )
+            if not _res_created and resource.status != RecordStatus.ACTIVE:
+                resource.status = RecordStatus.ACTIVE
+                resource.save(update_fields=["status"])
+
+            grant, _grant_created = ResourceRole.objects.get_or_create(
+                resource=resource,
+                role=admin_role,
+                defaults={"status": RecordStatus.ACTIVE},
+            )
+            if not _grant_created and grant.status != RecordStatus.ACTIVE:
+                grant.status = RecordStatus.ACTIVE
+                grant.save(update_fields=["status"])
+
+        if username:
+            try:
+                user = User.objects.get(username=username)
+                ru, _ru_created = RoleUser.objects.get_or_create(
+                    role=admin_role,
+                    user=user,
+                    defaults={"status": RecordStatus.ACTIVE},
+                )
+                if not _ru_created and ru.status != RecordStatus.ACTIVE:
+                    ru.status = RecordStatus.ACTIVE
+                    ru.save(update_fields=["status"])
+            except User.DoesNotExist:
+                self.stderr.write(self.style.WARNING(f"Usuario '{username}' no encontrado."))
+
+        self.stdout.write(self.style.SUCCESS("Recursos RBAC sincronizados."))
+```
+
+---
+
+### 3. Verificación de Consola y Resultados
+
+#### A. Ejecución del Comando seed_rbac
+```bash
+python manage.py seed_rbac --username admin
+```
+*Salida*:
+```text
+Recursos RBAC sincronizados.
+```
+
+#### B. Consulta de Verificación de Recursos (53 Filas con `<int:pk>`)
+```bash
+python manage.py shell -c '
+from apps.security.models import Resource
+print("Total:", Resource.objects.count())
+print("Clients detail:", Resource.objects.filter(route="api/clients/<int:pk>/").values_list("method", "route"))
+'
+```
+*Salida*:
+```text
+Total: 53
+Clients detail: <QuerySet [('GET', 'api/clients/<int:pk>/'), ('PUT', 'api/clients/<int:pk>/'), ('PATCH', 'api/clients/<int:pk>/'), ('DELETE', 'api/clients/<int:pk>/')]>
+```
+
+#### C. Validación del Esquema OpenAPI y Autenticador Bearer
+```bash
+python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
+```
+*Salida*: Código de salida 0 sin advertencias.
+
+---
+
+### 4. Evidencias Gráficas
+
+#### Evidencia 1: Sincronización Exitosa de Recursos RBAC y Rol Admin
+![Ejecución de seed_rbac con admin](capturas/ISS-24_01_seed_rbac_execution.png)
+
+#### Evidencia 2: Verificación de las 53 Filas de Recursos y Patrón `<int:pk>`
+![Conteo y Validación de Recursos RBAC](capturas/ISS-24_02_resources_sql_count.png)
+
+#### Evidencia 3: Validación del Esquema OpenAPI con Esquema Bearer
+![Validación Exitosa drf-spectacular Bearer](capturas/ISS-24_03_spectacular_validate_bearer.png)
+
+#### Evidencia 4: Swagger UI con Botón Authorize y Autenticación Bearer JWT
+![Swagger UI con Authorize Bearer JWT](capturas/ISS-24_04_swagger_bearer_authorize.png)
+
+---
+
+### 5. Bitácora de Cambios
+
+| Campo | Detalle |
+| :--- | :--- |
+| **Commit Hash** | `db294d6` |
+| **Fecha de Aplicación** | 2026-10-13 |
+| **Autor** | dvzinx22 |
+| **Mensaje de Commit** | `feat(security): add seed_rbac command and spectacular bearer scheme (ISS-24)` |
+| **Archivos Modificados** | `apps/security/schema.py`, `apps/security/apps.py`, `apps/security/rbac_views.py`, `apps/security/management/commands/seed_rbac.py`, `trazabilidad.md` |
+| **Estado** | `COMPLETADO Y VERIFICADO` |
