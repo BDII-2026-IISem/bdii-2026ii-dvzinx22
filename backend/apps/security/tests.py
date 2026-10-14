@@ -302,3 +302,15 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(reused.status_code, status.HTTP_401_UNAUTHORIZED)
         after_reuse = self.client.post("/api/auth/refresh/", {"refresh": second}, format="json")
         self.assertEqual(after_reuse.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_invalidates_refresh(self):
+        login = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": PASSWORD},
+            format="json",
+        )
+        raw = login.data["refresh"]
+        logout = self.client.post("/api/auth/logout/", {"refresh": raw}, format="json")
+        self.assertEqual(logout.status_code, status.HTTP_204_NO_CONTENT)
+        again = self.client.post("/api/auth/refresh/", {"refresh": raw}, format="json")
+        self.assertEqual(again.status_code, status.HTTP_401_UNAUTHORIZED)

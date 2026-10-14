@@ -63,6 +63,7 @@
 - [Unidad ISS-16: Role, RoleUser, Resource y ResourceRole](#unidad-iss-16-role-roleuser-resource-y-resourcerole)
 - [Unidad ISS-17: Login OPEN](#unidad-iss-17-login-open)
 - [Unidad ISS-18: Refresh con rotación](#unidad-iss-18-refresh-con-rotación)
+- [Unidad ISS-19: Logout](#unidad-iss-19-logout)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -4549,6 +4550,181 @@ Destroying test database for alias 'default'...
 
 ---
 
+## Unidad ISS-19: Logout
+
+Esta unidad implementa el cierre de sesión explícito (**Logout**) en el endpoint abierto `POST /api/auth/logout/`. Al ser la persistencia del refresh token el núcleo del estado de sesión en TazaNorte, la vista `LogoutAPIView` invalida la fila del refresh presentado marcando su estado como `RecordStatus.INACTIVE` y estampando `revoked_at = timezone.now()`, respondiendo `204 No Content`. Si el token ya había sido reemplazado previamente en una rotación, se interpreta como un reuso sospechoso y se revoca inmediatamente toda la familia (`family_id`).
+
+### 1. `apps/security/auth_views.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-18)
+```python
+from apps.security.serializers import LoginSerializer, RefreshSerializer, TokenPairSerializer
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from apps.security.serializers import LoginSerializer, RefreshSerializer, TokenPairSerializer
+```
+**REEMPLAZAR POR:**
+```python
+from apps.security.serializers import LoginSerializer, LogoutSerializer, RefreshSerializer, TokenPairSerializer
+```
+
+**UBICAR:**
+*(Encima de la función `def _find_user(username, email):`)*
+**AGREGAR:**
+```python
+class LogoutAPIView(APIView):
+    """
+    Endpoint OPEN de cierre de sesión (Logout) para TazaNorte.
+    Invalida el refresh token presentado marcándolo como INACTIVE y registrando revoked_at.
+    Si el token ya había sido reemplazado, revoca la familia completa por reuso.
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=LogoutSerializer,
+        responses={204: None},
+        description="Invalida el refresh token presentado y cierra la sesión.",
+        tags=["auth"],
+    )
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        raw_token = serializer.validated_data["refresh"]
+        t_hash = hash_token(raw_token)
+
+        with transaction.atomic():
+            token = (
+                RefreshToken.objects.select_for_update()
+                .filter(token_hash=t_hash)
+                .first()
+            )
+            if token is None:
+                return Response(
+                    {"detail": "Token inválido o no encontrado."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si ya fue reemplazado -> reuso de sesión, revocar la familia entera
+            if token.replaced_by_id is not None:
+                RefreshToken.objects.filter(family_id=token.family_id).update(
+                    revoked_at=timezone.now(),
+                    status=RecordStatus.INACTIVE,
+                )
+                return Response(
+                    {"detail": "Token inválido o reemplazado. Familia revocada."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # En cualquier otro caso: inactivar y revocar
+            token.status = RecordStatus.INACTIVE
+            token.revoked_at = timezone.now()
+            token.save(update_fields=["status", "revoked_at", "updated_at"])
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+```
+
+---
+
+### 2. `apps/security/urls.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-18)
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+]
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from apps.security.auth_views import LoginAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+]
+```
+**REEMPLAZAR POR:**
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView, LogoutAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+    path("auth/logout/", LogoutAPIView.as_view(), name="auth-logout"),
+]
+```
+
+#### Código Actualizado Completo
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView, LogoutAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+    path("auth/logout/", LogoutAPIView.as_view(), name="auth-logout"),
+]
+```
+
+---
+
+### 3. `apps/security/tests.py`
+
+#### Adición del Método de Prueba
+```python
+    def test_logout_invalidates_refresh(self):
+        login = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": PASSWORD},
+            format="json",
+        )
+        raw = login.data["refresh"]
+        logout = self.client.post("/api/auth/logout/", {"refresh": raw}, format="json")
+        self.assertEqual(logout.status_code, status.HTTP_204_NO_CONTENT)
+        again = self.client.post("/api/auth/refresh/", {"refresh": raw}, format="json")
+        self.assertEqual(again.status_code, status.HTTP_401_UNAUTHORIZED)
+```
+
+---
+
+### Verificación y Ejecución de Pruebas GATE
+
+```bash
+python manage.py check
+python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
+python manage.py test apps.security.tests.AuthFlowTests.test_logout_invalidates_refresh
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+Creating test database for alias 'default'...
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.760s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+**Evidencias:**
+![Vista LogoutAPIView con invalidación de sesión](capturas/ISS-19_01_logout_view_code.png)
+![Ruta auth/logout/ y verificación del sistema](capturas/ISS-19_02_urls_y_check.png)
+![Pruebas automatizadas de invalidación en logout (GATE)](capturas/ISS-19_03_test_logout_gate.png)
+![Endpoint /api/auth/logout/ en Swagger UI](capturas/ISS-19_04_swagger_logout_endpoint.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -4576,3 +4752,4 @@ Destroying test database for alias 'default'...
 | **ISS-16** | Modelos RBAC: `Role`, `RoleUser`, `Resource`, `ResourceRole`, migraciones y tests | `110c431` | **COMPLETADO** |
 | **ISS-17** | Login OPEN: `LoginAPIView`, `/api/auth/login/`, JWT tokens y suite `AuthFlowTests` | `9bdae68` | **COMPLETADO** |
 | **ISS-18** | Refresh con rotación: `RefreshAPIView`, `/api/auth/refresh/` y suite de reuso | `439ecb9` | **COMPLETADO** |
+| **ISS-19** | Logout: `LogoutAPIView`, `/api/auth/logout/` y suite de revocación de sesión | `10c3db9` | **COMPLETADO** |

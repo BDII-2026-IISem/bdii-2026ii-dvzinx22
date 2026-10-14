@@ -13,7 +13,7 @@ from drf_spectacular.utils import extend_schema
 
 from apps.common.status import RecordStatus
 from apps.security.models import RefreshToken
-from apps.security.serializers import LoginSerializer, RefreshSerializer, TokenPairSerializer
+from apps.security.serializers import LoginSerializer, LogoutSerializer, RefreshSerializer, TokenPairSerializer
 from apps.security.tokens import generate_refresh_value, hash_token
 
 User = get_user_model()
@@ -142,6 +142,60 @@ class RefreshAPIView(APIView):
             token.save(update_fields=["replaced_by", "updated_at"])
 
             return Response(token_payload(token.user, new_raw_refresh), status=status.HTTP_200_OK)
+
+
+
+
+class LogoutAPIView(APIView):
+    """
+    Endpoint OPEN de cierre de sesión (Logout) para TazaNorte.
+    Invalida el refresh token presentado marcándolo como INACTIVE y registrando revoked_at.
+    Si el token ya había sido reemplazado, revoca la familia completa por reuso.
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=LogoutSerializer,
+        responses={204: None},
+        description="Invalida el refresh token presentado y cierra la sesión.",
+        tags=["auth"],
+    )
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        raw_token = serializer.validated_data["refresh"]
+        t_hash = hash_token(raw_token)
+
+        with transaction.atomic():
+            token = (
+                RefreshToken.objects.select_for_update()
+                .filter(token_hash=t_hash)
+                .first()
+            )
+            if token is None:
+                return Response(
+                    {"detail": "Token inválido o no encontrado."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si ya fue reemplazado -> reuso de sesión, revocar la familia entera
+            if token.replaced_by_id is not None:
+                RefreshToken.objects.filter(family_id=token.family_id).update(
+                    revoked_at=timezone.now(),
+                    status=RecordStatus.INACTIVE,
+                )
+                return Response(
+                    {"detail": "Token inválido o reemplazado. Familia revocada."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # En cualquier otro caso: inactivar y revocar
+            token.status = RecordStatus.INACTIVE
+            token.revoked_at = timezone.now()
+            token.save(update_fields=["status", "revoked_at", "updated_at"])
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def _find_user(username, email):
