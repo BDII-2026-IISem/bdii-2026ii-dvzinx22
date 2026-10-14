@@ -1,5 +1,10 @@
 # Informe de Trazabilidad: Desarrollo Backend Django - TazaNorte
 
+> [!NOTE]
+> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
+> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
+
+
 ## Información del Estudiante
 
 | Campo          | Detalle                                                                                                     |
@@ -3615,10 +3620,6 @@ OK
 **Evidencias:**
 ![Definición criptográfica de tokens.py y clase RefreshToken](capturas/ISS-15_01_tokens_y_refreshtoken_model.png)
 
-> [!NOTE]
-> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
-> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
-
 ![Configuración de SIMPLE_JWT y dependencias en settings](capturas/ISS-15_02_simplejwt_settings.png)
 ![Verificación de migraciones aplicadas de RefreshToken en PostgreSQL](capturas/ISS-15_03_showmigrations_security.png)
 ![Ejecución exitosa de la suite de pruebas unitarias de RefreshToken (GATE)](capturas/ISS-15_04_test_refreshtoken_gate.png)
@@ -4076,10 +4077,6 @@ OK
 
 **Evidencias:**
 ![Modelos de autorización RBAC (Role, RoleUser, Resource, ResourceRole)](capturas/ISS-16_01_rbac_models_code.png)
-
-> [!NOTE]
-> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
-> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
 
 ![Migraciones de tablas roles, role_users, resources y resource_roles](capturas/ISS-16_02_makemigrations_y_migrate.png)
 ![Ejecución exitosa de la suite de pruebas unitarias RBAC (GATE)](capturas/ISS-16_03_test_rbac_models_gate.png)
@@ -4979,10 +4976,6 @@ Destroying test database for alias 'default'...
 **Evidencias:**
 ![Autenticación JWT personalizada y clase StoreLabJWTAuthentication](capturas/ISS-20_01_authentication_class.png)
 
-> [!NOTE]
-> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
-> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
-
 ![Vista ProfileAPIView y ProfileSerializer](capturas/ISS-20_02_profile_view_y_serializer.png)
 ![Pruebas automatizadas de perfil JWT y rechazo a inactivos (GATE)](capturas/ISS-20_03_test_profile_gate.png)
 ![Endpoint /api/auth/profile/ en Swagger UI](capturas/ISS-20_04_swagger_profile_endpoint.png)
@@ -5154,10 +5147,6 @@ Destroying test database for alias 'default'...
 **Evidencias:**
 ![Permiso HasResourceAccess con evaluación completa de cadena RBAC](capturas/ISS-21_01_has_resource_access_permission.png)
 
-> [!NOTE]
-> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
-> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
-
 ![Verificación de integridad del sistema](capturas/ISS-21_02_system_check.png)
 ![Pruebas automatizadas de autorización RBAC (GATE)](capturas/ISS-21_03_test_rbac_permission_gate.png)
 
@@ -5321,47 +5310,8 @@ Destroying test database for alias 'default'...
 ![Helpers grant y grant_crud en testing.py](capturas/ISS-22_01_grant_helpers_testing.png)
 ![Protección RBAC en vistas de client, product y sale](capturas/ISS-22_02_views_rbac_protection.png)
 
-> [!NOTE]
-> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
-> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
-
 ![Suite de pruebas de negocio con RBAC en Verde (39 tests OK)](capturas/ISS-22_03_test_business_rbac_gate.png)
 ![Prueba de denegación por defecto 401 y 403](capturas/ISS-22_04_test_deny_by_default.png)
-
----
-
-## Bitácora de Commits Realizados
-
-
-
-
-
-| Issue | Descripción del Cambio | Hash Commit | Estado |
-|-------|------------------------|-------------|--------|
-| **ISS-00** | Creación del entorno virtual, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
-| **ISS-01** | Settings y selección de motor: drivers, `database.py`, `settings/`, `project_python.py`, `tests.py` | `494db4c` | **COMPLETADO** |
-| **ISS-02** | Apps `client`, `product`, `sale`: inicialización CLI, parches `apps.py` y registro en `settings` | `f4fe16f` | **COMPLETADO** |
-| **ISS-03** | Custom User antes de la primera migración: `RecordStatus`, modelo `User`, migraciones y suite de pruebas | `a7414c1` | **COMPLETADO** |
-| **ISS-04** | Modelo Client: modelos base `TimeStampedModel`/`StoreLabModel`, `Client`, migraciones y suite GATE | `b2c2dab` | **COMPLETADO** |
-| **ISS-05** | Catálogo TazaNorte: modelos `ProductType` y `Product`, FK restrict, migraciones y suite GATE | `d502e56` | **COMPLETADO** |
-| **ISS-06** | Ventas TazaNorte: modelos `Sale` y `ProductSale`, precio histórico, void, migraciones y suite GATE | `645ec19` | **COMPLETADO** |
-| **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `4ab39a6` | **COMPLETADO** |
-| **ISS-08** | Client CRUD: ModelViewSet con baja lógica, SimpleRouter (/api/clients/) y suite GATE | `a459875` | **COMPLETADO** |
-| **ISS-09** | Catálogo CRUD: ViewSets con baja lógica, SimpleRouter (/api/products/ y /api/product-types/) y suite GATE | `9ccca92` | **COMPLETADO** |
-| **ISS-10** | Disponibles con ListAPIView: endpoint /api/products/available/ con filtro de activos y suite de tests | `cd1cd31` | **COMPLETADO** |
-| **ISS-11** | Registro de venta atómica con APIView: `/api/sales/`, validaciones y suite GATE | `3225354` | **COMPLETADO** |
-| **ISS-12** | Consulta y anulación de ventas: `SaleReadViewSet`, `GET/DELETE /api/sales/<pk>/` y suite GATE | `179a19f` | **COMPLETADO** |
-| **ISS-13** | Configuración de Django Admin: `ClientAdmin`, `ProductAdmin`, `SaleAdmin` con inline seguro | `59e61ac` | **COMPLETADO** |
-| **ISS-14** | OpenAPI y Swagger UI: `drf-spectacular`, esquemas automáticos y documentación interactiva | `51483b2` | **COMPLETADO** |
-| **ISS-15** | RefreshToken: SimpleJWT, `tokens.py` (SHA-256), modelo `RefreshToken` y tests | `60e4c86` | **COMPLETADO** |
-| **ISS-16** | Modelos RBAC: `Role`, `RoleUser`, `Resource`, `ResourceRole`, migraciones y tests | `110c431` | **COMPLETADO** |
-| **ISS-17** | Login OPEN: `LoginAPIView`, `/api/auth/login/`, JWT tokens y suite `AuthFlowTests` | `9bdae68` | **COMPLETADO** |
-| **ISS-18** | Refresh con rotación: `RefreshAPIView`, `/api/auth/refresh/` y suite de reuso | `439ecb9` | **COMPLETADO** |
-| **ISS-19** | Logout: `LogoutAPIView`, `/api/auth/logout/` y suite de revocación de sesión | `10c3db9` | **COMPLETADO** |
-| **ISS-20** | Perfil JWT: `StoreLabJWTAuthentication`, `ProfileAPIView`, `/api/auth/profile/` y suite GATE | `c986ae0` | **COMPLETADO** |
-| **ISS-21** | Autorización RBAC: permiso `HasResourceAccess`, negación por defecto y suite GATE | `338d409` | **COMPLETADO** |
-| **ISS-22** | RBAC sobre el negocio: protección JWT+RBAC en catálogo, clientes y ventas | `3bd7fec` | **COMPLETADO** |
-
 
 ---
 
@@ -5582,11 +5532,6 @@ System check identified no issues (0 silenced).
 #### Evidencia 1: UserSerializer con contraseña segura write-only y set_password
 ![UserSerializer Password Write-Only](capturas/ISS-23_01_user_serializer_password.png)
 
-> [!NOTE]
-> **Aclaración Técnica de Entorno (Linter / IDE vs Runtime):**
-> Las líneas onduladas o subrayados rojos que pudieran apreciarse en algunas capturas del editor corresponden exclusivamente al analizador estático y corrector sintáctico de VS Code en Windows (Pylance / Spell Checker) al abrir archivos montados sobre la ruta de red de WSL2 (`\\wsl.localhost\...`) sin vincular el intérprete de Linux. No constituyen ningún error de código, como lo certifica la ejecución limpia del comando `python manage.py check` y el paso exitoso al 100% de la suite de pruebas unitarias correspondientes en consola.
-
-
 #### Evidencia 2: SoftDeleteModelViewSet y ViewSets de la Matriz RBAC
 ![RBAC ViewSets Soft Delete](capturas/ISS-23_02_rbac_viewsets_soft_delete.png)
 
@@ -5597,18 +5542,6 @@ System check identified no issues (0 silenced).
 ![Swagger UI Matriz RBAC](capturas/ISS-23_04_swagger_matrix_endpoints.png)
 
 ---
-
-### 5. Bitácora de Cambios
-
-| Campo | Detalle |
-| :--- | :--- |
-| **Commit Hash** | `f4a0df4` |
-| **Fecha de Aplicación** | 2026-10-13 |
-| **Autor** | dvzinx22 |
-| **Mensaje de Commit** | `feat(security): implement matrix crud viewsets and serializers (ISS-23)` |
-| **Archivos Modificados** | `apps/security/serializers.py`, `apps/security/rbac_views.py`, `apps/security/urls.py`, `apps/security/tests.py`, `trazabilidad.md` |
-| **Estado** | `COMPLETADO Y VERIFICADO` |
-
 
 ---
 
@@ -5891,18 +5824,6 @@ python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
 
 ---
 
-### 5. Bitácora de Cambios
-
-| Campo | Detalle |
-| :--- | :--- |
-| **Commit Hash** | `db294d6` |
-| **Fecha de Aplicación** | 2026-10-13 |
-| **Autor** | dvzinx22 |
-| **Mensaje de Commit** | `feat(security): add seed_rbac command and spectacular bearer scheme (ISS-24)` |
-| **Archivos Modificados** | `apps/security/schema.py`, `apps/security/apps.py`, `apps/security/rbac_views.py`, `apps/security/management/commands/seed_rbac.py`, `trazabilidad.md` |
-| **Estado** | `COMPLETADO Y VERIFICADO` |
-
-
 ---
 
 ## ISS-25 · Pruebas 401 y 403 (Cierre de la Fase II · Auth con RBAC)
@@ -6041,13 +5962,35 @@ Con la culminación de esta unidad, se consolida la arquitectura completa de seg
 
 ---
 
-### 6. Bitácora de Cambios
+---
 
-| Campo | Detalle |
-| :--- | :--- |
-| **Commit Hash** | `c79c199` |
-| **Fecha de Aplicación** | 2026-10-13 |
-| **Autor** | dvzinx22 |
-| **Mensaje de Commit** | `test(security): add 401 vs 403 rbac tests and complete phase ii (ISS-25)` |
-| **Archivos Modificados** | `apps/security/tests.py`, `trazabilidad.md` |
-| **Estado** | `COMPLETADO Y VERIFICADO - CIERRE FASE II` |
+## Bitácora Consolidada de Commits Realizados
+
+| Issue | Descripción del Cambio | Hash Commit | Estado |
+| :--- | :--- | :---: | :---: |
+| **ISS-00** | Creación del entorno virtual, Django 5.2.17, `config/`, `.gitignore` y `requirements.txt` | `ed65975` | **COMPLETADO** |
+| **ISS-01** | Settings y selección de motor: drivers, `database.py`, `settings/`, `project_python.py`, `tests.py` | `494db4c` | **COMPLETADO** |
+| **ISS-02** | Apps `client`, `product`, `sale`: inicialización CLI, parches `apps.py` y registro en `settings` | `f4fe16f` | **COMPLETADO** |
+| **ISS-03** | Custom User antes de la primera migración: `RecordStatus`, modelo `User`, migraciones y suite de pruebas | `a7414c1` | **COMPLETADO** |
+| **ISS-04** | Modelo Client: modelos base `TimeStampedModel`/`StoreLabModel`, `Client`, migraciones y suite GATE | `b2c2dab` | **COMPLETADO** |
+| **ISS-05** | Catálogo TazaNorte: modelos `ProductType` y `Product`, FK restrict, migraciones y suite GATE | `d502e56` | **COMPLETADO** |
+| **ISS-06** | Ventas TazaNorte: modelos `Sale` y `ProductSale`, precio histórico, void, migraciones y suite GATE | `645ec19` | **COMPLETADO** |
+| **ISS-07** | Serializers TazaNorte: DRF, camelCase JSON, normalización email, serializers y suite GATE | `4ab39a6` | **COMPLETADO** |
+| **ISS-08** | Client CRUD: ModelViewSet con baja lógica, SimpleRouter (/api/clients/) y suite GATE | `a459875` | **COMPLETADO** |
+| **ISS-09** | Catálogo CRUD: ViewSets con baja lógica, SimpleRouter (/api/products/ y /api/product-types/) y suite GATE | `9ccca92` | **COMPLETADO** |
+| **ISS-10** | Disponibles con ListAPIView: endpoint /api/products/available/ con filtro de activos y suite de tests | `cd1cd31` | **COMPLETADO** |
+| **ISS-11** | Registro de venta atómica con APIView: `/api/sales/`, validaciones y suite GATE | `3225354` | **COMPLETADO** |
+| **ISS-12** | Consulta y anulación de ventas: `SaleReadViewSet`, `GET/DELETE /api/sales/<pk>/` y suite GATE | `179a19f` | **COMPLETADO** |
+| **ISS-13** | Configuración de Django Admin: `ClientAdmin`, `ProductAdmin`, `SaleAdmin` con inline seguro | `59e61ac` | **COMPLETADO** |
+| **ISS-14** | OpenAPI y Swagger UI: `drf-spectacular`, esquemas automáticos y documentación interactiva | `51483b2` | **COMPLETADO** |
+| **ISS-15** | RefreshToken: SimpleJWT, `tokens.py` (SHA-256), modelo `RefreshToken` y tests | `60e4c86` | **COMPLETADO** |
+| **ISS-16** | Modelos RBAC: `Role`, `RoleUser`, `Resource`, `ResourceRole`, migraciones y tests | `110c431` | **COMPLETADO** |
+| **ISS-17** | Login OPEN: `LoginAPIView`, `/api/auth/login/`, JWT tokens y suite `AuthFlowTests` | `9bdae68` | **COMPLETADO** |
+| **ISS-18** | Refresh con rotación: `RefreshAPIView`, `/api/auth/refresh/` y suite de reuso | `439ecb9` | **COMPLETADO** |
+| **ISS-19** | Logout: `LogoutAPIView`, `/api/auth/logout/` y suite de revocación de sesión | `10c3db9` | **COMPLETADO** |
+| **ISS-20** | Perfil JWT: `StoreLabJWTAuthentication`, `ProfileAPIView`, `/api/auth/profile/` y suite GATE | `c986ae0` | **COMPLETADO** |
+| **ISS-21** | Autorización RBAC: permiso `HasResourceAccess`, negación por defecto y suite GATE | `338d409` | **COMPLETADO** |
+| **ISS-22** | RBAC sobre el negocio: protección JWT+RBAC en catálogo, clientes y ventas | `3bd7fec` | **COMPLETADO** |
+| **ISS-23** | CRUD de la matriz: ViewSets y serializers (`users`, `roles`, `role-users`, `resources`, `resource-roles`) | `d091887` | **COMPLETADO** |
+| **ISS-24** | Semilla RBAC y Swagger con Bearer: comando `seed_rbac`, rutas y esquema `StoreLabJWTScheme` | `06221da` | **COMPLETADO** |
+| **ISS-25** | Pruebas 401 y 403: suite `RbacTests` y Cierre de la Fase II · Auth con RBAC | `2e91086` | **COMPLETADO** |
