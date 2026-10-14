@@ -80,6 +80,109 @@
 
 ---
 
+---
+
+## Arquitectura del Sistema y Estructura del Proyecto
+
+A continuación se presenta el árbol de directorios completo del backend de TazaNorte, desarrollado en Django 5.2.17 con Django REST Framework y PostgreSQL, detallando la responsabilidad y función técnica de cada archivo:
+
+```text
+backend/
+├── manage.py                                 # Punto de entrada CLI para comandos administrativos de Django
+├── requirements.txt                          # Dependencias oficiales del proyecto (Django, DRF, SimpleJWT, psycopg, etc.)
+├── test_business_http.py                     # Script automatizado de verificación HTTP de la capa de negocio (Segunda Parte)
+├── trazabilidad.md                           # Documento maestro de bitácora, código, diffs y evidencias del proyecto
+├── config/                                   # Paquete de configuración global del proyecto Django
+│   ├── __init__.py                           # Inicializador de paquete Python
+│   ├── asgi.py                               # Interfaz ASGI para servidores asíncronos
+│   ├── wsgi.py                               # Interfaz WSGI para servidores síncronos de producción
+│   ├── database.py                           # Selector dinámico de motor de BD (PostgreSQL, MySQL, SQL Server, Oracle)
+│   ├── project_python.py                     # Wrapper para garantizar la ejecución con el intérprete virtual (.venv)
+│   ├── urls.py                               # Enrutador raíz central (OpenAPI, Swagger, Admin y /api/ de apps)
+│   ├── tests.py                              # Pruebas unitarias de selección de motor y configuración de bases de datos
+│   └── settings/                             # Módulos de configuración modularizada
+│       └── __init__.py                       # Ajustes de Django, INSTALLED_APPS, DRF, JWT, CORS y Spectacular
+└── apps/                                     # Módulos de aplicación del dominio del sistema
+    ├── __init__.py                           # Inicializador del paquete de aplicaciones
+    ├── common/                               # Capa transversal compartida por todo el backend
+    │   ├── __init__.py                       # Inicializador del módulo
+    │   ├── status.py                         # Definición canónica de estados de registro (RecordStatus: ACTIVE/INACTIVE)
+    │   ├── models.py                         # Clases base abstractas TimeStampedModel y StoreLabModel con baja lógica
+    │   └── testing.py                        # Helpers para suites de prueba: create_active_user, grant y grant_crud
+    ├── client/                               # Módulo de gestión de clientes
+    │   ├── __init__.py                       # Inicializador del módulo
+    │   ├── apps.py                           # Metadatos y configuración de la app client (ClientConfig)
+    │   ├── models.py                         # Modelo Client con auditoría, validación de email y teléfono
+    │   ├── serializers.py                   # ClientSerializer con serialización camelCase y normalización
+    │   ├── views.py                          # ClientViewSet (ModelViewSet con baja lógica y filtro por status)
+    │   ├── urls.py                           # SimpleRouter registrando el endpoint /api/clients/
+    │   ├── admin.py                          # Interfaz administrativa personalizada ClientAdmin
+    │   ├── tests.py                          # Suite de pruebas unitarias y de integración para clientes
+    │   └── migrations/                       # Historial de migraciones de la base de datos
+    │       ├── 0001_initial.py               # Creación de tabla 'clients' con restricciones de integridad
+    │       └── __init__.py
+    ├── product/                              # Módulo de catálogo y menú de cafetería
+    │   ├── __init__.py                       # Inicializador del módulo
+    │   ├── apps.py                           # Metadatos y configuración de la app product (ProductConfig)
+    │   ├── models.py                         # Modelos ProductType (categorías) y Product (productos con stock y precio)
+    │   ├── serializers.py                   # ProductTypeSerializer y ProductSerializer con camelCase
+    │   ├── views.py                          # ProductTypeViewSet, ProductViewSet y AvailableProductListAPIView
+    │   ├── urls.py                           # Enrutador para /api/products/, /product-types/ y /available/
+    │   ├── admin.py                          # Personalización de Django Admin para productos y categorías
+    │   ├── tests.py                          # Suite de pruebas del catálogo, stock y productos activos
+    │   └── migrations/
+    │       ├── 0001_initial.py               # Creación de tablas 'product_types' y 'products' con FK restrict
+    │       └── __init__.py
+    ├── sale/                                 # Módulo transaccional de ventas
+    │   ├── __init__.py                       # Inicializador del módulo
+    │   ├── apps.py                           # Metadatos y configuración de la app sale (SaleConfig)
+    │   ├── managers.py                       # SaleManager con método register() transaccional atómico
+    │   ├── serializers.py                   # SaleCreateSerializer y SaleReadSerializer con líneas anidadas
+    │   ├── views.py                          # SaleCollectionAPIView (registro atómico) y SaleReadViewSet (consulta/anulación)
+    │   ├── urls.py                           # Rutas REST para /api/sales/ (colección y detalle por ID)
+    │   ├── admin.py                          # SaleAdmin con ProductSaleInline de solo lectura para auditoría
+    │   ├── tests.py                          # Pruebas transaccionales de ventas, montos y stock
+    │   └── migrations/
+    │       ├── 0001_initial.py               # Creación de tablas 'sales' y 'product_sales' con checks
+    │       └── __init__.py
+    └── security/                             # Módulo de autenticación JWT y autorización RBAC
+        ├── __init__.py                       # Inicializador del módulo
+        ├── apps.py                           # SecurityConfig con hook ready() para registrar esquemas OpenAPI
+        ├── models.py                         # Custom User, RefreshToken, Role, RoleUser, Resource, ResourceRole
+        ├── tokens.py                         # Utilidades criptográficas SHA-256 para refresh tokens y familias
+        ├── authentication.py                 # Autenticador personalizado StoreLabJWTAuthentication
+        ├── permissions.py                    # Permiso HasResourceAccess con evaluación dinámica de permisos RBAC
+        ├── serializers.py                   # LoginSerializer, ProfileSerializer y serializers de la matriz RBAC
+        ├── auth_views.py                     # LoginAPIView, RefreshAPIView y LogoutAPIView (Endpoints OPEN)
+        ├── rbac_views.py                     # ProfileAPIView y SoftDeleteModelViewSet (ViewSets de la matriz RBAC)
+        ├── urls.py                           # Rutas /api/auth/* y endpoints de la matriz (/users, /roles, etc.)
+        ├── schema.py                         # Extensión StoreLabJWTScheme para integración Bearer con drf-spectacular
+        ├── admin.py                          # Configuración de administración para entidades de seguridad
+        ├── tests.py                          # Suite exhaustiva (AuthFlowTests, SecurityMatrixApiTests, RbacTests)
+        ├── management/                       # Comandos de gestión personalizados de Django
+        │   ├── __init__.py
+        │   └── commands/
+        │       ├── __init__.py
+        │       └── seed_rbac.py              # Comando 'seed_rbac' que sincroniza rutas reales y concede rol admin
+        └── migrations/
+            ├── 0001_initial.py               # Modelo Custom User
+            ├── 0002_refreshtoken.py          # Tabla refresh_tokens con soporte de familia y rotación
+            ├── 0003_resource_role_...py      # Tablas roles, role_users, resources y resource_roles
+            └── __init__.py
+```
+
+### Tabla de Responsabilidades Clave por Módulo
+
+| Módulo / Capa | Componentes Principales | Responsabilidad Técnica en TazaNorte |
+| :--- | :--- | :--- |
+| **`config/`** | `database.py`, `settings/`, `urls.py` | Configuración agnóstica de base de datos multilínea, variables de entorno, middleware, integración DRF y documentación Swagger. |
+| **`apps/common/`** | `models.py`, `status.py`, `testing.py` | Modelos base abstractos (`StoreLabModel`) con baja lógica (`status = INACTIVE`), auditoría temporal y helpers de tests. |
+| **`apps/client/`** | `Client`, `ClientViewSet`, `ClientSerializer` | Gestión de clientes de cafetería con soporte de eliminación lógica y nombres de campo camelCase. |
+| **`apps/product/`** | `Product`, `ProductType`, `AvailableProductListAPIView` | Catálogo de cafetería, control de existencias (stock), precios decimales y filtro exclusivo de productos disponibles. |
+| **`apps/sale/`** | `Sale`, `ProductSale`, `SaleManager` | Transacciones comerciales atómicas con `transaction.atomic()`, cálculo seguro de subtotales/impuestos y anulación de ventas. |
+| **`apps/security/`** | `User`, `RefreshToken`, `HasResourceAccess`, `seed_rbac` | Autenticación JWT con rotación y detección de reuso, control de acceso basado en roles (RBAC) y comando de siembra de matriz. |
+
+
 ## Unidad ISS-00: Creación del entorno virtual
 
 ### 1. Entorno
@@ -2823,8 +2926,12 @@ python manage.py check
 System check identified no issues (0 silenced).
 ```
 
-**Evidencias:**
+### Evidencias Gráficas
+
+#### Evidencia 1: Creación de Superusuario y Verificación en Django Admin
 ![Creación de superusuario y verificación de Django Admin](capturas/ISS-13_01_createsuperuser_y_check.png)
+
+#### Evidencia 2: Panel de Administración con Entidades de TazaNorte
 ![Panel de administración de Django con las tablas de TazaNorte](capturas/ISS-13_02_django_admin_panel.png)
 
 ---
@@ -3260,8 +3367,12 @@ Ran 55 tests in 4.100s
 OK
 ```
 
-**Evidencias:**
+### Evidencias Gráficas
+
+#### Evidencia 1: Validación Exitosa del Esquema OpenAPI con drf-spectacular
 ![Validación de esquema OpenAPI con drf-spectacular](capturas/ISS-14_01_spectacular_validate.png)
+
+#### Evidencia 2: Documentación Interactiva de Endpoints en Swagger UI
 ![Documentación interactiva Swagger UI de TazaNorte API](capturas/ISS-14_02_swagger_ui_endpoints.png)
 
 ---
@@ -4335,10 +4446,18 @@ OK
 Destroying test database for alias 'default'...
 ```
 
-**Evidencias:**
+### Evidencias Gráficas
+
+#### Evidencia 1: Vistas y Serializers de Autenticación Abierta (Login OPEN)
 ![Vistas y serializers de autenticación abierta (Login OPEN)](capturas/ISS-17_01_auth_views_y_serializers.png)
+
+#### Evidencia 2: Configuración de Ruta y Verificación de Integridad con check
 ![Ruta auth-login y verificación de URLs](capturas/ISS-17_02_urls_y_check.png)
+
+#### Evidencia 3: Pruebas Automatizadas del Flujo de Autenticación (GATE)
 ![Pruebas automatizadas de autenticación GATE (AuthFlowTests)](capturas/ISS-17_03_test_auth_flow_gate.png)
+
+#### Evidencia 4: Endpoint /api/auth/login/ en Swagger UI
 ![Endpoint /api/auth/login/ documentado en Swagger UI](capturas/ISS-17_04_swagger_login_endpoint.png)
 
 ---
@@ -4552,10 +4671,18 @@ OK
 Destroying test database for alias 'default'...
 ```
 
-**Evidencias:**
+### Evidencias Gráficas
+
+#### Evidencia 1: Vista RefreshAPIView con Transacción y Detección de Reuso
 ![Vista RefreshAPIView con transacción y detección de reuso](capturas/ISS-18_01_refresh_view_code.png)
+
+#### Evidencia 2: Registro de Ruta auth/refresh/ y Chequeo del Sistema
 ![Ruta auth/refresh/ y verificación del sistema](capturas/ISS-18_02_urls_y_check.png)
+
+#### Evidencia 3: Pruebas Automatizadas de Rotación y Revocación de Familia (GATE)
 ![Pruebas automatizadas de rotación y revocación de familia (GATE)](capturas/ISS-18_03_test_refresh_gate.png)
+
+#### Evidencia 4: Endpoint /api/auth/refresh/ en Swagger UI
 ![Endpoint /api/auth/refresh/ en Swagger UI](capturas/ISS-18_04_swagger_refresh_endpoint.png)
 
 ---
@@ -4727,10 +4854,18 @@ OK
 Destroying test database for alias 'default'...
 ```
 
-**Evidencias:**
+### Evidencias Gráficas
+
+#### Evidencia 1: Vista LogoutAPIView con Invalidación de Refresh Token
 ![Vista LogoutAPIView con invalidación de sesión](capturas/ISS-19_01_logout_view_code.png)
+
+#### Evidencia 2: Registro de Ruta auth/logout/ y Chequeo del Sistema
 ![Ruta auth/logout/ y verificación del sistema](capturas/ISS-19_02_urls_y_check.png)
+
+#### Evidencia 3: Pruebas Automatizadas de Invalidación de Sesión (GATE)
 ![Pruebas automatizadas de invalidación en logout (GATE)](capturas/ISS-19_03_test_logout_gate.png)
+
+#### Evidencia 4: Endpoint /api/auth/logout/ en Swagger UI
 ![Endpoint /api/auth/logout/ en Swagger UI](capturas/ISS-19_04_swagger_logout_endpoint.png)
 
 ---
