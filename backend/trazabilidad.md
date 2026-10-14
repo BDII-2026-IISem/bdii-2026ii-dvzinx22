@@ -5964,6 +5964,30 @@ Con la culminación de esta unidad, se consolida la arquitectura completa de seg
 
 ---
 
+---
+
+## Segunda Parte · Pruebas HTTP de la Capa de Negocio (Business)
+
+### 1. Descripción y Alcance
+En cumplimiento de los requerimientos de la Segunda Parte (**"Proyecto Django solo business, probar: - http - swagger"**), se implementó y ejecutó el script de verificación automatizado [`test_business_http.py`](test_business_http.py). Este script valida el ciclo comercial completo de TazaNorte mediante peticiones HTTP reales contra el servidor Django en ejecución (`http://127.0.0.1:8000/api`):
+
+1. **Autenticación HTTP (`POST /api/auth/login/`)**: Demuestra el login y obtención del token Bearer (`HTTP 200 OK`).
+2. **Clientes HTTP (`POST /api/clients/` y `GET /api/clients/`)**: Alta del cliente y consulta de listado con serialización normalizada camelCase (`HTTP 201 Created` y `HTTP 200 OK`).
+3. **Categorías de Menú (`POST /api/product-types/`)**: Alta de categoría en menú (`HTTP 201 Created`).
+4. **Productos de Cafetería (`POST /api/products/`)**: Creación de producto con precio y stock asignado (`HTTP 201 Created`).
+5. **Menú Disponible para la Venta (`GET /api/products/available/`)**: Demostración del filtro de vitrina: solo productos activos con categoría activa y stock > 0 (`HTTP 200 OK`).
+6. **Ventas Transaccionales Atómicas (`POST /api/sales/`)**: Registro de venta con cálculo automático de totales, descuentos y detalle de líneas (`HTTP 201 Created`).
+7. **Consulta de Venta (`GET /api/sales/{id}/`)**: Recuperación de la venta registrada con sus líneas de producto (`HTTP 200 OK`).
+
+---
+
+### 2. Evidencia Gráfica de Ejecución HTTP
+
+#### Ejecución Completa de Pruebas HTTP de Negocio (Business)
+![Pruebas HTTP de la Capa de Negocio Business](capturas/SEGUNDA_PARTE_01_http_business_suite.png)
+
+---
+
 ## Bitácora Consolidada de Commits Realizados
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
