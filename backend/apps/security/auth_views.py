@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -12,7 +13,7 @@ from drf_spectacular.utils import extend_schema
 
 from apps.common.status import RecordStatus
 from apps.security.models import RefreshToken
-from apps.security.serializers import LoginSerializer, TokenPairSerializer
+from apps.security.serializers import LoginSerializer, RefreshSerializer, TokenPairSerializer
 from apps.security.tokens import generate_refresh_value, hash_token
 
 User = get_user_model()
@@ -70,6 +71,77 @@ class LoginAPIView(APIView):
             return invalid
         _stored, raw_refresh = issue_refresh(user)
         return Response(token_payload(user, raw_refresh), status=status.HTTP_200_OK)
+
+
+
+
+class RefreshAPIView(APIView):
+    """
+    Endpoint OPEN de rotación de Refresh Token para TazaNorte.
+    Rota el token de refresco en cada uso y revoca la familia completa si se detecta reuso.
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=RefreshSerializer,
+        responses={200: TokenPairSerializer},
+        description="Rota el token de refresco y entrega un nuevo access token de la misma familia.",
+        tags=["auth"],
+    )
+    def post(self, request):
+        serializer = RefreshSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        raw_token = serializer.validated_data["refresh"]
+        t_hash = hash_token(raw_token)
+
+        with transaction.atomic():
+            token = (
+                RefreshToken.objects.select_for_update()
+                .filter(token_hash=t_hash)
+                .first()
+            )
+            if token is None:
+                return Response(
+                    {"detail": "Token inválido o no encontrado."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si ya fue rotado, revocado o inactivo -> reuso detectado, revocar la familia entera
+            if token.replaced_by_id is not None or token.revoked_at is not None or token.status != RecordStatus.ACTIVE:
+                RefreshToken.objects.filter(family_id=token.family_id).update(
+                    revoked_at=timezone.now(),
+                    status=RecordStatus.INACTIVE,
+                )
+                return Response(
+                    {"detail": "Reuso de token detectado. Familia revocada."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si está vencido
+            if token.expires_at <= timezone.now():
+                token.status = RecordStatus.INACTIVE
+                token.save(update_fields=["status", "updated_at"])
+                return Response(
+                    {"detail": "Token expirado."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si el usuario asociado está inactivo
+            if token.user.status != RecordStatus.ACTIVE:
+                token.status = RecordStatus.INACTIVE
+                token.save(update_fields=["status", "updated_at"])
+                return Response(
+                    {"detail": "Usuario inactivo."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Vigente -> rotar emitiendo nuevo par de la misma familia
+            new_stored, new_raw_refresh = issue_refresh(token.user, family_id=token.family_id)
+            token.replaced_by = new_stored
+            token.save(update_fields=["replaced_by", "updated_at"])
+
+            return Response(token_payload(token.user, new_raw_refresh), status=status.HTTP_200_OK)
 
 
 def _find_user(username, email):

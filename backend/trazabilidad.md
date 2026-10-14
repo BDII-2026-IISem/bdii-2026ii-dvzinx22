@@ -62,6 +62,7 @@
 - [Unidad ISS-15: RefreshToken (SimpleJWT y tokens.py)](#unidad-iss-15-refreshtoken-simplejwt-y-tokenspy)
 - [Unidad ISS-16: Role, RoleUser, Resource y ResourceRole](#unidad-iss-16-role-roleuser-resource-y-resourcerole)
 - [Unidad ISS-17: Login OPEN](#unidad-iss-17-login-open)
+- [Unidad ISS-18: Refresh con rotación](#unidad-iss-18-refresh-con-rotación)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -4331,6 +4332,223 @@ Destroying test database for alias 'default'...
 
 ---
 
+## Unidad ISS-18: Refresh con rotación
+
+Esta unidad implementa la rotación continua de tokens de refresco en cada uso mediante la vista abierta `RefreshAPIView` en `POST /api/auth/refresh/`. La operación se ejecuta de manera atómica bajo `transaction.atomic()` y bloqueo pesimista `select_for_update()`. La arquitectura protege contra robos de sesión: si un token antiguo ya reemplazado (`replaced_by`) es presentado nuevamente, el sistema detecta reuso y **revoca automáticamente a todos los miembros de esa familia (`family_id`)**, forzando al atacante y al usuario legítimo a autenticarse de nuevo.
+
+### 1. `apps/security/auth_views.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-17)
+```python
+import uuid
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken
+from drf_spectacular.utils import extend_schema
+
+from apps.common.status import RecordStatus
+from apps.security.models import RefreshToken
+from apps.security.serializers import LoginSerializer, TokenPairSerializer
+from apps.security.tokens import generate_refresh_value, hash_token
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from django.utils import timezone
+```
+**REEMPLAZAR POR:**
+```python
+from django.db import transaction
+from django.utils import timezone
+```
+
+**UBICAR:**
+```python
+from apps.security.serializers import LoginSerializer, TokenPairSerializer
+```
+**REEMPLAZAR POR:**
+```python
+from apps.security.serializers import LoginSerializer, RefreshSerializer, TokenPairSerializer
+```
+
+**UBICAR:**
+*(Encima de la función `def _find_user(username, email):`)*
+**AGREGAR:**
+```python
+class RefreshAPIView(APIView):
+    """
+    Endpoint OPEN de rotación de Refresh Token para TazaNorte.
+    Rota el token de refresco en cada uso y revoca la familia completa si se detecta reuso.
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=RefreshSerializer,
+        responses={200: TokenPairSerializer},
+        description="Rota el token de refresco y entrega un nuevo access token de la misma familia.",
+        tags=["auth"],
+    )
+    def post(self, request):
+        serializer = RefreshSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        raw_token = serializer.validated_data["refresh"]
+        t_hash = hash_token(raw_token)
+
+        with transaction.atomic():
+            token = (
+                RefreshToken.objects.select_for_update()
+                .filter(token_hash=t_hash)
+                .first()
+            )
+            if token is None:
+                return Response(
+                    {"detail": "Token inválido o no encontrado."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si ya fue rotado, revocado o inactivo -> reuso detectado, revocar la familia entera
+            if token.replaced_by_id is not None or token.revoked_at is not None or token.status != RecordStatus.ACTIVE:
+                RefreshToken.objects.filter(family_id=token.family_id).update(
+                    revoked_at=timezone.now(),
+                    status=RecordStatus.INACTIVE,
+                )
+                return Response(
+                    {"detail": "Reuso de token detectado. Familia revocada."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si está vencido
+            if token.expires_at <= timezone.now():
+                token.status = RecordStatus.INACTIVE
+                token.save(update_fields=["status", "updated_at"])
+                return Response(
+                    {"detail": "Token expirado."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Si el usuario asociado está inactivo
+            if token.user.status != RecordStatus.ACTIVE:
+                token.status = RecordStatus.INACTIVE
+                token.save(update_fields=["status", "updated_at"])
+                return Response(
+                    {"detail": "Usuario inactivo."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Vigente -> rotar emitiendo nuevo par de la misma familia
+            new_stored, new_raw_refresh = issue_refresh(token.user, family_id=token.family_id)
+            token.replaced_by = new_stored
+            token.save(update_fields=["replaced_by", "updated_at"])
+
+            return Response(token_payload(token.user, new_raw_refresh), status=status.HTTP_200_OK)
+```
+
+---
+
+### 2. `apps/security/urls.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-17)
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+]
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from apps.security.auth_views import LoginAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+]
+```
+**REEMPLAZAR POR:**
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+]
+```
+
+#### Código Actualizado Completo
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+]
+```
+
+---
+
+### 3. `apps/security/tests.py`
+
+#### Adición del Método de Prueba
+```python
+    def test_refresh_rotates_and_reuse_revokes_family(self):
+        login = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": PASSWORD},
+            format="json",
+        )
+        first = login.data["refresh"]
+        rotated = self.client.post("/api/auth/refresh/", {"refresh": first}, format="json")
+        self.assertEqual(rotated.status_code, status.HTTP_200_OK)
+        second = rotated.data["refresh"]
+        self.assertNotEqual(first, second)
+        reused = self.client.post("/api/auth/refresh/", {"refresh": first}, format="json")
+        self.assertEqual(reused.status_code, status.HTTP_401_UNAUTHORIZED)
+        after_reuse = self.client.post("/api/auth/refresh/", {"refresh": second}, format="json")
+        self.assertEqual(after_reuse.status_code, status.HTTP_401_UNAUTHORIZED)
+```
+
+---
+
+### Verificación y Ejecución de Pruebas GATE
+
+```bash
+python manage.py check
+python manage.py spectacular --file /tmp/tazanorte-schema.yml --validate
+python manage.py test apps.security.tests.AuthFlowTests.test_refresh_rotates_and_reuse_revokes_family
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+Creating test database for alias 'default'...
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.775s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+**Evidencias:**
+![Vista RefreshAPIView con transacción y detección de reuso](capturas/ISS-18_01_refresh_view_code.png)
+![Ruta auth/refresh/ y verificación del sistema](capturas/ISS-18_02_urls_y_check.png)
+![Pruebas automatizadas de rotación y revocación de familia (GATE)](capturas/ISS-18_03_test_refresh_gate.png)
+![Endpoint /api/auth/refresh/ en Swagger UI](capturas/ISS-18_04_swagger_refresh_endpoint.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -4357,3 +4575,4 @@ Destroying test database for alias 'default'...
 | **ISS-15** | RefreshToken: SimpleJWT, `tokens.py` (SHA-256), modelo `RefreshToken` y tests | `60e4c86` | **COMPLETADO** |
 | **ISS-16** | Modelos RBAC: `Role`, `RoleUser`, `Resource`, `ResourceRole`, migraciones y tests | `110c431` | **COMPLETADO** |
 | **ISS-17** | Login OPEN: `LoginAPIView`, `/api/auth/login/`, JWT tokens y suite `AuthFlowTests` | `9bdae68` | **COMPLETADO** |
+| **ISS-18** | Refresh con rotación: `RefreshAPIView`, `/api/auth/refresh/` y suite de reuso | `439ecb9` | **COMPLETADO** |
