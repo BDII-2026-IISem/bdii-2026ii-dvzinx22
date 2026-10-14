@@ -64,6 +64,7 @@
 - [Unidad ISS-17: Login OPEN](#unidad-iss-17-login-open)
 - [Unidad ISS-18: Refresh con rotación](#unidad-iss-18-refresh-con-rotación)
 - [Unidad ISS-19: Logout](#unidad-iss-19-logout)
+- [Unidad ISS-20: Perfil JWT con token](#unidad-iss-20-perfil-jwt-con-token)
   - [1. Panel de Administración de Clientes (apps/client/admin.py)](#1-panel-de-administración-de-clientes-appsclientadminpy)
   - [2. Panel del Catálogo de Menú (apps/product/admin.py)](#2-panel-del-catálogo-de-menú-appsproductadminpy)
   - [3. Panel de Ventas y Detalle en Solo Lectura (apps/sale/admin.py)](#3-panel-de-ventas-y-detalle-en-solo-lectura-appssaleadminpy)
@@ -4725,6 +4726,252 @@ Destroying test database for alias 'default'...
 
 ---
 
+## Unidad ISS-20: Perfil JWT con token
+
+Esta unidad implementa el segundo modo de acceso al sistema: **JWT con token**. Introduce la clase `StoreLabJWTAuthentication` (que extiende de `JWTAuthentication` de SimpleJWT) para forzar la validación del estado `status=RecordStatus.ACTIVE` del usuario en la base de datos tras verificar la firma criptográfica del token, garantizando que un usuario desactivado reciba un inmediato `401 Unauthorized` aunque su Access Token siga vigente. Expone el endpoint `/api/auth/profile/` mediante `ProfileAPIView` (`RetrieveUpdateAPIView`) para permitir al usuario autenticado consultar y actualizar su propio perfil de manera protegida.
+
+### 1. `apps/security/authentication.py`
+
+*(Archivo nuevo en la unidad ISS-20).*
+
+#### Código
+```python
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
+
+from apps.common.status import RecordStatus
+
+
+class StoreLabJWTAuthentication(JWTAuthentication):
+    """
+    Autenticación JWT adaptada para TazaNorte.
+    Verifica que el usuario permanezca con status=ACTIVE tras validar la firma del token.
+    """
+    def get_user(self, validated_token):
+        user = super().get_user(validated_token)
+        if user.status != RecordStatus.ACTIVE or not user.is_active:
+            raise AuthenticationFailed(
+                "El usuario no está active.",
+                code="user_inactive",
+            )
+        return user
+```
+
+---
+
+### 2. `config/settings/__init__.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-19)
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_RENDERER_CLASSES": (
+        "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer",
+    ),
+    "DEFAULT_PARSER_CLASSES": (
+        "djangorestframework_camel_case.parser.CamelCaseFormParser",
+        "djangorestframework_camel_case.parser.CamelCaseMultiPartParser",
+        "djangorestframework_camel_case.parser.CamelCaseJSONParser",
+    ),
+}
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+```
+**REEMPLAZAR POR:**
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.security.authentication.StoreLabJWTAuthentication",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+```
+
+---
+
+### 3. `apps/security/serializers.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-19)
+```python
+from rest_framework import serializers
+
+
+class LoginSerializer(serializers.Serializer):
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from rest_framework import serializers
+
+
+class LoginSerializer(serializers.Serializer):
+```
+**REEMPLAZAR POR:**
+```python
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "first_name", "last_name", "status"]
+        read_only_fields = ["id", "username", "status"]
+
+
+class LoginSerializer(serializers.Serializer):
+```
+
+---
+
+### 4. `apps/security/rbac_views.py`
+
+*(Archivo nuevo en la unidad ISS-20).*
+
+#### Código
+```python
+from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
+
+from apps.security.serializers import ProfileSerializer
+
+
+class ProfileAPIView(RetrieveUpdateAPIView):
+    """
+    Endpoint del perfil propio de usuario en TazaNorte (/api/auth/profile/).
+    Requiere autenticación JWT válida sin consultar todavía matriz RBAC.
+    """
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "patch", "head", "options"]
+
+    @extend_schema(
+        description="Consulta los datos de perfil del usuario autenticado vía JWT.",
+        tags=["auth"],
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        description="Actualiza parcialmente el perfil del usuario autenticado (nombres/apellidos).",
+        tags=["auth"],
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+    def get_object(self):
+        return self.request.user
+```
+
+---
+
+### 5. `apps/security/urls.py`
+
+#### Código Antiguo (Antes de los cambios - ISS-19)
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView, LogoutAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+    path("auth/logout/", LogoutAPIView.as_view(), name="auth-logout"),
+]
+```
+
+#### Instrucciones de Cambio
+**UBICAR:**
+```python
+from apps.security.auth_views import LoginAPIView, LogoutAPIView, RefreshAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+    path("auth/logout/", LogoutAPIView.as_view(), name="auth-logout"),
+]
+```
+**REEMPLAZAR POR:**
+```python
+from django.urls import path
+from apps.security.auth_views import LoginAPIView, LogoutAPIView, RefreshAPIView
+from apps.security.rbac_views import ProfileAPIView
+
+urlpatterns = [
+    path("auth/login/", LoginAPIView.as_view(), name="auth-login"),
+    path("auth/refresh/", RefreshAPIView.as_view(), name="auth-refresh"),
+    path("auth/logout/", LogoutAPIView.as_view(), name="auth-logout"),
+    path("auth/profile/", ProfileAPIView.as_view(), name="auth-profile"),
+]
+```
+
+---
+
+### 6. `apps/security/tests.py`
+
+#### Adición del Método de Prueba
+```python
+    def test_profile_requires_token_and_rejects_inactive_user(self):
+        anonymous = self.client.get("/api/auth/profile/")
+        self.assertEqual(anonymous.status_code, status.HTTP_401_UNAUTHORIZED)
+        login = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": PASSWORD},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+        profile = self.client.get("/api/auth/profile/")
+        self.assertEqual(profile.status_code, status.HTTP_200_OK)
+        self.assertEqual(profile.data["username"], "ana")
+        patched = self.client.patch(
+            "/api/auth/profile/",
+            {"firstName": "Ana"},
+            format="json",
+        )
+        self.assertEqual(patched.status_code, status.HTTP_200_OK)
+        self.user.status = RecordStatus.INACTIVE
+        self.user.save()
+        denied = self.client.get("/api/auth/profile/")
+        self.assertEqual(denied.status_code, status.HTTP_401_UNAUTHORIZED)
+```
+
+---
+
+### Verificación y Ejecución de Pruebas GATE
+
+```bash
+python manage.py check
+python manage.py test apps.security.tests.AuthFlowTests.test_profile_requires_token_and_rejects_inactive_user
+```
+
+#### Salida de Terminal
+```text
+System check identified no issues (0 silenced).
+Creating test database for alias 'default'...
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.762s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+**Evidencias:**
+![Autenticación JWT personalizada y clase StoreLabJWTAuthentication](capturas/ISS-20_01_authentication_class.png)
+![Vista ProfileAPIView y ProfileSerializer](capturas/ISS-20_02_profile_view_y_serializer.png)
+![Pruebas automatizadas de perfil JWT y rechazo a inactivos (GATE)](capturas/ISS-20_03_test_profile_gate.png)
+![Endpoint /api/auth/profile/ en Swagger UI](capturas/ISS-20_04_swagger_profile_endpoint.png)
+
+---
+
 ## Bitácora de Commits Realizados
 
 
@@ -4753,3 +5000,4 @@ Destroying test database for alias 'default'...
 | **ISS-17** | Login OPEN: `LoginAPIView`, `/api/auth/login/`, JWT tokens y suite `AuthFlowTests` | `9bdae68` | **COMPLETADO** |
 | **ISS-18** | Refresh con rotación: `RefreshAPIView`, `/api/auth/refresh/` y suite de reuso | `439ecb9` | **COMPLETADO** |
 | **ISS-19** | Logout: `LogoutAPIView`, `/api/auth/logout/` y suite de revocación de sesión | `10c3db9` | **COMPLETADO** |
+| **ISS-20** | Perfil JWT: `StoreLabJWTAuthentication`, `ProfileAPIView`, `/api/auth/profile/` y suite GATE | `c986ae0` | **COMPLETADO** |

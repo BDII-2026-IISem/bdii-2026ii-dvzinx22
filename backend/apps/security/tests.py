@@ -314,3 +314,26 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(logout.status_code, status.HTTP_204_NO_CONTENT)
         again = self.client.post("/api/auth/refresh/", {"refresh": raw}, format="json")
         self.assertEqual(again.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_profile_requires_token_and_rejects_inactive_user(self):
+        anonymous = self.client.get("/api/auth/profile/")
+        self.assertEqual(anonymous.status_code, status.HTTP_401_UNAUTHORIZED)
+        login = self.client.post(
+            "/api/auth/login/",
+            {"username": "ana", "password": PASSWORD},
+            format="json",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+        profile = self.client.get("/api/auth/profile/")
+        self.assertEqual(profile.status_code, status.HTTP_200_OK)
+        self.assertEqual(profile.data["username"], "ana")
+        patched = self.client.patch(
+            "/api/auth/profile/",
+            {"firstName": "Ana"},
+            format="json",
+        )
+        self.assertEqual(patched.status_code, status.HTTP_200_OK)
+        self.user.status = RecordStatus.INACTIVE
+        self.user.save()
+        denied = self.client.get("/api/auth/profile/")
+        self.assertEqual(denied.status_code, status.HTTP_401_UNAUTHORIZED)
