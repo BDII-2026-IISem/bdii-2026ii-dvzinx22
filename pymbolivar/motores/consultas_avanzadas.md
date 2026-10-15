@@ -89,7 +89,11 @@ A continuación se presentan las evidencias visuales del estado actual de regist
 
 ### 1.1 Mostrar algunos de los registros de la tabla customers
 
-**Hipótesis:** En la arquitectura de datos de la cafetería de especialidad **TazaNorte**, el catálogo de clientes constituye la entidad primaria sobre la cual gravita el sistema de fidelización y trazabilidad de pedidos. Se plantea como hipótesis que proyectar selectivamente los atributos cardinales de identificación (`name`, `document_type`, `document_number`, `status`), en lugar de incurrir en la sobrecarga innecesaria de un `SELECT *`, reduce drásticamente el tráfico en el canal de red entre el motor MySQL y DBeaver y optimiza los búferes de memoria del servidor. Se espera comprobar que el motor resuelve la proyección columnar de forma inmediata, devolviendo un conjunto ordenado y libre de redundancias que certifica la correcta inserción inicial de clientes aptos para transaccionar en el punto de venta.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería requiere un módulo de consulta rápida en la terminal de punto de venta (POS) para verificar los clientes registrados visualizando únicamente su documento, nombre, teléfono y estado activo. Se formula como hipótesis de negocio que proyectar de manera selectiva solo los campos indispensables para la atención en mostrador reducirá la saturación visual del cajero, agilizará la búsqueda de comensales y evitará la sobrecarga en el sistema de facturación.
+
+**Solución Técnica:**
+En la arquitectura de datos de la cafetería de especialidad **TazaNorte**, el catálogo de clientes constituye la entidad primaria sobre la cual gravita el sistema de fidelización y trazabilidad de pedidos. Se plantea como hipótesis que proyectar selectivamente los atributos cardinales de identificación (`name`, `document_type`, `document_number`, `status`), en lugar de incurrir en la sobrecarga innecesaria de un `SELECT *`, reduce drásticamente el tráfico en el canal de red entre el motor MySQL y DBeaver y optimiza los búferes de memoria del servidor. Se espera comprobar que el motor resuelve la proyección columnar de forma inmediata, devolviendo un conjunto ordenado y libre de redundancias que certifica la correcta inserción inicial de clientes aptos para transaccionar en el punto de venta.
 
 ```sql
 SELECT name, document_type, document_number, status FROM customers;
@@ -128,7 +132,11 @@ CALL sp_get_customers();
 
 ### 1.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Hipótesis:** Para el control operativo en barra y el monitoreo financiero de caja en **TazaNorte**, los supervisores necesitan auditar prioritariamente los pedidos en orden estrictamente cronológico decreciente para identificar las transacciones más recientes y detectar anomalías en tiempo real. Se plantea como hipótesis que al aplicar la cláusula `ORDER BY order_date DESC` sobre la tabla `orders`, el optimizador de consultas de MySQL ejecutará un plan de clasificación secuencial que organizará el universo de órdenes desde la fecha y hora más reciente hasta la más antigua. Se espera validar que la salida refleje con exactitud la temporalidad del negocio, permitiendo correlacionar cada venta con su importe total sin alterar la integridad de las claves primarias.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La administración de TazaNorte necesita auditar en tiempo real el flujo de comandas del día, priorizando las últimas órdenes registradas en barra para resolver aclaraciones con los clientes y detectar demoras en preparación. Se formula como hipótesis de negocio que desplegar los pedidos organizados de manera cronológicamente inversa (del más reciente al más antiguo) facilitará la supervisión operativa del servicio y el control de caja en horas pico.
+
+**Solución Técnica:**
+Para el control operativo en barra y el monitoreo financiero de caja en **TazaNorte**, los supervisores necesitan auditar prioritariamente los pedidos en orden estrictamente cronológico decreciente para identificar las transacciones más recientes y detectar anomalías en tiempo real. Se plantea como hipótesis que al aplicar la cláusula `ORDER BY order_date DESC` sobre la tabla `orders`, el optimizador de consultas de MySQL ejecutará un plan de clasificación secuencial que organizará el universo de órdenes desde la fecha y hora más reciente hasta la más antigua. Se espera validar que la salida refleje con exactitud la temporalidad del negocio, permitiendo correlacionar cada venta con su importe total sin alterar la integridad de las claves primarias.
 
 ```sql
 SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
@@ -167,7 +175,11 @@ CALL sp_get_orders_desc();
 
 ### 1.3 Consultas a múltiples tablas mediante WHERE
 
-**Hipótesis:** En el álgebra relacional tradicional, la asociación entre dos entidades se modela mediante el producto cartesiano restringido por una condición de igualdad en la cláusula `WHERE`. Se postula como hipótesis que al vincular `orders` y `customers` mediante el predicado `WHERE c.id = o.customer_id`, el motor MySQL delimitará rigurosamente la combinación de tuplas descartando cualquier cruce espurio. De este modo, se espera comprobar que cada pedido exhibido quede emparejado de forma unívoca con su cliente titular, demostrando la consistencia de la clave foránea `customer_id` y permitiendo evaluar el volumen de consumo personal sin inconsistencias de datos huérfanos.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería solicita un informe que correlacione cada orden de compra con el nombre del cliente titular para conciliar consumos individuales y emitir comprobantes de pago personalizados. Se plantea como hipótesis de negocio que la vinculación relacional entre las entidades de comensales y pedidos garantizará que cada ticket quede asociado inequívocamente con su comprador sin tolerar órdenes huérfanas ni duplicidades.
+
+**Solución Técnica:**
+En el álgebra relacional tradicional, la asociación entre dos entidades se modela mediante el producto cartesiano restringido por una condición de igualdad en la cláusula `WHERE`. Se postula como hipótesis que al vincular `orders` y `customers` mediante el predicado `WHERE c.id = o.customer_id`, el motor MySQL delimitará rigurosamente la combinación de tuplas descartando cualquier cruce espurio. De este modo, se espera comprobar que cada pedido exhibido quede emparejado de forma unívoca con su cliente titular, demostrando la consistencia de la clave foránea `customer_id` y permitiendo evaluar el volumen de consumo personal sin inconsistencias de datos huérfanos.
 
 ```sql
 SELECT c.name, o.id AS order_id, o.total, o.status 
@@ -212,7 +224,11 @@ CALL sp_get_orders_customers_where();
 
 ### 1.4 Consultas a múltiples tablas mediante JOIN
 
-**Hipótesis:** La especificación formal ANSI SQL `JOIN ... ON` fue introducida para separar limpiamente los criterios de acoplamiento estructural entre tablas de las condiciones de filtrado de negocio. Se plantea la hipótesis de que al ejecutar la combinación de `customers` y `orders` mediante la cláusula explícita `JOIN orders AS o ON (c.id = o.customer_id)`, el planificador de MySQL procesará de manera óptima los índices de clave primaria y foránea, arrojando un conjunto de resultados idéntico en cardinalidad y contenido al obtenido con la cláusula `WHERE`, pero garantizando un plan de ejecución más robusto y un código fuente estandarizado, legible y mantenible para el software de punto de venta.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para la integración del sistema de facturación electrónica y reportes analíticos estandarizados, la gerencia de TazaNorte exige que las relaciones entre clientes y ventas operen bajo estándares formales de ingeniería de software. Se formula como hipótesis de negocio que la consulta estandarizada permitirá consultar el historial transaccional de comensales de manera confiable, mantenible y sin riesgo de pérdidas de datos ante futuras expansiones de la base de datos.
+
+**Solución Técnica:**
+La especificación formal ANSI SQL `JOIN ... ON` fue introducida para separar limpiamente los criterios de acoplamiento estructural entre tablas de las condiciones de filtrado de negocio. Se plantea la hipótesis de que al ejecutar la combinación de `customers` y `orders` mediante la cláusula explícita `JOIN orders AS o ON (c.id = o.customer_id)`, el planificador de MySQL procesará de manera óptima los índices de clave primaria y foránea, arrojando un conjunto de resultados idéntico en cardinalidad y contenido al obtenido con la cláusula `WHERE`, pero garantizando un plan de ejecución más robusto y un código fuente estandarizado, legible y mantenible para el software de punto de venta.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -261,7 +277,11 @@ Para las condiciones se utiliza la clausula Where de la siguiente manera:
 
 Quiero realizar la misma consulta anterior de cualquiera de las dos formas, teniendo en cuenta la condición que presente las órdenes de un status específico.
 
-**Hipótesis:** En la gestión operativa de **TazaNorte**, resulta imperativo discriminar el flujo transaccional activo respecto de aquellos pedidos que fueron cancelados o quedaron inactivos por deserción o error en barra. Se plantea como hipótesis que al combinar las entidades `customers` y `orders` mediante la cláusula explícita `JOIN ... ON` y aplicar el predicado restrictivo `WHERE o.status = 'inactive'`, el motor MySQL ejecutará un plan de evaluación relacional que aislará con exactitud matemática el subconjunto de pedidos fallidos o suspendidos, proyectando el nombre del cliente y su correo para permitir análisis de calidad del servicio y auditoría de motivos de anulación.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento contable de TazaNorte requiere separar las órdenes activas y facturadas de aquellas canceladas o anuladas para determinar con precisión los ingresos reales y auditar las razones de pedidos fallidos en barra. Se plantea como hipótesis de negocio que discriminar las órdenes por su estado transaccional permitirá aislar la facturación líquida de las transacciones no concretadas, mejorando el control de mermas y devoluciones.
+
+**Solución Técnica:**
+En la gestión operativa de **TazaNorte**, resulta imperativo discriminar el flujo transaccional activo respecto de aquellos pedidos que fueron cancelados o quedaron inactivos por deserción o error en barra. Se plantea como hipótesis que al combinar las entidades `customers` y `orders` mediante la cláusula explícita `JOIN ... ON` y aplicar el predicado restrictivo `WHERE o.status = 'inactive'`, el motor MySQL ejecutará un plan de evaluación relacional que aislará con exactitud matemática el subconjunto de pedidos fallidos o suspendidos, proyectando el nombre del cliente y su correo para permitir análisis de calidad del servicio y auditoría de motivos de anulación.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
@@ -321,7 +341,11 @@ CALL sp_get_orders_by_status('active');
 
 ### 1.6 Consultas con filtros condicional LIKE
 
-**Hipótesis:** Esta consulta permite consultar los clientes cuyo correo electrónico comienza con la letra **“m”**. Se utiliza `LIKE` junto con el símbolo `%`, que indica que después de la letra “m” puede existir cualquier cantidad de caracteres. De esta manera, se pueden filtrar los clientes según la primera letra de su correo electrónico.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área de fidelización de TazaNorte requiere segmentar a los comensales registrados para desplegar campañas alfabéticas de beneficios en barra. Se formula como hipótesis de negocio que filtrar a los clientes cuyo correo inicia con una letra determinada (en este caso la letra 'm') permitirá ejecutar envíos segmentados de cupones digitales sin sobrecargar los servidores de correo masivo.
+
+**Solución Técnica:**
+Se implementa una consulta condicional utilizando el operador de coincidencia de patrones `LIKE` combinado con el comodín `%` (`WHERE c.email LIKE 'm%'`). El motor evalúa la cadena alfanumérica y proyecta únicamente las tuplas cuyo valor inicie con el carácter especificado, validando de forma óptima el filtrado textual.
 
 ```sql
 SELECT name, email, status 
@@ -335,7 +359,11 @@ WHERE c.email LIKE 'm%';
 
 **Mostrar todos los correos de los clientes que contengan el dominio gmail**
 
-**Hipótesis:** En esta consulta realicé una búsqueda de los clientes que tienen la palabra **“gmail”** dentro de su correo electrónico. Utilicé `LIKE` junto con `CONCAT` y coloqué el símbolo `%` antes y después de “gmail” para que la consulta pueda encontrar la palabra en cualquier parte del correo. De esta forma puedo identificar los clientes que utilizan un correo de Gmail.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La gerencia comercial de TazaNorte proyecta integrar el sistema de pedidos con las plataformas de Google Workspace y Google Wallet para notificaciones de comanda. Se plantea como hipótesis de negocio que identificar el volumen de clientes que emplean cuentas de correo `@gmail.com` permitirá determinar la viabilidad y alcance real de dicha integración digital.
+
+**Solución Técnica:**
+Se aplica una búsqueda por subcadenas mediante el predicado `LIKE` con comodines `%` en ambos extremos (`LIKE '%gmail%'` o `LIKE '%@gmail.com'`). Esta técnica permite al motor localizar el dominio deseado en cualquier posición del atributo `email`, garantizando la correcta segmentación de la base de usuarios.
 
 ```sql
 SELECT name, email, status 
@@ -349,7 +377,11 @@ WHERE c.email LIKE CONCAT('%', 'gmail', '%');
 
 **combinacion del punto 1.5 y la implementacion de el like**
 
-**Hipótesis:** En esta consulta realicé una búsqueda de los clientes que tienen una orden con estado **“active”** y cuyo correo electrónico comienza con la letra **“m”**. Para esto relacioné las tablas `customers` y `orders` mediante un `JOIN`, utilizando el `id` del cliente y el `customer_id` de la orden. Luego utilicé dos condiciones en el `WHERE`: una para buscar las órdenes activas y otra para filtrar los correos que comienzan con **“m”**. Finalmente, muestro el nombre y correo del cliente junto con la información operativa de su orden.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El administrador de turno en barra necesita ubicar a comensales activos que se encuentren consumiendo en el establecimiento y que formen parte del grupo promocional matutino (clientes con correo inicial 'm') para aplicarles un descuento inmediato en su comanda abierta. Se formula como hipótesis de negocio que enlazar órdenes vigentes con el patrón de correo del cliente permitirá validar la asignación de cortesías comerciales en tiempo real.
+
+**Solución Técnica:**
+Se combinan las tablas `customers` y `orders` mediante la cláusula formal de unión `JOIN ... ON (c.id = o.customer_id)` e incorporando una condición compuesta en `WHERE` con el operador lógico `AND` (`o.status = 'active' AND c.email LIKE 'm%'`). Esto garantiza integridad relacional y aislamiento exacto del subconjunto comensal-orden.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.total, o.status 
@@ -394,7 +426,11 @@ CALL sp_get_orders_like_combinado('active', 'm');
 
 ### 1.7 Consultas con filtros condicionales BETWEEN
 
-**Hipótesis:** En esta consulta realicé una búsqueda de los pagos realizados por los clientes entre el 1 de septiembre de 2026 y el 24 de septiembre de 2026. Para esto relacioné las tablas `customers`, `orders` y `payments`, aprovechando las relaciones que se muestran en el diagrama de la base de datos, donde un cliente genera órdenes y cada orden tiene pagos asociados. Luego utilicé `BETWEEN` para establecer el rango de fechas y `ORDER BY` para organizar los pagos desde el más antiguo hasta el más reciente. Finalmente, seleccioné los datos principales del cliente, la orden y el pago.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El propietario de la cafetería exige una auditoría contable de las recaudaciones percibidas durante las semanas centrales de septiembre de 2026 para cuadrar los arqueos de caja y contrastar los ingresos reales contra las comandas emitidas. Se plantea como hipótesis de negocio que filtrar las transacciones en una ventana de fechas delimitada permitirá verificar la consistencia financiera entre lo facturado y lo pagado por los clientes.
+
+**Solución Técnica:**
+Se articulan las entidades `customers`, `orders` y `payments` siguiendo las claves foráneas del modelo relacional, empleando la cláusula `BETWEEN '2026-09-01 00:00:00' AND '2026-09-24 00:00:00'` sobre la columna `payment_date` y ordenando cronológicamente mediante `ORDER BY pay.payment_date ASC`. Esto asegura la trazabilidad temporal completa de los pagos por cliente y comanda.
 
 ```sql
 SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
@@ -411,7 +447,11 @@ ORDER BY pay.payment_date ASC;
 
 **Forma 2:**
 
-**Hipótesis:** En esta consulta realicé prácticamente lo mismo que en la anterior, pero esta vez utilicé la forma tradicional con `WHERE` para relacionar las tablas `customers`, `orders` y `payments`, tomando como referencia las relaciones del diagrama de la base de datos.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La dirección de TazaNorte requiere validar que los reportes financieros obtenidos mediante herramientas tradicionales y módulos heredados del sistema coincidan al 100% con los reportes analíticos modernos, asegurando que no existan discrepancias en los totales de recaudo auditados entre el 1 y el 24 de septiembre de 2026.
+
+**Solución Técnica:**
+Se replica la extracción de la ventana temporal de pagos empleando la sintaxis multitabla relacional implícita con `WHERE c.id = o.customer_id AND pay.reference_id = o.id` y la condición de rango `BETWEEN`. Esto demuestra que el optimizador de consultas genera un resultado idéntico al del `JOIN` explícito, ratificando la solidez de las claves foráneas.
 
 ```sql
 SELECT c.name, c.email, o.order_date, o.status, pay.payment_date, pay.amount, pay.method 
@@ -465,7 +505,11 @@ Se consideran este tipo de consultas cuando tenemos valores que se repiten en lo
 
 **Forma 1 con el where:**
 
-**Hipótesis:** En la analítica de negocio de **TazaNorte**, es indispensable cuantificar el valor monetario del cliente (Customer Lifetime Value) en un ciclo de facturación mensual. Se plantea la hipótesis de que al acoplar `customers`, `orders` y `payments` bajo un rango temporal `BETWEEN` y aplicar las funciones de agregación `SUM(p.amount)`, `COUNT(p.id)` y `AVG(p.amount)` agrupadas por `GROUP BY c.id, c.name`, el motor condensará el universo de transacciones en un resumen ejecutivo ordenado por facturación decreciente (`ORDER BY TotalSuma DESC`), permitiendo clasificar de inmediato a los clientes con mayor frecuencia de visita y ticket promedio.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La gerencia de TazaNorte requiere un tablero de control que totalice los ingresos generados por cada cliente, la cantidad de compras realizadas y el ticket promedio por visita. Se formula como hipótesis de negocio que consolidar estos tres indicadores por comensal permitirá categorizar a la clientela y formular ofertas personalizadas según su frecuencia y poder de consumo.
+
+**Solución Técnica:**
+En la analítica de negocio de **TazaNorte**, es indispensable cuantificar el valor monetario del cliente (Customer Lifetime Value) en un ciclo de facturación mensual. Se plantea la hipótesis de que al acoplar `customers`, `orders` y `payments` bajo un rango temporal `BETWEEN` y aplicar las funciones de agregación `SUM(p.amount)`, `COUNT(p.id)` y `AVG(p.amount)` agrupadas por `GROUP BY c.id, c.name`, el motor condensará el universo de transacciones en un resumen ejecutivo ordenado por facturación decreciente (`ORDER BY TotalSuma DESC`), permitiendo clasificar de inmediato a los clientes con mayor frecuencia de visita y ticket promedio.
 
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS TotalSuma, 
@@ -485,7 +529,11 @@ ORDER BY TotalSuma DESC;
 
 **Forma 1 (Filtrado por estado y método):**
 
-**Hipótesis:** Con el objetivo de evaluar las comisiones de adquirencia bancaria y el comportamiento de pago electrónico en barra, se formula como hipótesis que la aplicación de filtros previos a la agrupación (`WHERE p.status = 'active' AND p.method = 'card'`) restringirá el cálculo agregado únicamente a las transacciones con datáfono confirmadas. Al colapsar los datos por cliente con `GROUP BY`, se espera obtener la distribución exacta de ingresos captados con tarjeta y el número de operaciones por usuario.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para auditar las comisiones retenidas por las franquicias de datáfono en barra, la administración exige aislar los cobros realizados exclusivamente mediante tarjeta bancaria. Se plantea como hipótesis de negocio que agrupar el recaudo electrónico por cliente permitirá cuantificar el costo de intermediación financiera sobre las ventas con medios digitales.
+
+**Solución Técnica:**
+Con el objetivo de evaluar las comisiones de adquirencia bancaria y el comportamiento de pago electrónico en barra, se formula como hipótesis que la aplicación de filtros previos a la agrupación (`WHERE p.status = 'active' AND p.method = 'card'`) restringirá el cálculo agregado únicamente a las transacciones con datáfono confirmadas. Al colapsar los datos por cliente con `GROUP BY`, se espera obtener la distribución exacta de ingresos captados con tarjeta y el número de operaciones por usuario.
 
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS TotalGasto, 
@@ -504,7 +552,11 @@ ORDER BY TotalGasto DESC;
 
 **Forma 2 con el HAVING:**
 
-**Hipótesis:** La cláusula `WHERE` resulta insuficiente cuando el predicado de exclusión depende del resultado computado de una función agregada. Se postula la hipótesis de que al incorporar la cláusula pos-agrupamiento `HAVING SUM(p.amount) >= 20000`, el motor MySQL calculará primero la acumulación por cliente y posteriormente descartará a todos aquellos comensales cuyo consumo global no alcance el piso de 20.000 COP, aislando con precisión matemática el segmento de clientes VIP o de alto impacto comercial.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La cafetería lanzará un club de membresía premium para clientes destacados cuyo gasto acumulado alcance o supere los $20.000 COP. Se plantea como hipótesis de negocio que fijar un umbral de consumo agregado permitirá identificar con exactitud al segmento de comensales VIP para otorgarles beneficios de degustación y fidelización especial.
+
+**Solución Técnica:**
+La cláusula `WHERE` resulta insuficiente cuando el predicado de exclusión depende del resultado computado de una función agregada. Se postula la hipótesis de que al incorporar la cláusula pos-agrupamiento `HAVING SUM(p.amount) >= 20000`, el motor MySQL calculará primero la acumulación por cliente y posteriormente descartará a todos aquellos comensales cuyo consumo global no alcance el piso de 20.000 COP, aislando con precisión matemática el segmento de clientes VIP o de alto impacto comercial.
 
 ```sql
 SELECT c.id, c.name, SUM(p.amount) AS TotalSuma, 
@@ -523,7 +575,11 @@ ORDER BY TotalSuma DESC;
 
 **Forma 2 (Múltiples condiciones con HAVING y rango BETWEEN):**
 
-**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine múltiples métricas de agregación unidas por `AND` (`HAVING COUNT(p.id) >= 1 AND SUM(p.amount) > 15000`) sobre una ventana temporal delimitada en `WHERE` con `BETWEEN`, permitirá al motor filtrar simultáneamente por volumen de visitas y umbral de recaudación acumulada, ofreciendo una métrica de fidelización compuesta altamente fidedigna para la toma de decisiones gerenciales.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área comercial requiere premiar a clientes que no solo hayan visitado la cafetería sino que mantengan un ticket acumulado representativo (más de una comanda y más de $15.000 COP en compras). Se formula como hipótesis de negocio que evaluar simultáneamente la frecuencia de visita y el monto total permitirá premiar la verdadera lealtad comercial sobre compras marginales.
+
+**Solución Técnica:**
+Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine múltiples métricas de agregación unidas por `AND` (`HAVING COUNT(p.id) >= 1 AND SUM(p.amount) > 15000`) sobre una ventana temporal delimitada en `WHERE` con `BETWEEN`, permitirá al motor filtrar simultáneamente por volumen de visitas y umbral de recaudación acumulada, ofreciendo una métrica de fidelización compuesta altamente fidedigna para la toma de decisiones gerenciales.
 
 ```sql
 SELECT c.id, c.name, c.email, SUM(p.amount) AS TotalPeriodo,   
@@ -551,7 +607,11 @@ La más conocida es el siguiente caso:
 
 Teniendo en cuenta las tablas entre clientes y órdenes (`customers` y `orders`), muestre los clientes que no han realizado órdenes en una fecha o período determinado.
 
-**Hipótesis:** En esta consulta realicé una búsqueda de los clientes que no registran órdenes de compra entre el 1 de septiembre de 2026 y el 10 de septiembre de 2026. Primero, en la subconsulta interna, examiné la tabla `orders` y utilicé `BETWEEN` para obtener el conjunto de `customer_id` de todos los clientes que compraron en ese período. Después, en la consulta externa principal, utilicé la cláusula `NOT IN` junto con `c.id` para excluir a todos los clientes que aparecen en los resultados de la subconsulta. De esta manera, el resultado muestra únicamente los clientes inactivos o sin consumo en dicha ventana temporal, lo cual es de gran valor para campañas de fidelización y reactivación en la cafetería TazaNorte.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento de mercadeo de TazaNorte necesita identificar a los comensales registrados en la plataforma que no han registrado ninguna comanda durante el ciclo comercial de septiembre de 2026, con el fin de activar un plan de retención comercial mediante ofertas de bienvenida y degustaciones de café de origen. Se postula como hipótesis de negocio que aislar a los clientes inactivos permitirá prevenir el abandono definitivo de la marca.
+
+**Solución Técnica:**
+Se implementa una operación conjuntista de exclusión mediante una subconsulta anidada con el operador `NOT IN` (`WHERE c.id NOT IN (SELECT o.customer_id FROM orders o ...)`). La subconsulta aísla el universo de comensales que sí transaccionaron en el rango temporal, y la consulta externa sustrae dichos identificadores, devolviendo con exactitud a los usuarios sin consumos registrados.
 
 ```sql
 SELECT * 
@@ -569,7 +629,11 @@ WHERE c.id NOT IN (
 
 **Forma 2:**
 
-**Hipótesis:** Se postula como hipótesis que la técnica de diferencia de conjuntos implementada mediante combinación externa `LEFT JOIN` con el predicado de nulidad `WHERE o.customer_id IS NULL` producirá un conjunto de resultados idéntico al de la subconsulta con `NOT IN`. Asimismo, desde la perspectiva de rendimiento interno en MySQL, el planificador optimizará la unión mediante índices evitando evaluaciones de conjuntos en subconsultas no correlacionadas, logrando la detección de clientes inactivos con máxima eficiencia operacional.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para optimizar los reportes nocturnos del sistema POS, el equipo de sistemas propone verificar que el cálculo de clientes desatendidos mediante combinaciones externas (`LEFT JOIN`) entregue el mismo listado con mayor rapidez en el servidor. Se plantea como hipótesis de negocio que optimizar esta extracción asegurará reportes matutinos puntuales para el equipo comercial sin saturar la base de datos operativa.
+
+**Solución Técnica:**
+Se postula como hipótesis que la técnica de diferencia de conjuntos implementada mediante combinación externa `LEFT JOIN` con el predicado de nulidad `WHERE o.customer_id IS NULL` producirá un conjunto de resultados idéntico al de la subconsulta con `NOT IN`. Asimismo, desde la perspectiva de rendimiento interno en MySQL, el planificador optimizará la unión mediante índices evitando evaluaciones de conjuntos en subconsultas no correlacionadas, logrando la detección de clientes inactivos con máxima eficiencia operacional.
 
 ```sql
 SELECT c.* 
@@ -614,7 +678,11 @@ CALL sp_clientes_sin_ordenes_periodo('2026-09-01 00:00:00', '2026-09-10 23:59:59
 
 ### **Creacion triggers en la tabla products**
 
-**Hipótesis:** El catálogo de productos y la fijación de precios (`price`, `sku`) constituyen el activo financiero más sensible del punto de venta en **TazaNorte**. Se postula la hipótesis de que un sistema de disparadores reactivos (`AFTER INSERT`, `AFTER UPDATE`, `AFTER DELETE`) que serialice instantáneas completas en formato estructurado `JSON` hacia una bitácora `products_audit` garantizará la no-repudiación y la trazabilidad forense de cada movimiento contable. Adicionalmente, se formula como hipótesis que la instalación de disparadores restrictivos `BEFORE UPDATE` y `BEFORE DELETE` sobre `products_audit` con invocación de `SIGNAL SQLSTATE '45000'` blindará de forma inviolable la tabla de auditoría, impidiendo cualquier intento interno o externo de manipular, alterar o suprimir la evidencia histórica.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de TazaNorte exige un blindaje absoluto sobre el catálogo comercial y la lista de precios de la cafetería, asegurando que cualquier cambio de valor o eliminación de productos quede auditado de forma indeleble. Se plantea como hipótesis de negocio que registrar cada alteración de precios con su snapshot histórico evitará fraudes internos y garantizará la transparencia en las ventas.
+
+**Solución Técnica:**
+El catálogo de productos y la fijación de precios (`price`, `sku`) constituyen el activo financiero más sensible del punto de venta en **TazaNorte**. Se postula la hipótesis de que un sistema de disparadores reactivos (`AFTER INSERT`, `AFTER UPDATE`, `AFTER DELETE`) que serialice instantáneas completas en formato estructurado `JSON` hacia una bitácora `products_audit` garantizará la no-repudiación y la trazabilidad forense de cada movimiento contable. Adicionalmente, se formula como hipótesis que la instalación de disparadores restrictivos `BEFORE UPDATE` y `BEFORE DELETE` sobre `products_audit` con invocación de `SIGNAL SQLSTATE '45000'` blindará de forma inviolable la tabla de auditoría, impidiendo cualquier intento interno o externo de manipular, alterar o suprimir la evidencia histórica.
 
 ```sql
 CREATE TABLE IF NOT EXISTS products_audit (
@@ -787,7 +855,11 @@ En la evidencia se observa cómo quedaron registradas en la tabla `products_audi
 
 ### **Creacion triggers en la tabla orders**
 
-**Hipótesis:** En la tabla `orders` convergen los ingresos brutos, los canales de atención y los estados de liquidación de la cafetería. Se plantea la hipótesis de que un usuario con privilegios elevados en la base de datos podría intentar anular pedidos fraudulentamente o alterar los totales cobrados para encubrir faltantes de inventario en caja. Para mitigar esta vulnerabilidad, se formula la hipótesis de que un esquema de auditoría automática complementado con validaciones de inmutabilidad estricta registrará toda mutación en `orders_audit` y abortará de inmediato cualquier modificación directa sobre órdenes consolidadas, manteniendo la integridad del libro contable.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La dirección financiera requiere garantizar la inmutabilidad y trazabilidad total de las órdenes de venta registradas en barra. Se formula como hipótesis de negocio que auditar de forma automática cada inserción, modificación o intento de anulación de comandas impedirá la alteración maliciosa de los importes cobrados a los clientes.
+
+**Solución Técnica:**
+En la tabla `orders` convergen los ingresos brutos, los canales de atención y los estados de liquidación de la cafetería. Se plantea la hipótesis de que un usuario con privilegios elevados en la base de datos podría intentar anular pedidos fraudulentamente o alterar los totales cobrados para encubrir faltantes de inventario en caja. Para mitigar esta vulnerabilidad, se formula la hipótesis de que un esquema de auditoría automática complementado con validaciones de inmutabilidad estricta registrará toda mutación en `orders_audit` y abortará de inmediato cualquier modificación directa sobre órdenes consolidadas, manteniendo la integridad del libro contable.
 
 ```sql
 CREATE TABLE IF NOT EXISTS orders_audit (
@@ -939,7 +1011,11 @@ Se validó que toda alteración sobre las órdenes de venta queda blindada y aud
 
 ### **Creacion triggers en la tabla payments**
 
-**Hipótesis:** La entidad `payments` gestiona el flujo de caja real y los medios de pago físicos y electrónicos de **TazaNorte**, constituyendo el flanco más expuesto a fraude financiero y conciliación ficticia de arqueos. Se plantea como hipótesis que la implementación de disparadores a nivel de fila (`FOR EACH ROW`) registrará sin excepción cada ingreso monetario capturado, mientras que los triggers de inmutabilidad rechazarán con código de error fatal cualquier intento de alterar el importe o método de pago de un cobro ya efectuado, garantizando la irreversibilidad probatoria requerida por las normas contables y de auditoría.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El propietario de la cafetería y los auditores contables exigen un control estricto sobre el flujo de caja, los cobros con tarjeta y las transferencias. Se postula como hipótesis de negocio que la captura inmediata e irreversible de todas las transacciones de pago protegerá los fondos del establecimiento y respaldará los cierres de caja contra cualquier discrepancia contable.
+
+**Solución Técnica:**
+La entidad `payments` gestiona el flujo de caja real y los medios de pago físicos y electrónicos de **TazaNorte**, constituyendo el flanco más expuesto a fraude financiero y conciliación ficticia de arqueos. Se plantea como hipótesis que la implementación de disparadores a nivel de fila (`FOR EACH ROW`) registrará sin excepción cada ingreso monetario capturado, mientras que los triggers de inmutabilidad rechazarán con código de error fatal cualquier intento de alterar el importe o método de pago de un cobro ya efectuado, garantizando la irreversibilidad probatoria requerida por las normas contables y de auditoría.
 
 ```sql
 CREATE TABLE IF NOT EXISTS payments_audit (
@@ -1093,7 +1169,11 @@ La implementación de auditoría en la tabla `payments` garantiza la inviolabili
 
 ### 2.1 Mostrar algunos de los registros de la tabla customers
 
-**Hipótesis:** En el motor PostgreSQL 17, el manejo de tipos de datos es fuertemente tipado en comparación con otros RDBMS. Se plantea como hipótesis que la proyección selectiva de atributos en `customers` validará la coherencia del tipo `BOOLEAN` nativo (`true`/`false`) para el estado de actividad del cliente, comprobando que la migración e importación de datos conservó la integridad de tipos y permitiendo visualizar los clientes autorizados para transaccionar en TazaNorte.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería requiere un módulo de consulta rápida en la terminal de punto de venta (POS) para verificar los clientes registrados visualizando únicamente su documento, nombre, teléfono y estado activo. Se formula como hipótesis de negocio que proyectar de manera selectiva solo los campos indispensables para la atención en mostrador reducirá la saturación visual del cajero, agilizará la búsqueda de comensales y evitará la sobrecarga en el sistema de facturación.
+
+**Solución Técnica:**
+En el motor PostgreSQL 17, el manejo de tipos de datos es fuertemente tipado en comparación con otros RDBMS. Se plantea como hipótesis que la proyección selectiva de atributos en `customers` validará la coherencia del tipo `BOOLEAN` nativo (`true`/`false`) para el estado de actividad del cliente, comprobando que la migración e importación de datos conservó la integridad de tipos y permitiendo visualizar los clientes autorizados para transaccionar en TazaNorte.
 
 ```sql
 SELECT name, document_type, document_number, is_active FROM customers;
@@ -1131,7 +1211,11 @@ SELECT * FROM sp_get_customers();
 
 ### 2.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Hipótesis:** Se postula como hipótesis que la ejecución de `ORDER BY order_date DESC` en PostgreSQL invocará el algoritmo de ordenamiento interno (quicksort o external merge sort según la memoria de trabajo `work_mem`), entregando el historial de órdenes ordenado rigurosamente desde la fecha más reciente, lo que facilitará la supervisión de la rotación de mesas y comandas sin afectar el rendimiento del plan de ejecución.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La administración de TazaNorte necesita auditar en tiempo real el flujo de comandas del día, priorizando las últimas órdenes registradas en barra para resolver aclaraciones con los clientes y detectar demoras en preparación. Se formula como hipótesis de negocio que desplegar los pedidos organizados de manera cronológicamente inversa (del más reciente al más antiguo) facilitará la supervisión operativa del servicio y el control de caja en horas pico.
+
+**Solución Técnica:**
+Se postula como hipótesis que la ejecución de `ORDER BY order_date DESC` en PostgreSQL invocará el algoritmo de ordenamiento interno (quicksort o external merge sort según la memoria de trabajo `work_mem`), entregando el historial de órdenes ordenado rigurosamente desde la fecha más reciente, lo que facilitará la supervisión de la rotación de mesas y comandas sin afectar el rendimiento del plan de ejecución.
 
 ```sql
 SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
@@ -1159,7 +1243,11 @@ $$ LANGUAGE plpgsql;
 
 ### 2.3 Consultas a múltiples tablas mediante WHERE
 
-**Hipótesis:** Se plantea la hipótesis de que la vinculación relacional tradicional en la cláusula `WHERE` sobre PostgreSQL 17 ejecutará un operador `Hash Join` o `Merge Join` para enlazar la clave primaria `customers.id` con la foránea `orders.customer_id`, garantizando que ninguna orden válida quede excluida y verificando que el cruce de datos refleje con exactitud la titularidad de las compras en TazaNorte.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería solicita un informe que correlacione cada orden de compra con el nombre del cliente titular para conciliar consumos individuales y emitir comprobantes de pago personalizados. Se plantea como hipótesis de negocio que la vinculación relacional entre las entidades de comensales y pedidos garantizará que cada ticket quede asociado inequívocamente con su comprador sin tolerar órdenes huérfanas ni duplicidades.
+
+**Solución Técnica:**
+Se plantea la hipótesis de que la vinculación relacional tradicional en la cláusula `WHERE` sobre PostgreSQL 17 ejecutará un operador `Hash Join` o `Merge Join` para enlazar la clave primaria `customers.id` con la foránea `orders.customer_id`, garantizando que ninguna orden válida quede excluida y verificando que el cruce de datos refleje con exactitud la titularidad de las compras en TazaNorte.
 
 ```sql
 SELECT c.name, o.id AS order_id, o.total, o.status 
@@ -1199,7 +1287,11 @@ SELECT * FROM sp_get_orders_customers_where();
 
 ### 2.4 Consultas a múltiples tablas mediante JOIN
 
-**Hipótesis:** Se formula la hipótesis de que la instrucción estándar `INNER JOIN ... ON` en PostgreSQL optimizará la semántica de la consulta, permitiendo que el analizador de costos seleccione el árbol relacional más eficiente para unir las tablas de clientes y pedidos, proyectando la información de contacto y facturación con total coherencia y claridad formal.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para la integración del sistema de facturación electrónica y reportes analíticos estandarizados, la gerencia de TazaNorte exige que las relaciones entre clientes y ventas operen bajo estándares formales de ingeniería de software. Se formula como hipótesis de negocio que la consulta estandarizada permitirá consultar el historial transaccional de comensales de manera confiable, mantenible y sin riesgo de pérdidas de datos ante futuras expansiones de la base de datos.
+
+**Solución Técnica:**
+Se formula la hipótesis de que la instrucción estándar `INNER JOIN ... ON` en PostgreSQL optimizará la semántica de la consulta, permitiendo que el analizador de costos seleccione el árbol relacional más eficiente para unir las tablas de clientes y pedidos, proyectando la información de contacto y facturación con total coherencia y claridad formal.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -1239,7 +1331,11 @@ SELECT * FROM sp_get_orders_customers_join();
 
 ### 2.5 Condiciones en las Consultas o filtros en las Consultas
 
-**Hipótesis:** Se plantea la hipótesis de que al incorporar filtros discriminatorios sobre el atributo `status` en PostgreSQL (`WHERE o.status = 'active'` y `WHERE o.status = 'inactive'`), el motor segmentará con precisión los pedidos completados frente a los cancelados, demostrando la consistencia de los predicados lógicos compuestos unidos por `AND` y validando la equivalencia funcional entre las formas de unión de tablas.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento contable de TazaNorte requiere separar las órdenes activas y facturadas de aquellas canceladas o anuladas para determinar con precisión los ingresos reales y auditar las razones de pedidos fallidos en barra. Se plantea como hipótesis de negocio que discriminar las órdenes por su estado transaccional permitirá aislar la facturación líquida de las transacciones no concretadas, mejorando el control de mermas y devoluciones.
+
+**Solución Técnica:**
+Se plantea la hipótesis de que al incorporar filtros discriminatorios sobre el atributo `status` en PostgreSQL (`WHERE o.status = 'active'` y `WHERE o.status = 'inactive'`), el motor segmentará con precisión los pedidos completados frente a los cancelados, demostrando la consistencia de los predicados lógicos compuestos unidos por `AND` y validando la equivalencia funcional entre las formas de unión de tablas.
 
 **Filtro WHERE por órdenes con estado activo:**
 ```sql
@@ -1292,7 +1388,11 @@ SELECT * FROM sp_get_orders_by_status('active');
 
 ### 2.6 Consultas con filtros condicional LIKE
 
-**Hipótesis:** En PostgreSQL, la evaluación de expresiones de coincidencia de cadenas mediante el operador `LIKE` opera respetando estrictamente el cotejamiento y la distinción de mayúsculas y minúsculas. Se postula la hipótesis de que la búsqueda con comodines `%` (`email LIKE 'm%'` y `email LIKE '%@gmail.com'`) permitirá filtrar y recuperar con precisión a los usuarios registrados bajo dominios masivos, posibilitando campañas dirigidas para los clientes habituales de la cafetería.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área de fidelización de TazaNorte requiere segmentar a los comensales registrados para desplegar campañas alfabéticas de beneficios en barra. Se formula como hipótesis de negocio que filtrar a los clientes cuyo correo inicia con una letra determinada (en este caso la letra 'm') permitirá ejecutar envíos segmentados de cupones digitales sin sobrecargar los servidores de correo masivo.
+
+**Solución Técnica:**
+En PostgreSQL, la evaluación de expresiones de coincidencia de cadenas mediante el operador `LIKE` opera respetando estrictamente el cotejamiento y la distinción de mayúsculas y minúsculas. Se postula la hipótesis de que la búsqueda con comodines `%` (`email LIKE 'm%'` y `email LIKE '%@gmail.com'`) permitirá filtrar y recuperar con precisión a los usuarios registrados bajo dominios masivos, posibilitando campañas dirigidas para los clientes habituales de la cafetería.
 
 **Filtro por inicial de correo electrónico (`m%`):**
 ```sql
@@ -1346,7 +1446,11 @@ $$ LANGUAGE plpgsql;
 
 ### 2.7 Consultas con filtros condicionales BETWEEN
 
-**Hipótesis:** La conciliación contable de TazaNorte en PostgreSQL exige verificar el recaudo financiero en intervalos específicos. Se postula la hipótesis de que el operador `BETWEEN` con marcas temporales `TIMESTAMP` evaluará de forma cerrada el intervalo comprendido entre el 1 y el 24 de septiembre de 2026, uniendo en cadena clientes, órdenes y pagos para auditar la correlación entre facturación y cobro en orden cronológico ascendente.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El propietario de la cafetería exige una auditoría contable de las recaudaciones percibidas durante las semanas centrales de septiembre de 2026 para cuadrar los arqueos de caja y contrastar los ingresos reales contra las comandas emitidas. Se plantea como hipótesis de negocio que filtrar las transacciones en una ventana de fechas delimitada permitirá verificar la consistencia financiera entre lo facturado y lo pagado por los clientes.
+
+**Solución Técnica:**
+La conciliación contable de TazaNorte en PostgreSQL exige verificar el recaudo financiero en intervalos específicos. Se postula la hipótesis de que el operador `BETWEEN` con marcas temporales `TIMESTAMP` evaluará de forma cerrada el intervalo comprendido entre el 1 y el 24 de septiembre de 2026, uniendo en cadena clientes, órdenes y pagos para auditar la correlación entre facturación y cobro en orden cronológico ascendente.
 
 **Forma 1 (con JOIN):**
 ```sql
@@ -1414,7 +1518,11 @@ Se consideran este tipo de consultas cuando tenemos valores que se repiten en lo
 
 **Forma 1 con el WHERE (rango de fechas, SUM, COUNT y AVG):**
 
-**Hipótesis:** En la analítica financiera de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable mensual. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` en PostgreSQL 17 y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `ROUND(AVG(pay.amount), 2)` agrupadas por `GROUP BY c.id, c.name`, el optimizador generará un plan `HashAggregate` que condensará las operaciones en un resumen ejecutivo ordenado descendentemente por ingresos totales (`ORDER BY total_suma DESC`).
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La gerencia de TazaNorte requiere un tablero de control que totalice los ingresos generados por cada cliente, la cantidad de compras realizadas y el ticket promedio por visita. Se formula como hipótesis de negocio que consolidar estos tres indicadores por comensal permitirá categorizar a la clientela y formular ofertas personalizadas según su frecuencia y poder de consumo.
+
+**Solución Técnica:**
+En la analítica financiera de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable mensual. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` en PostgreSQL 17 y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `ROUND(AVG(pay.amount), 2)` agrupadas por `GROUP BY c.id, c.name`, el optimizador generará un plan `HashAggregate` que condensará las operaciones en un resumen ejecutivo ordenado descendentemente por ingresos totales (`ORDER BY total_suma DESC`).
 
 ```sql
 SELECT c.id, c.name, 
@@ -1435,7 +1543,11 @@ ORDER BY total_suma DESC;
 
 **Forma 1 (Filtrado por status activo y pago con tarjeta):**
 
-**Hipótesis:** Con el objetivo de auditar las comisiones de adquirencia y el comportamiento de pago electrónico en barra, se plantea como hipótesis que la aplicación de filtros previos a la agrupación (`WHERE pay.status = 'active' AND pay.method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por cliente con `GROUP BY`, se espera obtener con exactitud la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado en PostgreSQL.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para auditar las comisiones retenidas por las franquicias de datáfono en barra, la administración exige aislar los cobros realizados exclusivamente mediante tarjeta bancaria. Se plantea como hipótesis de negocio que agrupar el recaudo electrónico por cliente permitirá cuantificar el costo de intermediación financiera sobre las ventas con medios digitales.
+
+**Solución Técnica:**
+Con el objetivo de auditar las comisiones de adquirencia y el comportamiento de pago electrónico en barra, se plantea como hipótesis que la aplicación de filtros previos a la agrupación (`WHERE pay.status = 'active' AND pay.method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por cliente con `GROUP BY`, se espera obtener con exactitud la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado en PostgreSQL.
 
 ```sql
 SELECT c.id, c.name, 
@@ -1455,7 +1567,11 @@ ORDER BY total_gasto DESC;
 
 **Forma 2 con el HAVING:**
 
-**Hipótesis:** Se plantea como hipótesis que el motor PostgreSQL ejecutará un plan de agregación por tabla de dispersión (`HashAggregate`) al procesar `GROUP BY c.id, c.name`, calculando simultáneamente la sumatoria, cuenta y media de pagos por cliente. La posterior aplicación del filtro `HAVING SUM(pay.amount) >= 20000` permitirá aislar de forma automática a los clientes con mayor valor financiero acumulado.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La cafetería lanzará un club de membresía premium para clientes destacados cuyo gasto acumulado alcance o supere los $20.000 COP. Se plantea como hipótesis de negocio que fijar un umbral de consumo agregado permitirá identificar con exactitud al segmento de comensales VIP para otorgarles beneficios de degustación y fidelización especial.
+
+**Solución Técnica:**
+Se plantea como hipótesis que el motor PostgreSQL ejecutará un plan de agregación por tabla de dispersión (`HashAggregate`) al procesar `GROUP BY c.id, c.name`, calculando simultáneamente la sumatoria, cuenta y media de pagos por cliente. La posterior aplicación del filtro `HAVING SUM(pay.amount) >= 20000` permitirá aislar de forma automática a los clientes con mayor valor financiero acumulado.
 
 ```sql
 SELECT c.id, c.name, SUM(pay.amount) AS total_suma, 
@@ -1476,7 +1592,11 @@ ORDER BY total_suma DESC;
 
 **Forma 2 (Múltiples condiciones con HAVING y rango de fechas):**
 
-**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE`, permitirá al motor en PostgreSQL discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área comercial requiere premiar a clientes que no solo hayan visitado la cafetería sino que mantengan un ticket acumulado representativo (más de una comanda y más de $15.000 COP en compras). Se formula como hipótesis de negocio que evaluar simultáneamente la frecuencia de visita y el monto total permitirá premiar la verdadera lealtad comercial sobre compras marginales.
+
+**Solución Técnica:**
+Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE`, permitirá al motor en PostgreSQL discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
 
 ```sql
 SELECT c.id, c.name, c.email, 
@@ -1536,7 +1656,11 @@ SELECT * FROM sp_resumen_pagos_group_by(20000);
 
 ### 2.9 Subconsultas y teoría de conjuntos
 
-**Hipótesis:** Se formula la hipótesis de que al ejecutar la sustracción de conjuntos para detectar clientes inactivos en PostgreSQL, tanto la subconsulta evaluada con `NOT IN` como la combinación externa `LEFT JOIN` filtrada con `WHERE o.customer_id IS NULL` arrojarán exactamente el mismo subconjunto de usuarios no compradores, corroborando la consistencia teórica del motor en operaciones de diferencia relacional.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento de mercadeo de TazaNorte necesita identificar a los comensales registrados en la plataforma que no han registrado ninguna comanda durante el ciclo comercial de septiembre de 2026, con el fin de activar un plan de retención comercial mediante ofertas de bienvenida y degustaciones de café de origen. Se postula como hipótesis de negocio que aislar a los clientes inactivos permitirá prevenir el abandono definitivo de la marca.
+
+**Solución Técnica:**
+Se formula la hipótesis de que al ejecutar la sustracción de conjuntos para detectar clientes inactivos en PostgreSQL, tanto la subconsulta evaluada con `NOT IN` como la combinación externa `LEFT JOIN` filtrada con `WHERE o.customer_id IS NULL` arrojarán exactamente el mismo subconjunto de usuarios no compradores, corroborando la consistencia teórica del motor en operaciones de diferencia relacional.
 
 **Forma 1 (con NOT IN):**
 ```sql
@@ -1597,7 +1721,11 @@ SELECT * FROM sp_clientes_sin_ordenes();
 
 ### **Sistema de Triggers de Auditoría y Trazabilidad Transaccional en PostgreSQL**
 
-**Hipótesis:** En la arquitectura empresarial de **TazaNorte**, el catálogo de productos y las ventas exigen trazabilidad forense estricta y cumplimiento del principio contable de no-repudiación. Se formula como hipótesis que la implementación de un sistema de disparadores reactivos basados en funciones PL/pgSQL unificadas (`fn_auditoria_unificada`), acoplado a la capacidad nativa de PostgreSQL para serializar tuplas en formato `JSONB`, permitirá capturar snapshots integrales de cualquier mutación de datos (`INSERT`, `UPDATE`, `DELETE`) en una bitácora centralizada `audit_log_general`. Asimismo, se postula que la fijación de disparadores de intercepción previa `BEFORE UPDATE OR DELETE` con emisión de excepciones controladas (`RAISE EXCEPTION`) garantizará la inmutabilidad absoluta del historial, neutralizando cualquier intento de alteración o borrado de registros probatorios.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de TazaNorte y los auditores financieros exigen un mecanismo corporativo, centralizado e incorruptible que registre cualquier creación, modificación o eliminación en las entidades críticas del negocio (productos, comandas y pagos), garantizando que nadie pueda alterar o borrar el historial contable. Se formula como hipótesis de negocio que un sistema de auditoría automatizado e inmutable asegurará la transparencia fiscal absoluta y protegerá el patrimonio del negocio.
+
+**Solución Técnica:**
+En la arquitectura empresarial de **TazaNorte**, el catálogo de productos y las ventas exigen trazabilidad forense estricta y cumplimiento del principio contable de no-repudiación. Se formula como hipótesis que la implementación de un sistema de disparadores reactivos basados en funciones PL/pgSQL unificadas (`fn_auditoria_unificada`), acoplado a la capacidad nativa de PostgreSQL para serializar tuplas en formato `JSONB`, permitirá capturar snapshots integrales de cualquier mutación de datos (`INSERT`, `UPDATE`, `DELETE`) en una bitácora centralizada `audit_log_general`. Asimismo, se postula que la fijación de disparadores de intercepción previa `BEFORE UPDATE OR DELETE` con emisión de excepciones controladas (`RAISE EXCEPTION`) garantizará la inmutabilidad absoluta del historial, neutralizando cualquier intento de alteración o borrado de registros probatorios.
 
 #### 1. Creación de la Tabla de Auditoría y Disparadores
 
@@ -1693,7 +1821,11 @@ UPDATE audit_log_general SET accion = 'MODIFICADO' WHERE id = 1;
 
 ### 3.1 Mostrar algunos de los registros de la tabla customers
 
-**Hipótesis:** En Microsoft SQL Server 2022 (T-SQL), los indicadores lógicos se representan físicamente mediante el tipo de datos entero compacto `BIT`. Se plantea como hipótesis que la consulta de proyección selectiva sobre `customers` recuperará limpiamente las columnas de identificación y exhibirá el estado del cliente en formato binario (`1` para activo, `0` para inactivo), validando la compatibilidad de esquemas entre motores relacionales para TazaNorte.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería requiere un módulo de consulta rápida en la terminal de punto de venta (POS) para verificar los clientes registrados visualizando únicamente su documento, nombre, teléfono y estado activo. Se formula como hipótesis de negocio que proyectar de manera selectiva solo los campos indispensables para la atención en mostrador reducirá la saturación visual del cajero, agilizará la búsqueda de comensales y evitará la sobrecarga en el sistema de facturación.
+
+**Solución Técnica:**
+En Microsoft SQL Server 2022 (T-SQL), los indicadores lógicos se representan físicamente mediante el tipo de datos entero compacto `BIT`. Se plantea como hipótesis que la consulta de proyección selectiva sobre `customers` recuperará limpiamente las columnas de identificación y exhibirá el estado del cliente en formato binario (`1` para activo, `0` para inactivo), validando la compatibilidad de esquemas entre motores relacionales para TazaNorte.
 
 ```sql
 SELECT name, document_type, document_number, is_active FROM customers;
@@ -1733,7 +1865,11 @@ EXEC sp_get_customers;
 
 ### 3.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Hipótesis:** Se postula la hipótesis de que la directiva `ORDER BY order_date DESC` en SQL Server utilizará un operador `Sort` en el plan de ejecución de T-SQL, estructurando las órdenes de venta desde la más reciente hasta la más antigua, garantizando una inspección cronológica rigurosa para la supervisión de comandas y arqueos diarios en la cafetería.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La administración de TazaNorte necesita auditar en tiempo real el flujo de comandas del día, priorizando las últimas órdenes registradas en barra para resolver aclaraciones con los clientes y detectar demoras en preparación. Se formula como hipótesis de negocio que desplegar los pedidos organizados de manera cronológicamente inversa (del más reciente al más antiguo) facilitará la supervisión operativa del servicio y el control de caja en horas pico.
+
+**Solución Técnica:**
+Se postula la hipótesis de que la directiva `ORDER BY order_date DESC` en SQL Server utilizará un operador `Sort` en el plan de ejecución de T-SQL, estructurando las órdenes de venta desde la más reciente hasta la más antigua, garantizando una inspección cronológica rigurosa para la supervisión de comandas y arqueos diarios en la cafetería.
 
 ```sql
 SELECT id, order_date, total, status FROM orders ORDER BY order_date DESC;
@@ -1773,7 +1909,11 @@ EXEC sp_get_orders_desc;
 
 ### 3.3 Consultas a múltiples tablas mediante WHERE
 
-**Hipótesis:** Se plantea la hipótesis de que al enlazar las entidades `orders` y `customers` mediante igualdad en `WHERE c.id = o.customer_id`, el optimizador de SQL Server creará un plan de ejecución relacional que evitará lecturas desordenadas y acoplará de forma estricta cada orden con su cliente correspondiente, comprobando la integridad referencial del modelo.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería solicita un informe que correlacione cada orden de compra con el nombre del cliente titular para conciliar consumos individuales y emitir comprobantes de pago personalizados. Se plantea como hipótesis de negocio que la vinculación relacional entre las entidades de comensales y pedidos garantizará que cada ticket quede asociado inequívocamente con su comprador sin tolerar órdenes huérfanas ni duplicidades.
+
+**Solución Técnica:**
+Se plantea la hipótesis de que al enlazar las entidades `orders` y `customers` mediante igualdad en `WHERE c.id = o.customer_id`, el optimizador de SQL Server creará un plan de ejecución relacional que evitará lecturas desordenadas y acoplará de forma estricta cada orden con su cliente correspondiente, comprobando la integridad referencial del modelo.
 
 ```sql
 SELECT c.name, o.id AS order_id, o.total, o.status 
@@ -1817,7 +1957,11 @@ EXEC sp_get_orders_customers_where;
 
 ### 3.4 Consultas a múltiples tablas mediante JOIN
 
-**Hipótesis:** Se formula como hipótesis que la cláusula `INNER JOIN ... ON` en SQL Server representará de forma declarativa y normalizada la relación entre clientes y pedidos, permitiendo al optimizador basado en costos (Cost-Based Optimizer) generar un plan de acceso eficiente y devolviendo un conjunto de datos perfectamente homologado con los demás motores relacionales del proyecto.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para la integración del sistema de facturación electrónica y reportes analíticos estandarizados, la gerencia de TazaNorte exige que las relaciones entre clientes y ventas operen bajo estándares formales de ingeniería de software. Se formula como hipótesis de negocio que la consulta estandarizada permitirá consultar el historial transaccional de comensales de manera confiable, mantenible y sin riesgo de pérdidas de datos ante futuras expansiones de la base de datos.
+
+**Solución Técnica:**
+Se formula como hipótesis que la cláusula `INNER JOIN ... ON` en SQL Server representará de forma declarativa y normalizada la relación entre clientes y pedidos, permitiendo al optimizador basado en costos (Cost-Based Optimizer) generar un plan de acceso eficiente y devolviendo un conjunto de datos perfectamente homologado con los demás motores relacionales del proyecto.
 
 ```sql
 SELECT c.name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -1861,7 +2005,11 @@ EXEC sp_get_orders_customers_join;
 
 ### 3.5 Condiciones en las Consultas o filtros en las Consultas
 
-**Hipótesis:** Se plantea la hipótesis de que la utilización de operadores booleanos en T-SQL (`AND o.status = 'active'` y `WHERE o.status = 'inactive'`) discriminará eficientemente los pedidos completados de los anulados, demostrando la capacidad del motor de aplicar predicados relacionales compuestos tanto sobre combinaciones implícitas como sobre sentencias `JOIN`.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento contable de TazaNorte requiere separar las órdenes activas y facturadas de aquellas canceladas o anuladas para determinar con precisión los ingresos reales y auditar las razones de pedidos fallidos en barra. Se plantea como hipótesis de negocio que discriminar las órdenes por su estado transaccional permitirá aislar la facturación líquida de las transacciones no concretadas, mejorando el control de mermas y devoluciones.
+
+**Solución Técnica:**
+Se plantea la hipótesis de que la utilización de operadores booleanos en T-SQL (`AND o.status = 'active'` y `WHERE o.status = 'inactive'`) discriminará eficientemente los pedidos completados de los anulados, demostrando la capacidad del motor de aplicar predicados relacionales compuestos tanto sobre combinaciones implícitas como sobre sentencias `JOIN`.
 
 **Filtro WHERE por pedidos con status activo:**
 ```sql
@@ -1920,7 +2068,11 @@ EXEC sp_get_orders_by_status 'active';
 
 ### 3.6 Consultas con filtros condicional LIKE
 
-**Hipótesis:** Se postula la hipótesis de que el operador de coincidencia de patrones `LIKE` en SQL Server evaluará eficazmente los comodines `%`, aislando con rapidez a los clientes cuyos correos electrónicos comienzan con una inicial determinada o pertenecen a un proveedor específico, facilitando la extracción de listas de contacto para la operación de TazaNorte.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área de fidelización de TazaNorte requiere segmentar a los comensales registrados para desplegar campañas alfabéticas de beneficios en barra. Se formula como hipótesis de negocio que filtrar a los clientes cuyo correo inicia con una letra determinada (en este caso la letra 'm') permitirá ejecutar envíos segmentados de cupones digitales sin sobrecargar los servidores de correo masivo.
+
+**Solución Técnica:**
+Se postula la hipótesis de que el operador de coincidencia de patrones `LIKE` en SQL Server evaluará eficazmente los comodines `%`, aislando con rapidez a los clientes cuyos correos electrónicos comienzan con una inicial determinada o pertenecen a un proveedor específico, facilitando la extracción de listas de contacto para la operación de TazaNorte.
 
 **Filtro LIKE por letra inicial (`m%`):**
 ```sql
@@ -1987,7 +2139,11 @@ EXEC sp_get_customers_like_email '%@gmail.com';
 
 ### 3.7 Consultas con filtros condicionales BETWEEN
 
-**Hipótesis:** La auditoría temporal en SQL Server permite validar los ingresos acumulados en un corte mensual. Se formula la hipótesis de que al vincular `customers`, `orders` y `payments` y acotar la fecha con `BETWEEN '2026-09-01' AND '2026-09-24'`, el motor recuperará los cobros del intervalo en estricto orden cronológico ascendente, certificando la trazabilidad de los pagos en barra.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El propietario de la cafetería exige una auditoría contable de las recaudaciones percibidas durante las semanas centrales de septiembre de 2026 para cuadrar los arqueos de caja y contrastar los ingresos reales contra las comandas emitidas. Se plantea como hipótesis de negocio que filtrar las transacciones en una ventana de fechas delimitada permitirá verificar la consistencia financiera entre lo facturado y lo pagado por los clientes.
+
+**Solución Técnica:**
+La auditoría temporal en SQL Server permite validar los ingresos acumulados en un corte mensual. Se formula la hipótesis de que al vincular `customers`, `orders` y `payments` y acotar la fecha con `BETWEEN '2026-09-01' AND '2026-09-24'`, el motor recuperará los cobros del intervalo en estricto orden cronológico ascendente, certificando la trazabilidad de los pagos en barra.
 
 **Forma 1 (con JOIN):**
 ```sql
@@ -2057,7 +2213,11 @@ Se consideran este tipo de consultas cuando tenemos valores que se repiten en lo
 
 **Forma 1 con el WHERE (rango de fechas, SUM, COUNT y AVG):**
 
-**Hipótesis:** En la analítica contable de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable mensual. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` en Microsoft SQL Server 2022 y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `AVG(pay.amount)` agrupadas por `GROUP BY c.id, c.name`, el optimizador de T-SQL condensará las operaciones en un resumen financiero ordenado descendentemente por ingresos totales (`ORDER BY TotalSuma DESC`).
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La gerencia de TazaNorte requiere un tablero de control que totalice los ingresos generados por cada cliente, la cantidad de compras realizadas y el ticket promedio por visita. Se formula como hipótesis de negocio que consolidar estos tres indicadores por comensal permitirá categorizar a la clientela y formular ofertas personalizadas según su frecuencia y poder de consumo.
+
+**Solución Técnica:**
+En la analítica contable de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable mensual. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` en Microsoft SQL Server 2022 y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `AVG(pay.amount)` agrupadas por `GROUP BY c.id, c.name`, el optimizador de T-SQL condensará las operaciones en un resumen financiero ordenado descendentemente por ingresos totales (`ORDER BY TotalSuma DESC`).
 
 ```sql
 USE tazanorte;
@@ -2080,7 +2240,11 @@ ORDER BY TotalSuma DESC;
 
 **Forma 1 (Filtrado por status activo y pago con tarjeta):**
 
-**Hipótesis:** Con el objetivo de auditar las comisiones de pasarela bancaria y el volumen transaccional captado vía datáfono en la cafetería, se plantea como hipótesis que el filtrado de pagos activos efectuados con tarjeta (`WHERE pay.status = 'active' AND pay.payment_method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por cliente con `GROUP BY`, se espera obtener con exactitud en SQL Server la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para auditar las comisiones retenidas por las franquicias de datáfono en barra, la administración exige aislar los cobros realizados exclusivamente mediante tarjeta bancaria. Se plantea como hipótesis de negocio que agrupar el recaudo electrónico por cliente permitirá cuantificar el costo de intermediación financiera sobre las ventas con medios digitales.
+
+**Solución Técnica:**
+Con el objetivo de auditar las comisiones de pasarela bancaria y el volumen transaccional captado vía datáfono en la cafetería, se plantea como hipótesis que el filtrado de pagos activos efectuados con tarjeta (`WHERE pay.status = 'active' AND pay.payment_method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por cliente con `GROUP BY`, se espera obtener con exactitud en SQL Server la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado.
 
 ```sql
 USE tazanorte;
@@ -2102,7 +2266,11 @@ ORDER BY TotalGasto DESC;
 
 **Forma 2 con el HAVING:**
 
-**Hipótesis:** Se plantea como hipótesis que el motor de SQL Server agrupará eficientemente los pagos por cliente mediante `GROUP BY c.id, c.name` y aplicará las métricas `SUM`, `COUNT` y `AVG`. La inclusión de la condición restrictiva `HAVING SUM(pay.amount) >= 20000` filtrará en una segunda fase del procesamiento a los comensales cuyo consumo supere el umbral establecido, entregando un reporte financiero consolidado.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La cafetería lanzará un club de membresía premium para clientes destacados cuyo gasto acumulado alcance o supere los $20.000 COP. Se plantea como hipótesis de negocio que fijar un umbral de consumo agregado permitirá identificar con exactitud al segmento de comensales VIP para otorgarles beneficios de degustación y fidelización especial.
+
+**Solución Técnica:**
+Se plantea como hipótesis que el motor de SQL Server agrupará eficientemente los pagos por cliente mediante `GROUP BY c.id, c.name` y aplicará las métricas `SUM`, `COUNT` y `AVG`. La inclusión de la condición restrictiva `HAVING SUM(pay.amount) >= 20000` filtrará en una segunda fase del procesamiento a los comensales cuyo consumo supere el umbral establecido, entregando un reporte financiero consolidado.
 
 ```sql
 SELECT c.id, c.name, SUM(pay.amount) AS TotalSuma, 
@@ -2123,7 +2291,11 @@ ORDER BY TotalSuma DESC;
 
 **Forma 2 (Múltiples condiciones con HAVING y rango de fechas):**
 
-**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE`, permitirá al motor en SQL Server discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área comercial requiere premiar a clientes que no solo hayan visitado la cafetería sino que mantengan un ticket acumulado representativo (más de una comanda y más de $15.000 COP en compras). Se formula como hipótesis de negocio que evaluar simultáneamente la frecuencia de visita y el monto total permitirá premiar la verdadera lealtad comercial sobre compras marginales.
+
+**Solución Técnica:**
+Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE`, permitirá al motor en SQL Server discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
 
 ```sql
 USE tazanorte;
@@ -2189,7 +2361,11 @@ EXEC sp_resumen_pagos_group_by 20000;
 
 **Forma 1 (subconsulta con NOT IN):**
 
-**Hipótesis:** Se postula la hipótesis de que la subconsulta anidada de exclusión con `NOT IN` en SQL Server identificará con precisión al grupo de clientes que no registraron compras en el lapso evaluado, demostrando la solidez y consistencia del álgebra conjuntista en T-SQL al sustraer del padrón de clientes a aquellos presentes en las órdenes de venta.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento de mercadeo de TazaNorte necesita identificar a los comensales registrados en la plataforma que no han registrado ninguna comanda durante el ciclo comercial de septiembre de 2026, con el fin de activar un plan de retención comercial mediante ofertas de bienvenida y degustaciones de café de origen. Se postula como hipótesis de negocio que aislar a los clientes inactivos permitirá prevenir el abandono definitivo de la marca.
+
+**Solución Técnica:**
+Se postula la hipótesis de que la subconsulta anidada de exclusión con `NOT IN` en SQL Server identificará con precisión al grupo de clientes que no registraron compras en el lapso evaluado, demostrando la solidez y consistencia del álgebra conjuntista en T-SQL al sustraer del padrón de clientes a aquellos presentes en las órdenes de venta.
 
 ```sql
 SELECT * 
@@ -2207,7 +2383,11 @@ WHERE c.id NOT IN (
 
 **Forma 2 (LEFT JOIN con IS NULL):**
 
-**Hipótesis:** Se plantea la hipótesis de que la combinación externa `LEFT JOIN` asociada a la condición de filtrado por nulidad `WHERE o.customer_id IS NULL` en Microsoft SQL Server producirá el mismo resultado cardinal que la subconsulta con `NOT IN`, permitiendo aislar a los clientes sin órdenes en la ventana de fechas mediante el plan de acceso más eficiente generado por el optimizador de T-SQL.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para optimizar los reportes nocturnos del sistema POS, el equipo de sistemas propone verificar que el cálculo de clientes desatendidos mediante combinaciones externas (`LEFT JOIN`) entregue el mismo listado con mayor rapidez en el servidor. Se plantea como hipótesis de negocio que optimizar esta extracción asegurará reportes matutinos puntuales para el equipo comercial sin saturar la base de datos operativa.
+
+**Solución Técnica:**
+Se plantea la hipótesis de que la combinación externa `LEFT JOIN` asociada a la condición de filtrado por nulidad `WHERE o.customer_id IS NULL` en Microsoft SQL Server producirá el mismo resultado cardinal que la subconsulta con `NOT IN`, permitiendo aislar a los clientes sin órdenes en la ventana de fechas mediante el plan de acceso más eficiente generado por el optimizador de T-SQL.
 
 ```sql
 SELECT c.id, c.name, c.email 
@@ -2257,7 +2437,11 @@ EXEC sp_clientes_sin_ordenes;
 
 ### **Sistema de Triggers de Auditoría y Trazabilidad Transaccional en Microsoft SQL Server**
 
-**Hipótesis:** En la arquitectura de datos transaccionales de **TazaNorte**, las entidades de productos (`products`), comandas de venta (`orders`) y recaudos financieros (`payments`) constituyen el núcleo operacional del negocio y demandan un mecanismo automatizado de supervisión y trazabilidad contable. Se postula la hipótesis de que un sistema reactivo de disparadores en Transact-SQL acoplado a la cláusula `FOR JSON PATH` permitirá serializar instantáneas atómicas de datos (estados anteriores en `deleted` y estados posteriores en `inserted`) hacia una bitácora relacional centralizada `audit_log_general`. Asimismo, se formula como hipótesis que la imposición de un disparador sustitutivo `INSTEAD OF UPDATE, DELETE` con invocación de `RAISERROR` y reversión obligatoria mediante `ROLLBACK TRANSACTION` dotará a la bitácora de inmutabilidad estricta y blindaje forense, imposibilitando cualquier alteración, manipulación maliciosa o purga no autorizada de los registros históricos.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de TazaNorte y los auditores financieros exigen un mecanismo corporativo, centralizado e incorruptible que registre cualquier creación, modificación o eliminación en las entidades críticas del negocio (productos, comandas y pagos), garantizando que nadie pueda alterar o borrar el historial contable. Se formula como hipótesis de negocio que un sistema de auditoría automatizado e inmutable asegurará la transparencia fiscal absoluta y protegerá el patrimonio del negocio.
+
+**Solución Técnica:**
+En la arquitectura de datos transaccionales de **TazaNorte**, las entidades de productos (`products`), comandas de venta (`orders`) y recaudos financieros (`payments`) constituyen el núcleo operacional del negocio y demandan un mecanismo automatizado de supervisión y trazabilidad contable. Se postula la hipótesis de que un sistema reactivo de disparadores en Transact-SQL acoplado a la cláusula `FOR JSON PATH` permitirá serializar instantáneas atómicas de datos (estados anteriores en `deleted` y estados posteriores en `inserted`) hacia una bitácora relacional centralizada `audit_log_general`. Asimismo, se formula como hipótesis que la imposición de un disparador sustitutivo `INSTEAD OF UPDATE, DELETE` con invocación de `RAISERROR` y reversión obligatoria mediante `ROLLBACK TRANSACTION` dotará a la bitácora de inmutabilidad estricta y blindaje forense, imposibilitando cualquier alteración, manipulación maliciosa o purga no autorizada de los registros históricos.
 
 #### 1. Creación de la Tabla de Auditoría y Disparadores en SQL Server
 
@@ -2402,7 +2586,11 @@ UPDATE audit_log_general SET accion = 'MODIFICADO' WHERE id = 1;
 
 ### 4.1 Mostrar algunos de los registros de la tabla customers
 
-**Hipótesis:** En Oracle Database 21c XE, el esquema transaccional de TazaNorte almacena los nombres de clientes desglosados en columnas atómicas `first_name` y `last_name`. Se formula como hipótesis que el uso del operador estándar de concatenación de cadenas `||` unirá dinámicamente ambos campos en una única columna calculada `name`, validando que la normalización atómica de atributos no perjudica la legibilidad ni la presentación ejecutiva de los datos en DBeaver.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería requiere un módulo de consulta rápida en la terminal de punto de venta (POS) para verificar los clientes registrados visualizando únicamente su documento, nombre, teléfono y estado activo. Se formula como hipótesis de negocio que proyectar de manera selectiva solo los campos indispensables para la atención en mostrador reducirá la saturación visual del cajero, agilizará la búsqueda de comensales y evitará la sobrecarga en el sistema de facturación.
+
+**Solución Técnica:**
+En Oracle Database 21c XE, el esquema transaccional de TazaNorte almacena los nombres de clientes desglosados en columnas atómicas `first_name` y `last_name`. Se formula como hipótesis que el uso del operador estándar de concatenación de cadenas `||` unirá dinámicamente ambos campos en una única columna calculada `name`, validando que la normalización atómica de atributos no perjudica la legibilidad ni la presentación ejecutiva de los datos en DBeaver.
 
 ```sql
 SELECT code, first_name || ' ' || last_name AS name, email, status FROM tazanorte.customers;
@@ -2431,7 +2619,11 @@ END;
 
 ### 4.2 Mostrar de forma ordenada (DESC) los pedidos desde su comienzo
 
-**Hipótesis:** Se plantea la hipótesis de que la cláusula `ORDER BY order_date DESC` ejecutada sobre el esquema de Oracle organizará el histórico de transacciones de mayor a menor antigüedad cronológica, demostrando que el optimizador de Oracle gestiona de forma transparente el tipo de dato nativo `TIMESTAMP` para satisfacer los requerimientos de auditoría de la cafetería.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La administración de TazaNorte necesita auditar en tiempo real el flujo de comandas del día, priorizando las últimas órdenes registradas en barra para resolver aclaraciones con los clientes y detectar demoras en preparación. Se formula como hipótesis de negocio que desplegar los pedidos organizados de manera cronológicamente inversa (del más reciente al más antiguo) facilitará la supervisión operativa del servicio y el control de caja en horas pico.
+
+**Solución Técnica:**
+Se plantea la hipótesis de que la cláusula `ORDER BY order_date DESC` ejecutada sobre el esquema de Oracle organizará el histórico de transacciones de mayor a menor antigüedad cronológica, demostrando que el optimizador de Oracle gestiona de forma transparente el tipo de dato nativo `TIMESTAMP` para satisfacer los requerimientos de auditoría de la cafetería.
 
 ```sql
 SELECT id, order_date, total, status FROM tazanorte.orders ORDER BY order_date DESC;
@@ -2456,7 +2648,11 @@ END;
 
 ### 4.3 Consultas a múltiples tablas mediante WHERE
 
-**Hipótesis:** Se postula como hipótesis que la combinación de `orders` y `customers` mediante igualdad en `WHERE c.id = o.customer_id` en Oracle forzará al optimizador a construir un plan de unión relacional robusto, emparejando inequívocamente a cada comensal con el código y monto de su orden de compra sin tolerar anomalías de datos.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de la cafetería solicita un informe que correlacione cada orden de compra con el nombre del cliente titular para conciliar consumos individuales y emitir comprobantes de pago personalizados. Se plantea como hipótesis de negocio que la vinculación relacional entre las entidades de comensales y pedidos garantizará que cada ticket quede asociado inequívocamente con su comprador sin tolerar órdenes huérfanas ni duplicidades.
+
+**Solución Técnica:**
+Se postula como hipótesis que la combinación de `orders` y `customers` mediante igualdad en `WHERE c.id = o.customer_id` en Oracle forzará al optimizador a construir un plan de unión relacional robusto, emparejando inequívocamente a cada comensal con el código y monto de su orden de compra sin tolerar anomalías de datos.
 
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, o.id AS order_id, o.total, o.status 
@@ -2499,7 +2695,11 @@ END;
 
 ### 4.4 Consultas a múltiples tablas mediante JOIN
 
-**Hipótesis:** Se plantea como hipótesis que la instrucción `INNER JOIN ... ON` en Oracle Database 21c XE representará la relación estructural formal entre las dos entidades, permitiendo proyectar el nombre completo concatenado y los detalles de facturación de manera estandarizada y equivalente al producto cartesiano filtrado en `WHERE`.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para la integración del sistema de facturación electrónica y reportes analíticos estandarizados, la gerencia de TazaNorte exige que las relaciones entre clientes y ventas operen bajo estándares formales de ingeniería de software. Se formula como hipótesis de negocio que la consulta estandarizada permitirá consultar el historial transaccional de comensales de manera confiable, mantenible y sin riesgo de pérdidas de datos ante futuras expansiones de la base de datos.
+
+**Solución Técnica:**
+Se plantea como hipótesis que la instrucción `INNER JOIN ... ON` en Oracle Database 21c XE representará la relación estructural formal entre las dos entidades, permitiendo proyectar el nombre completo concatenado y los detalles de facturación de manera estandarizada y equivalente al producto cartesiano filtrado en `WHERE`.
 
 ```sql
 SELECT c.first_name || ' ' || c.last_name AS name, c.email, o.id AS order_id, o.order_date, o.total, o.status 
@@ -2542,7 +2742,11 @@ END;
 
 ### 4.5 Condiciones en las Consultas o filtros en las Consultas
 
-**Hipótesis:** Se formula la hipótesis de que al incorporar condiciones de estado sobre las órdenes (`AND o.status = 'active'` y `WHERE o.status = 'inactive'`) en Oracle, el motor segmentará con exactitud las ventas activas de las canceladas, demostrando la vigencia de los predicados lógicos compuestos en el motor corporativo de Oracle.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento contable de TazaNorte requiere separar las órdenes activas y facturadas de aquellas canceladas o anuladas para determinar con precisión los ingresos reales y auditar las razones de pedidos fallidos en barra. Se plantea como hipótesis de negocio que discriminar las órdenes por su estado transaccional permitirá aislar la facturación líquida de las transacciones no concretadas, mejorando el control de mermas y devoluciones.
+
+**Solución Técnica:**
+Se formula la hipótesis de que al incorporar condiciones de estado sobre las órdenes (`AND o.status = 'active'` y `WHERE o.status = 'inactive'`) en Oracle, el motor segmentará con exactitud las ventas activas de las canceladas, demostrando la vigencia de los predicados lógicos compuestos en el motor corporativo de Oracle.
 
 **Filtro WHERE por pedidos con status activo:**
 ```sql
@@ -2598,7 +2802,11 @@ END;
 
 ### 4.6 Consultas con filtros condicional LIKE
 
-**Hipótesis:** En Oracle Database, la concordancia de cadenas mediante `LIKE` combinada con concatenación de comodines (`LIKE 'm%'` y `LIKE '%@gmail.com'`) evaluará de manera óptima las columnas alfanuméricas de correo, abstrayendo patrones textuales para identificar segmentos específicos de clientes en la base de datos de TazaNorte.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área de fidelización de TazaNorte requiere segmentar a los comensales registrados para desplegar campañas alfabéticas de beneficios en barra. Se formula como hipótesis de negocio que filtrar a los clientes cuyo correo inicia con una letra determinada (en este caso la letra 'm') permitirá ejecutar envíos segmentados de cupones digitales sin sobrecargar los servidores de correo masivo.
+
+**Solución Técnica:**
+En Oracle Database, la concordancia de cadenas mediante `LIKE` combinada con concatenación de comodines (`LIKE 'm%'` y `LIKE '%@gmail.com'`) evaluará de manera óptima las columnas alfanuméricas de correo, abstrayendo patrones textuales para identificar segmentos específicos de clientes en la base de datos de TazaNorte.
 
 **Filtro LIKE inicial (`m%`):**
 ```sql
@@ -2665,7 +2873,11 @@ END;
 
 ### 4.7 Consultas con filtros condicionales BETWEEN
 
-**Hipótesis:** Dado que Oracle Database exige rigor extremo en el formateo de fechas y horas, se plantea como hipótesis que el uso explícito de literales `TIMESTAMP '2026-09-01 00:00:00'` en combinación con el operador `BETWEEN` evitará ambigüedades de conversión de caracteres a fecha, acotando el conjunto de pagos percibidos en septiembre de 2026 con total exactitud de microsegundos.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El propietario de la cafetería exige una auditoría contable de las recaudaciones percibidas durante las semanas centrales de septiembre de 2026 para cuadrar los arqueos de caja y contrastar los ingresos reales contra las comandas emitidas. Se plantea como hipótesis de negocio que filtrar las transacciones en una ventana de fechas delimitada permitirá verificar la consistencia financiera entre lo facturado y lo pagado por los clientes.
+
+**Solución Técnica:**
+Dado que Oracle Database exige rigor extremo en el formateo de fechas y horas, se plantea como hipótesis que el uso explícito de literales `TIMESTAMP '2026-09-01 00:00:00'` en combinación con el operador `BETWEEN` evitará ambigüedades de conversión de caracteres a fecha, acotando el conjunto de pagos percibidos en septiembre de 2026 con total exactitud de microsegundos.
 
 **Forma 1 (con JOIN):**
 ```sql
@@ -2730,7 +2942,11 @@ Se consideran este tipo de consultas cuando tenemos valores que se repiten en lo
 
 **Forma 1 con el WHERE (rango de fechas, SUM, COUNT y AVG):**
 
-**Hipótesis:** En la analítica financiera de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable cerrado. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` con literales nativos `TIMESTAMP` y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `ROUND(AVG(pay.amount), 2)` agrupadas por `GROUP BY c.id, c.first_name, c.last_name`, el motor Oracle calculará el acumulado de recaudo y ticket promedio por usuario, proyectando una sábana ejecutiva ordenada descendentemente por ingresos totales (`ORDER BY total_suma DESC`).
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La gerencia de TazaNorte requiere un tablero de control que totalice los ingresos generados por cada cliente, la cantidad de compras realizadas y el ticket promedio por visita. Se formula como hipótesis de negocio que consolidar estos tres indicadores por comensal permitirá categorizar a la clientela y formular ofertas personalizadas según su frecuencia y poder de consumo.
+
+**Solución Técnica:**
+En la analítica financiera de **TazaNorte**, es indispensable cuantificar el valor monetario global generado por cada comensal durante un ciclo contable cerrado. Se postula la hipótesis de que al enlazar `customers`, `orders` y `payments` bajo una ventana temporal `BETWEEN` con literales nativos `TIMESTAMP` y procesar las funciones agregadas `SUM(pay.amount)`, `COUNT(pay.id)` y `ROUND(AVG(pay.amount), 2)` agrupadas por `GROUP BY c.id, c.first_name, c.last_name`, el motor Oracle calculará el acumulado de recaudo y ticket promedio por usuario, proyectando una sábana ejecutiva ordenada descendentemente por ingresos totales (`ORDER BY total_suma DESC`).
 
 ```sql
 SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
@@ -2751,7 +2967,11 @@ ORDER BY total_suma DESC;
 
 **Forma 1 (Filtrado por status activo y pago con tarjeta):**
 
-**Hipótesis:** Con el objetivo de auditar las comisiones de pasarela bancaria y el volumen transaccional captado vía datáfono en la cafetería, se plantea como hipótesis que el filtrado de pagos activos efectuados con tarjeta (`WHERE pay.status = 'active' AND pay.payment_method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por comensal con `GROUP BY`, se espera obtener con exactitud la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para auditar las comisiones retenidas por las franquicias de datáfono en barra, la administración exige aislar los cobros realizados exclusivamente mediante tarjeta bancaria. Se plantea como hipótesis de negocio que agrupar el recaudo electrónico por cliente permitirá cuantificar el costo de intermediación financiera sobre las ventas con medios digitales.
+
+**Solución Técnica:**
+Con el objetivo de auditar las comisiones de pasarela bancaria y el volumen transaccional captado vía datáfono en la cafetería, se plantea como hipótesis que el filtrado de pagos activos efectuados con tarjeta (`WHERE pay.status = 'active' AND pay.payment_method = 'card'`) restringirá previamente las tuplas a agregar. Al agrupar por comensal con `GROUP BY`, se espera obtener con exactitud la dispersión del recaudo electrónico y el conteo de visitas por cliente bancarizado.
 
 ```sql
 SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
@@ -2771,7 +2991,11 @@ ORDER BY total_gasto DESC;
 
 **Forma 2 con el HAVING:**
 
-**Hipótesis:** Se postula como hipótesis que al agrupar por `GROUP BY c.id, c.first_name, c.last_name` en Oracle y aplicar las métricas `SUM`, `COUNT` y `AVG`, el motor generará un resumen financiero consolidado por cliente, y que la cláusula `HAVING SUM(pay.amount) >= 20000` restringirá el conjunto únicamente a aquellos usuarios cuyo consumo total supere el umbral establecido, clasificando a los clientes preferenciales del negocio.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+La cafetería lanzará un club de membresía premium para clientes destacados cuyo gasto acumulado alcance o supere los $20.000 COP. Se plantea como hipótesis de negocio que fijar un umbral de consumo agregado permitirá identificar con exactitud al segmento de comensales VIP para otorgarles beneficios de degustación y fidelización especial.
+
+**Solución Técnica:**
+Se postula como hipótesis que al agrupar por `GROUP BY c.id, c.first_name, c.last_name` en Oracle y aplicar las métricas `SUM`, `COUNT` y `AVG`, el motor generará un resumen financiero consolidado por cliente, y que la cláusula `HAVING SUM(pay.amount) >= 20000` restringirá el conjunto únicamente a aquellos usuarios cuyo consumo total supere el umbral establecido, clasificando a los clientes preferenciales del negocio.
 
 ```sql
 SELECT c.id, c.first_name || ' ' || c.last_name AS name, 
@@ -2793,7 +3017,11 @@ ORDER BY total_suma DESC;
 
 **Forma 2 (Múltiples condiciones con HAVING y rango de fechas):**
 
-**Hipótesis:** Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE` con literales `TIMESTAMP`, permitirá al motor discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El área comercial requiere premiar a clientes que no solo hayan visitado la cafetería sino que mantengan un ticket acumulado representativo (más de una comanda y más de $15.000 COP en compras). Se formula como hipótesis de negocio que evaluar simultáneamente la frecuencia de visita y el monto total permitirá premiar la verdadera lealtad comercial sobre compras marginales.
+
+**Solución Técnica:**
+Se formula la hipótesis de que un predicado complejo en la cláusula `HAVING` que combine conteo de operaciones y piso de facturación (`HAVING COUNT(pay.id) >= 1 AND SUM(pay.amount) > 15000`) sobre una delimitación temporal en `WHERE` con literales `TIMESTAMP`, permitirá al motor discriminar simultáneamente recurrencia y aporte económico, identificando a comensales fidelizados con impacto contable representativo.
 
 ```sql
 SELECT c.id, c.first_name || ' ' || c.last_name AS name, c.email, 
@@ -2858,7 +3086,11 @@ END;
 
 **Forma 1 (subconsulta con NOT IN):**
 
-**Hipótesis:** Se formula la hipótesis de que la exclusión conjuntista mediante `NOT IN` con subconsulta anidada sobre órdenes de compra en Oracle Database sustraerá de forma confiable a los clientes con actividad en el rango indicado, aislando a aquellos usuarios registrados que no registraron consumos en el período analizado.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El departamento de mercadeo de TazaNorte necesita identificar a los comensales registrados en la plataforma que no han registrado ninguna comanda durante el ciclo comercial de septiembre de 2026, con el fin de activar un plan de retención comercial mediante ofertas de bienvenida y degustaciones de café de origen. Se postula como hipótesis de negocio que aislar a los clientes inactivos permitirá prevenir el abandono definitivo de la marca.
+
+**Solución Técnica:**
+Se formula la hipótesis de que la exclusión conjuntista mediante `NOT IN` con subconsulta anidada sobre órdenes de compra en Oracle Database sustraerá de forma confiable a los clientes con actividad en el rango indicado, aislando a aquellos usuarios registrados que no registraron consumos en el período analizado.
 
 ```sql
 SELECT * 
@@ -2876,7 +3108,11 @@ WHERE c.id NOT IN (
 
 **Forma 2 (LEFT JOIN con IS NULL):**
 
-**Hipótesis:** Se postula como hipótesis que la técnica de diferencia de conjuntos modelada mediante combinación externa `LEFT JOIN` unida al predicado de nulidad `WHERE o.customer_id IS NULL` producirá un conjunto de resultados idéntico al de la subconsulta `NOT IN`. En Oracle Database, el optimizador de costos procesará la unión externa aprovechando los índices de clave foránea, garantizando la identificación de comensales inactivos con óptimo consumo de recursos en el servidor.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+Para optimizar los reportes nocturnos del sistema POS, el equipo de sistemas propone verificar que el cálculo de clientes desatendidos mediante combinaciones externas (`LEFT JOIN`) entregue el mismo listado con mayor rapidez en el servidor. Se plantea como hipótesis de negocio que optimizar esta extracción asegurará reportes matutinos puntuales para el equipo comercial sin saturar la base de datos operativa.
+
+**Solución Técnica:**
+Se postula como hipótesis que la técnica de diferencia de conjuntos modelada mediante combinación externa `LEFT JOIN` unida al predicado de nulidad `WHERE o.customer_id IS NULL` producirá un conjunto de resultados idéntico al de la subconsulta `NOT IN`. En Oracle Database, el optimizador de costos procesará la unión externa aprovechando los índices de clave foránea, garantizando la identificación de comensales inactivos con óptimo consumo de recursos en el servidor.
 
 ```sql
 SELECT c.id, c.code, c.first_name || ' ' || c.last_name AS name, c.email 
@@ -2926,7 +3162,11 @@ END;
 
 ### **Sistema de Triggers de Auditoría y Trazabilidad Transaccional en Oracle Database**
 
-**Hipótesis:** En la arquitectura de datos corporativa de **TazaNorte**, las entidades de productos (`products`), órdenes comerciales (`orders`) y recaudos financieros (`payments`) concentran el núcleo transaccional crítico del negocio y demandan un mecanismo automatizado e incorruptible de supervisión forense. Se postula la hipótesis de que un conjunto de disparadores reactivos a nivel de fila (`AFTER INSERT OR UPDATE OR DELETE FOR EACH ROW`) desarrollados en PL/SQL permitirá capturar y serializar instantáneas atómicas de datos en formato JSON mediante los pseudo-registros relacionales `:NEW` y `:OLD` hacia una bitácora centralizada `audit_log_general`. Asimismo, se formula como hipótesis que la implementación de un disparador preventivo (`BEFORE UPDATE OR DELETE`) con invocación de la excepción de usuario `RAISE_APPLICATION_ERROR(-20001, ...)` garantizará la inmutabilidad estricta y blindaje forense de la bitácora, abortando de manera inmediata e irrevocable cualquier intento de alteración o depuración no autorizada de la trazabilidad corporativa en Oracle Database 21c XE.
+**Hipótesis de Negocio (Requerimiento del Dueño de TazaNorte):**
+El dueño de TazaNorte y los auditores financieros exigen un mecanismo corporativo, centralizado e incorruptible que registre cualquier creación, modificación o eliminación en las entidades críticas del negocio (productos, comandas y pagos), garantizando que nadie pueda alterar o borrar el historial contable. Se formula como hipótesis de negocio que un sistema de auditoría automatizado e inmutable asegurará la transparencia fiscal absoluta y protegerá el patrimonio del negocio.
+
+**Solución Técnica:**
+En la arquitectura de datos corporativa de **TazaNorte**, las entidades de productos (`products`), órdenes comerciales (`orders`) y recaudos financieros (`payments`) concentran el núcleo transaccional crítico del negocio y demandan un mecanismo automatizado e incorruptible de supervisión forense. Se postula la hipótesis de que un conjunto de disparadores reactivos a nivel de fila (`AFTER INSERT OR UPDATE OR DELETE FOR EACH ROW`) desarrollados en PL/SQL permitirá capturar y serializar instantáneas atómicas de datos en formato JSON mediante los pseudo-registros relacionales `:NEW` y `:OLD` hacia una bitácora centralizada `audit_log_general`. Asimismo, se formula como hipótesis que la implementación de un disparador preventivo (`BEFORE UPDATE OR DELETE`) con invocación de la excepción de usuario `RAISE_APPLICATION_ERROR(-20001, ...)` garantizará la inmutabilidad estricta y blindaje forense de la bitácora, abortando de manera inmediata e irrevocable cualquier intento de alteración o depuración no autorizada de la trazabilidad corporativa en Oracle Database 21c XE.
 
 #### 1. Creación de la Tabla Centralizada de Auditoría y Disparadores en Oracle
 
