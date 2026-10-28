@@ -82,10 +82,31 @@ Inicialización del proyecto cliente utilizando Angular CLI bajo la modalidad St
 | Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
 | :--- | :--- | :--- |
 | `ISS-01_01_ng_new_proyecto.png` | Comando `ng new` con configuración standalone (sin SSR inicial, routing activado, CSS). | Consola |
-| `ISS-01_02_instalacion_tailwind_primeng.png` | Instalación de dependencias `primeng`, `primeicons`, `@primevue/themes` o Tailwind CSS. | Consola |
+| `ISS-01_02_instalacion_tailwind_primeng.png` | Instalación de dependencias `primeng`, `primeicons`, `@primeuix/themes` y Tailwind CSS v4. | Consola |
 | `ISS-01_03_configuracion_app_config.png` | Archivo `app.config.ts` configurado con `provideAnimationsAsync()` y proveedores de PrimeNG. | Editor VS Code |
 | `ISS-01_04_configuracion_styles_tailwind.png` | Archivo de estilos globales `styles.css` con directivas de Tailwind y estilos base. | Editor VS Code |
 | `ISS-01_EVI-01_ng_serve_primeng_gate.png` | **GATE:** Servidor local `ng serve` corriendo y render en navegador con un componente PrimeNG de prueba. | Navegador (localhost:4200) |
+
+#### 1. Creación del Proyecto Angular Standalone con CLI
+![Creación del proyecto Angular con ng new](capturas/ISS-01_01_ng_new_proyecto.png)
+
+#### 2. Instalación de Tailwind CSS v4 y Componentes PrimeNG
+![Instalación de Tailwind CSS v4 y dependencias PrimeNG](capturas/ISS-01_02_instalacion_tailwind_primeng.png)
+
+#### 3. Configuración del Inyector Raíz (app.config.ts)
+![Configuración de proveedores globales en app.config.ts](capturas/ISS-01_03_configuracion_app_config.png)
+
+#### 4. Configuración de PostCSS y Estilos Globales (styles.css)
+![Configuración de Tailwind y PrimeIcons en styles.css](capturas/ISS-01_04_configuracion_styles_tailwind.png)
+
+#### 5. Renderizado en Navegador y Verificación del Tema Aura (GATE EVI-01-01)
+![Servidor ng serve en localhost:4200 con componentes PrimeNG y Tailwind](capturas/ISS-01_EVI-01_ng_serve_primeng_gate.png)
+
+### Criterio de Aceptación (GATE EVI-01-01)
+* Proyecto `front-storelab-django` creado e inicializado con arquitectura Standalone en Angular 22.
+* Tailwind CSS v4 y PrimeNG con tema Aura configurados y procesados sin advertencias de compilación.
+* Servidor de desarrollo `ng serve` corriendo y render interactivo en `http://localhost:4200` validado.
+* **Estado:** **APROBADO**
 
 ---
 
