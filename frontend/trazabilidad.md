@@ -210,7 +210,7 @@ Cierre operativo del módulo comercial:
 
 | Issue | Descripción del Cambio | Hash Commit | Estado |
 | :--- | :--- | :---: | :---: |
-| **ISS-00** | Requisitos previos y entorno: verificación Node, npm, Angular CLI y Backend Django | - | Pendiente |
+| **ISS-00** | Requisitos previos y entorno: verificación Node 22, npm, Angular CLI y Backend Django | `8e6954d` | **COMPLETADO** |
 | **ISS-01** | Bootstrap del proyecto Angular, Tailwind CSS, PrimeNG y tema Aura | - | Pendiente |
 | **ISS-02** | Núcleo del Frontend: environments, modelos TS, servicios base y layout Shell | - | Pendiente |
 | **ISS-03** | Módulo Business: CRUD de Clientes con Signals y formularios reactivos tipados | - | Pendiente |
