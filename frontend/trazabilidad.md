@@ -126,6 +126,7 @@ Creación de la arquitectura base compartida del proyecto:
 | `ISS-02_01_archivo_environments.png` | Definición de `environment.ts` con la constante `apiUrl`. | Editor VS Code |
 | `ISS-02_02_interfaces_modelos_ts.png` | Archivos de modelos TypeScript en `core/models/` reflejando los atributos de Django. | Editor VS Code |
 | `ISS-02_03_layout_navegacion_shell.png` | Componente Layout / Menubar implementado con rutas principales del negocio. | Editor VS Code |
+| `ISS-02_04_layout_sidebar_guia.png` | Adaptación del Layout a Menú Lateral (Sidebar) según directriz y guía académica. | Especificación del Docente |
 | `ISS-02_EVI-01_layout_render_gate.png` | **GATE:** Navegador mostrando la carcasa visual interactiva con el menú de TazaNorte listo. | Navegador (localhost:4200) |
 
 #### 1. Configuración de Variables de Entorno (environment.ts)
@@ -139,6 +140,14 @@ Creación de la arquitectura base compartida del proyecto:
 
 #### 4. Verificación del Shell y Dashboard en Navegador (GATE EVI-02-01)
 ![Carcasa interactiva de TazaNorte en localhost:4200](capturas/ISS-02_EVI-01_layout_render_gate.png)
+
+#### 5. Adaptación de Layout a Menú Lateral (Sidebar) según Directriz del Docente
+Para homologar la interfaz con la plantilla de referencia del docente y el estándar del curso (modelo de paneles independientes), se refactorizó el layout global incorporando `SidebarComponent`:
+* **Header Superior:** Nombre de marca `TazaNorte · Producción y venta de cafetería` y estado de la API Django `:8000`.
+* **Sidebar Izquierda:** Menú desplegable tipo acordeón con subsecciones para `Catálogo` (Clientes, Tipos, Productos), `Ventas` (POS, Historial) y `Seguridad` (Fase II).
+* **Área Central:** Espacio dinámico desacoplado conectado a `router-outlet` y pie de página institucional `Bases de Datos II · Universidad de La Guajira`.
+
+![Distribución de paneles con barra lateral izquierda según directriz académica](capturas/ISS-02_04_layout_sidebar_guia.png)
 
 ### Criterio de Aceptación (GATE EVI-02-01)
 * Módulo `environments/environment.ts` configurado con `apiUrl` apuntando al backend Django y `requireAuth: false`.
