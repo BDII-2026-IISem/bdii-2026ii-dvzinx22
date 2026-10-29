@@ -3,21 +3,30 @@ import { Product } from './product.model';
 
 export interface ProductSale {
   id?: number;
-  productId: number;
-  product?: Product;
+  product?: number | Product;
+  productId?: number;
   productName?: string;
   quantity: number;
-  unitPrice?: number;
-  subtotal?: number;
+  unitPrice?: number | string;
+  lineTotal?: number | string;
+  subtotal?: number | string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Sale {
   id?: number;
-  clientId: number;
-  client?: Client;
+  client?: number | Client;
+  clientId?: number;
   clientName?: string;
-  total?: number;
+  saleDate?: string;
+  subtotal?: number | string;
+  tax?: number | string;
+  discounts?: number | string;
+  total?: number | string;
   status?: string;
+  lines?: ProductSale[];
   items?: ProductSale[];
   createdAt?: string;
   updatedAt?: string;
@@ -28,8 +37,9 @@ export interface CreateSaleItemPayload {
   quantity: number;
 }
 
-export interface CreateSalePayload {
+export interface SaleRegisterPayload {
   clientId: number;
+  saleDate: string;
+  discounts?: number;
   items: CreateSaleItemPayload[];
 }
-

@@ -1,0 +1,235 @@
+<div class="space-y-6">
+  <!-- Cabecera del Punto de Venta -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Punto de Venta · Business</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i class="pi pi-shopping-cart text-amber-500"></i>
+        Nueva Venta Transaccional
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400">
+        Facturación atómica con validación de stock y sincronización directa con Django REST Framework.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <p-button label="Historial de Ventas" 
+                icon="pi pi-list" 
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="goToSalesHistory()" />
+    </div>
+  </div>
+
+  <!-- Banner de éxito de última venta -->
+  @if (lastSale()) {
+    <div class="bg-gradient-to-r from-emerald-950/80 to-slate-900 border border-emerald-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <div>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Transacción Completada en Django
+          </span>
+          <h3 class="text-lg font-bold text-white mt-0.5">
+            Venta #{{ lastSale()?.id }} registrada para {{ lastSale()?.clientName }}
+          </h3>
+          <p class="text-xs text-slate-300">
+            Total facturado: <span class="text-emerald-400 font-bold font-mono">{{ lastSale()?.total | currency:'COP':'symbol-narrow':'1.0-0' }}</span> · Estado: Activo
+          </p>
+        </div>
+      </div>
+      <p-button label="Ver en Historial" 
+                icon="pi pi-arrow-right" 
+                severity="success" 
+                size="small"
+                (onClick)="goToSalesHistory()" />
+    </div>
+  }
+
+  <!-- Layout de Dos Columnas: Catálogo a la izquierda, Carrito/Facturación a la derecha -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Columna Izquierda: Catálogo de Productos Disponibles (7 cols) -->
+    <div class="lg:col-span-7 space-y-4">
+      <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="pi pi-box text-amber-500"></i>
+            Menú de Productos TazaNorte
+          </h2>
+          <span class="text-xs font-mono text-slate-400">
+            {{ products().length }} ítems disponibles
+          </span>
+        </div>
+
+        <!-- Grid de Tarjetas de Productos -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[560px] overflow-y-auto pr-1">
+          @for (prod of products(); track prod.id) {
+            <div class="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-amber-500/50 group">
+              <div>
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    {{ prod.productTypeName || 'Cafetería' }}
+                  </span>
+                  <span [class]="prod.stock > 10 ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'"
+                        class="text-xs font-mono px-2 py-0.5 rounded-full border border-current">
+                    Stock: {{ prod.stock }}
+                  </span>
+                </div>
+                <h3 class="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
+                  {{ prod.name }}
+                </h3>
+                <p class="text-xs text-slate-400 mt-1 line-clamp-1">
+                  {{ prod.description || 'Cafetería gourmet TazaNorte' }}
+                </p>
+              </div>
+
+              <div class="flex items-center justify-between mt-4 pt-3 border-t border-slate-700/50">
+                <span class="text-base font-bold font-mono text-white">
+                  {{ prod.price | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </span>
+                <p-button icon="pi pi-plus" 
+                          label="Agregar" 
+                          size="small"
+                          severity="warn"
+                          [disabled]="prod.stock <= 0"
+                          (onClick)="addToCart(prod)" />
+              </div>
+            </div>
+          } @empty {
+            <div class="col-span-2 text-center py-12 text-slate-500">
+              <i class="pi pi-inbox text-4xl mb-2 block"></i>
+              No hay productos registrados en el menú de TazaNorte.
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna Derecha: Canasta y Cierre de Venta (5 cols) -->
+    <div class="lg:col-span-5 space-y-4">
+      
+      <!-- Selector de Cliente -->
+      <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+        <h2 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <i class="pi pi-user text-amber-500"></i>
+          Cliente Receptor de Factura *
+        </h2>
+        <form [formGroup]="saleForm">
+          <p-select formControlName="clientId" 
+                    [options]="clients()" 
+                    optionLabel="name" 
+                    optionValue="id" 
+                    placeholder="Seleccione un cliente..." 
+                    styleClass="w-full bg-slate-800 border-slate-700 text-white rounded-lg text-sm" />
+        </form>
+      </div>
+
+      <!-- Detalle de Canasta de Compra -->
+      <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="pi pi-receipt text-amber-500"></i>
+            Canasta de Venta
+          </h2>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-amber-500/20 text-amber-400 font-mono px-2 py-0.5 rounded-full border border-amber-500/30">
+              {{ totalItemsCount() }} unid.
+            </span>
+            @if (cart().length > 0) {
+              <button (click)="clearCart()" 
+                      class="text-xs text-rose-400 hover:text-rose-300 transition-colors">
+                Vaciar
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Lista de Items en Canasta -->
+        <div class="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+          @for (item of cart(); track item.product.id) {
+            <div class="bg-slate-800/70 border border-slate-700/50 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <h4 class="text-xs font-bold text-white truncate">{{ item.product.name }}</h4>
+                <div class="text-xs font-mono text-slate-400">
+                  {{ item.product.price | currency:'COP':'symbol-narrow':'1.0-0' }} c/u
+                </div>
+              </div>
+
+              <!-- Controles de Cantidad -->
+              <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
+                <button (click)="updateQuantity(item.product.id, -1)"
+                        class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors">
+                  <i class="pi pi-minus text-[10px]"></i>
+                </button>
+                <span class="text-xs font-mono font-bold text-white px-1">
+                  {{ item.quantity }}
+                </span>
+                <button (click)="updateQuantity(item.product.id, 1)"
+                        class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors">
+                  <i class="pi pi-plus text-[10px]"></i>
+                </button>
+              </div>
+
+              <!-- Subtotal de Línea -->
+              <div class="text-right min-w-[70px]">
+                <div class="text-xs font-bold font-mono text-amber-400">
+                  {{ (Number(item.product.price) * item.quantity) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </div>
+              </div>
+
+              <!-- Eliminar Item -->
+              <button (click)="removeFromCart(item.product.id)" 
+                      class="text-slate-500 hover:text-rose-400 transition-colors">
+                <i class="pi pi-times text-xs"></i>
+              </button>
+            </div>
+          } @empty {
+            <div class="text-center py-8 text-slate-500">
+              <i class="pi pi-shopping-bag text-3xl mb-1 block"></i>
+              No hay productos en la orden actual.
+            </div>
+          }
+        </div>
+
+        <!-- Liquidación de Totales -->
+        <div class="space-y-2 pt-3 border-t border-slate-800 text-xs">
+          <div class="flex items-center justify-between text-slate-400">
+            <span>Subtotal:</span>
+            <span class="font-mono text-white">{{ subtotal() | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-400">
+            <span>IVA (19% Estimado):</span>
+            <span class="font-mono text-white">{{ tax() | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-200 text-sm font-bold pt-2 border-t border-slate-800">
+            <span class="text-amber-400 uppercase tracking-wide">Total a Pagar:</span>
+            <span class="font-mono text-lg text-amber-400">
+              {{ total() | currency:'COP':'symbol-narrow':'1.0-0' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Botón de Envío Transaccional -->
+        <div class="pt-2">
+          <p-button label="Procesar Venta en Django" 
+                    icon="pi pi-send" 
+                    severity="warn"
+                    styleClass="w-full justify-center text-sm font-bold py-3"
+                    [loading]="submitting()"
+                    [disabled]="cart().length === 0 || saleForm.invalid"
+                    (onClick)="processSale()" />
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+

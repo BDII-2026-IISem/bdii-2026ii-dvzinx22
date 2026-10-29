@@ -23,6 +23,16 @@ export const routes: Routes = [
       import('./features/products/product-list/product-list').then((m) => m.ProductListComponent),
   },
   {
+    path: 'ventas/nueva',
+    loadComponent: () =>
+      import('./features/sales/sale-form/sale-form').then((m) => m.SaleFormComponent),
+  },
+  {
+    path: 'ventas',
+    loadComponent: () =>
+      import('./features/sales/sale-form/sale-form').then((m) => m.SaleFormComponent),
+  },
+  {
     path: '**',
     redirectTo: '',
   },
