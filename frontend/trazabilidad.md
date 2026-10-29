@@ -308,6 +308,22 @@ Cierre operativo del módulo comercial:
 | `ISS-07_02_detalle_venta_dialog.png` | Modal/Expansión de venta visualizando el desglose de productos y total. | Navegador |
 | `ISS-07_EVI-01_anulacion_y_cierre_gate.png` | **GATE:** Anulación de venta confirmada, cambio de estado visual y suite completa de negocio operativa. | Navegador |
 
+#### 1. Implementación del Historial de Órdenes y Acciones de Auditoría (SaleListComponent)
+![Componente SaleListComponent con consulta cronológica y acciones](capturas/ISS-07_01_sales_history_component.png)
+
+#### 2. Inspección Detallada de Líneas de Pedido y Totales Históricos
+![Modal interactivo p-dialog con desglose de ítems, precio y subtotales](capturas/ISS-07_02_detalle_venta_dialog.png)
+
+#### 3. Anulación Transaccional y Cierre Operativo de Fase I (GATE EVI-07-01)
+![Anulación confirmada con baja lógica en Django y badge de estado actualizado](capturas/ISS-07_EVI-01_anulacion_y_cierre_gate.png)
+
+### Criterio de Aceptación (GATE EVI-07-01)
+* Consumo cronológico de ventas (`GET /api/sales/`) con ordenación descendente y visualización de totales en moneda nacional COP.
+* Modal de inspección de ítems facturados con precios históricos y cantidades despachadas.
+* Anulación transaccional (`DELETE /api/sales/:id/`) integrada con cuadro de confirmación modal (`p-confirmdialog`) y reactividad en tiempo real.
+* Ciclo completo de reglas de negocio de la Fase I (Clientes, Tipos, Catálogo y Ventas) cerrado y validado al 100%.
+* **Estado:** **APROBADO**
+
 ---
 
 ## Bitácora Consolidada de Commits Realizados
@@ -321,4 +337,4 @@ Cierre operativo del módulo comercial:
 | **ISS-04** | Módulo Business: Catálogo de Tipos de Producto con PrimeNG | `5fe7209` | **COMPLETADO** |
 | **ISS-05** | Módulo Business: Catálogo de Productos con relaciones y disponibilidad | `2ca430c` | **COMPLETADO** |
 | **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | `b6d80e3` | **COMPLETADO** |
-| **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | - | Pendiente |
+| **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | `c4560b8` | **COMPLETADO** |
