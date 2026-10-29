@@ -1,344 +1,332 @@
-# Informe de Trazabilidad: Desarrollo Frontend 2026 Angular - TazaNorte
+# Bitácora del frontend de TazaNorte (Angular)
 
-> [!NOTE]
-> **Aclaración Técnica de Entorno (Arquitectura y Estándar de Ejecución):**
-> El desarrollo del cliente Frontend para el Sistema de Cafetería TazaNorte se fundamenta en la arquitectura oficial de **Frontend 2026 (Angular con Componentes Standalone, Signals reactivos y modo Zoneless)**, integrando la biblioteca de componentes **PrimeNG** estilizada con **Tailwind CSS**. La comunicación se desacopla mediante contratos RESTful dirigidos hacia el Backend Django previamente construido. Cada paso, verificación en terminal y renderizado en navegador se audita mediante capturas secuenciales en el directorio `capturas/`, garantizando trazabilidad total por cada Issue y Gate de verificación.
+Registro del avance del frontend de **TazaNorte** (sistema integral de gestión, producción y venta de cafetería) siguiendo las directrices de la asignatura **Bases de Datos II (2026-II)** y las guías de desarrollo frontend de Tecnogua. Cada paso resume qué se realizó, qué decisiones arquitectónicas se adoptaron frente a la guía, cómo se verificó la funcionalidad y las capturas reales que respaldan cada hito técnico.
 
----
-
-## Información del Estudiante
-
-| Campo          | Detalle                                                                                                     |
-|----------------|-------------------------------------------------------------------------------------------------------------|
-| **Nombre**     | Moises Bolivar                                                                                              |
-| **Programa**   | Ingeniería de Sistemas                                                                                      |
-| **Facultad**   | Facultad de Ingeniería, Universidad de La Guajira                                                          |
-| **Docente**    | Ing. Jaider Quintero M.                                                                                     |
-| **Referencia** | [https://tecnogua.com/academic/site/frontend2026/](https://tecnogua.com/academic/site/frontend2026/)         |
-| **Proyecto**   | Sistema de Gestión Integral de Cafetería TazaNorte - Módulo Frontend 2026 Angular (**Fase I: Business**)    |
-| **Fecha**      | Octubre de 2026                                                                                             |
+| Metadato | Detalle del Proyecto |
+|---|---|
+| **Proyecto** | TazaNorte · Cafetería y Repostería Gourmet |
+| **Asignatura** | Bases de Datos II (2026-II) · Universidad de La Guajira |
+| **Estudiante** | Moises David Bolivar Fragozo |
+| **Docente** | Ing. Jaider Quintero M. |
+| **Alcance Fase I** | Arquitectura Frontend Standalone en Angular 22 Zoneless con Tailwind CSS y PrimeNG (tema Aura), layout con encabezado superior, barra lateral colapsable (`SidebarComponent`), dashboard principal, módulos de negocio *Business*: CRUD de Clientes, Catálogo de Categorías/Tipos, Catálogo de Menú de Productos, Punto de Venta Transaccional (POS) con Signals y despacho atómico, e Historial de Ventas con inspección de líneas de pedido y anulación lógica con Django REST Framework. |
+| **Guías de referencia** | [Guía Académica Frontend 2026](https://tecnogua.com/academic/site/frontend2026/) (Requisitos, Bootstrap, Núcleo, Clientes, Tipos, Productos y Ventas) |
+| **Backend relacionado** | API REST de TazaNorte (Django 5.2 + Django REST Framework), `http://127.0.0.1:8000/api` |
+| **Repositorio oficial** | `https://github.com/BDII-2026-IISem/bdii-2026ii-dvzinx22.git` |
+| **Capturas** | 28 capturas reales organizadas en `capturas/`, tomadas en Visual Studio Code y en navegador en tiempo real contra la API viva de Django |
+| **Fecha de cierre** | 29 de octubre de 2026 |
 
 ---
 
-## Tabla de Contenido
+## 1. Estado general
 
-- [Información del Estudiante](#información-del-estudiante)
-- [Arquitectura y Estándares de la Fase I (Business)](#arquitectura-y-estándares-de-la-fase-i-business)
-- [ISS-00: Requisitos Previos y Verificación del Entorno](#iss-00-requisitos-previos-y-verificación-del-entorno)
-- [ISS-01: Bootstrap del Proyecto Angular, Tailwind CSS y PrimeNG](#iss-01-bootstrap-del-proyecto-angular-tailwind-css-y-primeng)
-- [ISS-02: Núcleo del Frontend (Environments, Modelos Base, Servicios y Layout)](#iss-02-núcleo-del-frontend-environments-modelos-base-servicios-y-layout)
-- [ISS-03: Módulo Business - CRUD de Clientes (Client)](#iss-03-módulo-business---crud-de-clientes-client)
-- [ISS-04: Módulo Business - Tipos de Producto (ProductType)](#iss-04-módulo-business---tipos-de-producto-producttype)
-- [ISS-05: Módulo Business - Catálogo de Productos (Product)](#iss-05-módulo-business---catálogo-de-productos-product)
-- [ISS-06: Módulo Business - Registro y Transacción de Ventas (Sale)](#iss-06-módulo-business---registro-y-transacción-de-ventas-sale)
-- [ISS-07: Módulo Business - Consulta, Detalle y Anulación de Ventas (Cierre Fase I)](#iss-07-módulo-business---consulta-detalle-y-anulación-de-ventas-cierre-fase-i)
-- [Bitácora Consolidada de Commits Realizados](#bitácora-consolidada-de-commits-realizados)
-
----
-
-## Arquitectura y Estándares de la Fase I (Business)
-
-La Fase I se concentra exclusivamente en las capacidades y flujos comerciales (**Business**) de TazaNorte:
-1. **Sin NgModules:** Uso exclusivo de componentes *Standalone* (`standalone: true` e `imports: [...]` directos).
-2. **Reactividad por Signals:** Manejo de estado local y reactividad mediante `signal()`, `computed()` y `effect()`, prescindiendo de dependencias pesadas de ciclo de detección.
-3. **Contratos e Interfaz Tipada:** Estricto reflejo en TypeScript de los modelos camelCase entregados por Django REST Framework.
-4. **Diseño Visual con PrimeNG y Tailwind CSS:** Uso de componentes desacoplados (`p-table`, `p-dialog`, `p-toast`, `p-confirmDialog`, `p-button`, `p-card`).
-5. **Aislamiento de Responsabilidad:** El frontend valida formato y construye la intención de compra, mientras que la persistencia, cálculo monetario y stock atómico recaen en el servidor Django.
+| Hito / Issue | Módulo o Tema | Estado |
+|---|---|:---:|
+| **ISS-00** | Requisitos y verificación de entorno (Node 22 LTS, npm, Angular CLI 22, Django check) | **Aprobado** |
+| **ISS-01** | Bootstrap del proyecto, Tailwind CSS, PrimeNG 22 (Aura Preset) y configuración global | **Aprobado** |
+| **ISS-02** | Núcleo frontend: environments, modelos tipados TS, Layout Shell y Sidebar colapsable | **Aprobado** |
+| **ISS-03** | Módulo Business: CRUD de Clientes (Client) con Signals y reactividad | **Aprobado** |
+| **ISS-04** | Módulo Business: Catálogo de Tipos de Producto / Categorías (ProductType) | **Aprobado** |
+| **ISS-05** | Módulo Business: Catálogo de Menú, precios COP, badges y stock (Product) | **Aprobado** |
+| **ISS-06** | Módulo Business: Punto de Venta (POS), cesta reactiva en memoria y despacho atómico | **Aprobado** |
+| **ISS-07** | Módulo Business: Historial cronológico de órdenes, detalle modal y anulación (Cierre Fase I) | **Aprobado** |
 
 ---
 
-## ISS-00: Requisitos Previos y Verificación del Entorno
+## 2. Entorno y versiones
 
-### Contexto y Alcance
-Antes de inicializar la aplicación cliente, se requiere auditar las dependencias del sistema operativo: presencia de Node.js (LTS v22+), gestor de paquetes npm, Angular CLI en su versión más reciente, y la disponibilidad activa del servidor backend Django con la base de datos de TazaNorte lista para responder peticiones.
-
-### Puntos de Verificación y Capturas Requeridas
-
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-00_01_version_node_npm_ng.png` | Verificación en terminal de versiones de `node -v`, `npm -v` y `ng version`. | Consola |
-| `ISS-00_02_backend_django_activo.png` | Servidor backend Django ejecutándose con `manage.py check` limpio en entorno virtual. | Consola |
-
-#### 1. Verificación de Versiones del Entorno Frontend (Node, npm y Angular CLI)
-![Verificación de versiones Node, npm y Angular CLI](capturas/ISS-00_01_version_node_npm_ng.png)
-
-#### 2. Verificación del Backend Django (manage.py check limpio)
-![Backend Django activo y verificado con manage.py check](capturas/ISS-00_02_backend_django_activo.png)
-
-### Criterio de Aceptación (GATE EVI-00-01)
-* Node.js (`v22.23.4`), npm (`10.9.9`) y Angular CLI (`22.2.5`) instalados y operativos en WSL2.
-* Backend Django activo en `.venv` con verificación `System check identified no issues (0 silenced)`.
-* **Estado:** **APROBADO**
+| Componente | Versión | Rol en la Arquitectura |
+|---|---|---|
+| **Node.js** | 22.14.0 LTS | Entorno de ejecución en WSL2 Ubuntu 24.04 |
+| **npm** | 10.9.2 | Gestor de dependencias del proyecto |
+| **Angular CLI** | 22.2.5 | Herramienta de compilación, empaquetado y scaffolding |
+| **Angular** | 22.2.3 | Framework SPA con componentes *standalone*, *signals* reactivas y modo *zoneless* nativo |
+| **PrimeNG** | 22.1.4 | Librería de componentes UI con tema Aura (`@primeuix/themes` 3.1) |
+| **PrimeIcons** | 8.0.2 | Set de iconografía vectorial para menús, acciones y badges |
+| **Tailwind CSS** | 4.1 | Framework de utilidades CSS vía `.postcssrc.json` y `@tailwindcss/postcss` |
+| **Backend** | Django 5.2 + DRF | API REST transaccional en Python 3.12 con soporte `djangorestframework-camel-case` |
+| **Base de Datos** | SQLite / PostgreSQL | Persistencia relacional con integridad referencial |
 
 ---
 
-## ISS-01: Bootstrap del Proyecto Angular, Tailwind CSS y PrimeNG
+## 3. Decisiones de diseño y adaptaciones frente a la guía
 
-### Contexto y Alcance
-Inicialización del proyecto cliente utilizando Angular CLI bajo la modalidad Standalone y Zoneless. Configuración del punto de entrada `app.config.ts`, instalación e integración de Tailwind CSS para estilos de utilidad y PrimeNG con su tema visual (Aura) y PrimeIcons para la iconografía.
-
-### Puntos de Verificación y Capturas Requeridas
-
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-01_01_ng_new_proyecto.png` | Comando `ng new` con configuración standalone (sin SSR inicial, routing activado, CSS). | Consola |
-| `ISS-01_02_instalacion_tailwind_primeng.png` | Instalación de dependencias `primeng`, `primeicons`, `@primeuix/themes` y Tailwind CSS v4. | Consola |
-| `ISS-01_03_configuracion_app_config.png` | Archivo `app.config.ts` configurado con `provideAnimationsAsync()` y proveedores de PrimeNG. | Editor VS Code |
-| `ISS-01_04_configuracion_styles_tailwind.png` | Archivo de estilos globales `styles.css` con directivas de Tailwind y estilos base. | Editor VS Code |
-| `ISS-01_EVI-01_ng_serve_primeng_gate.png` | **GATE:** Servidor local `ng serve` corriendo y render en navegador con un componente PrimeNG de prueba. | Navegador (localhost:4200) |
-
-#### 1. Creación del Proyecto Angular Standalone con CLI
-![Creación del proyecto Angular con ng new](capturas/ISS-01_01_ng_new_proyecto.png)
-
-#### 2. Instalación de Tailwind CSS v4 y Componentes PrimeNG
-![Instalación de Tailwind CSS v4 y dependencias PrimeNG](capturas/ISS-01_02_instalacion_tailwind_primeng.png)
-
-#### 3. Configuración del Inyector Raíz (app.config.ts)
-![Configuración de proveedores globales en app.config.ts](capturas/ISS-01_03_configuracion_app_config.png)
-
-#### 4. Configuración de PostCSS y Estilos Globales (styles.css)
-![Configuración de Tailwind y PrimeIcons en styles.css](capturas/ISS-01_04_configuracion_styles_tailwind.png)
-
-#### 5. Renderizado en Navegador y Verificación del Tema Aura (GATE EVI-01-01)
-![Servidor ng serve en localhost:4200 con componentes PrimeNG y Tailwind](capturas/ISS-01_EVI-01_ng_serve_primeng_gate.png)
-
-### Criterio de Aceptación (GATE EVI-01-01)
-* Proyecto `front-storelab-django` creado e inicializado con arquitectura Standalone en Angular 22.
-* Tailwind CSS v4 y PrimeNG con tema Aura configurados y procesados sin advertencias de compilación.
-* Servidor de desarrollo `ng serve` corriendo y render interactivo en `http://localhost:4200` validado.
-* **Estado:** **APROBADO**
+| Tema | Guía Académica Genérica | Adaptación TazaNorte | Motivo de la Decisión Técnica |
+|---|---|---|---|
+| **Modo de Detección** | Zone.js tradicional | **Angular 22 Zoneless nativo** | Se eliminó `provideZoneChangeDetection` de `app.config.ts` para aprovechar el rendimiento reactivo puro de **Angular Signals** sin dependencias externas pesadas. |
+| **Distribución Visual** | Barra de navegación superior plana | **Menú Lateral (Sidebar colapsable) + Header** | Se homologó la arquitectura solicitada por el docente, separando encabezado de marca, menú lateral con acordeón por módulos (`Catálogo`, `Ventas`, `Seguridad`) y panel central dinámico. |
+| **Estilos y Componentes** | PrimeNG 20 clásico | **PrimeNG 22 Standalone con Aura Preset** | Componentes modulares importados directamente (`p-button`, `p-table`, `p-select`, `p-dialog`, `p-confirmdialog`), con integración de `SharedModule` para plantillas `#header` y `#body`. |
+| **Entidades de Negocio** | Modelos genéricos | **Dominio de Cafetería:** `Client`, `ProductType`, `Product`, `Sale`, `ProductSale` | Respeta estrictamente los modelos relacionales creados en el backend Django en la Fase de Base de Datos. |
+| **Nomenclatura JSON** | snake_case | **camelCase bidireccional** | El backend Django cuenta con middleware camel-case; los contratos TS definen `productTypeId`, `productTypeName`, `saleDate`, `clientName` de manera nativa. |
+| **Formato Monetario** | Números planos | **CurrencyPipe en pesos colombianos (`COP`)** | Presentación comercial en formato `$ 8.500` con separadores de miles y moneda nacional. |
+| **Transaccionalidad POS** | Registro individual | **Cesta reactiva en memoria y despacho atómico** | El usuario selecciona cliente, agrega productos a una canasta controlada por Signals (`subtotal`, `tax`, `total`), y despacha un único payload `{ clientId, saleDate, discounts, items }` a `POST /api/sales/`. |
+| **Auditoría y Anulación** | Borrado físico `DELETE` | **Baja lógica transaccional** | Al pulsar "Anular Venta", Django ejecuta `instance.void()`, cambiando el estado a inactivo (`I`) sin destruir la trazabilidad contable ni las líneas de venta. |
 
 ---
 
-## ISS-02: Núcleo del Frontend (Environments, Modelos Base, Servicios y Layout)
+## 4. Estructura actual del proyecto
 
-### Contexto y Alcance
-Creación de la arquitectura base compartida del proyecto:
-1. `environments/environment.ts` con la URL base del API Django (`http://127.0.0.1:8000/api/`).
-2. Definición de contratos TypeScript e interfaces base (`Client`, `ProductType`, `Product`, `Sale`, `ProductSale`).
-3. Estructuración del Layout principal: Shell de la aplicación con barra de navegación superior/lateral (`p-menubar` / navegación responsiva) con enlaces hacia Clientes, Productos y Ventas.
-4. Servicios HTTP compartidos y servicios de notificación (`MessageService` para toasts de PrimeNG).
+```
+frontend/
+├── .postcssrc.json                         # Configuración Tailwind CSS v4
+├── angular.json                            # Metadatos del workspace Angular
+├── package.json                            # Dependencias (PrimeNG 22, Aura, Tailwind)
+├── capturas/                               # 28 evidencias reales organizadas por issue
+└── src/
+    ├── index.html                          # Raíz HTML con fuentes e iconos
+    ├── styles.css                          # Directivas Tailwind, PrimeIcons y resets
+    ├── environments/
+    │   ├── environment.ts                  # Configuración hacia http://127.0.0.1:8000/api
+    │   └── environment.development.ts      # Entorno de desarrollo
+    └── app/
+        ├── app.ts / app.html / app.css     # Shell raíz con Header + Sidebar + RouterOutlet + Footer
+        ├── app.config.ts                   # PrimeNG Aura, Router, HTTP, Message y ConfirmationService
+        ├── app.routes.ts                   # Enrutamiento perezoso con loadComponent
+        ├── core/
+        │   ├── models/                     # Contratos TypeScript (client, product, product-type, sale)
+        │   └── services/                   # Servicios HTTP tipados hacia endpoints DRF
+        │       ├── client.service.ts       # CRUD /api/clients/
+        │       ├── product-type.service.ts # CRUD /api/product-types/
+        │       ├── product.service.ts      # Catálogo /api/products/ y /api/products/available/
+        │       └── sale.service.ts         # Transacciones /api/sales/
+        ├── layout/
+        │   ├── navbar/                     # Cabecera superior con marca y status de Django API
+        │   └── sidebar/                    # Menú lateral colapsable con Catálogo, Ventas y Seguridad
+        └── features/
+            ├── home/                       # Dashboard de bienvenida y accesos rápidos
+            ├── clients/client-list/        # Tabla y modal de clientes con reactividad
+            ├── product-types/              # Clasificación y categorías de menú
+            ├── products/product-list/      # Grid de productos, stock badges y precios COP
+            └── sales/
+                ├── sale-form/              # Punto de Venta (POS) transaccional interactivo
+                └── sale-list/              # Historial de ventas, detalle de items y anulación
+```
 
-### Puntos de Verificación y Capturas Requeridas
+### Rutas del Frontend y Endpoints Relacionados del Backend
 
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-02_01_archivo_environments.png` | Definición de `environment.ts` con la constante `apiUrl`. | Editor VS Code |
-| `ISS-02_02_interfaces_modelos_ts.png` | Archivos de modelos TypeScript en `core/models/` reflejando los atributos de Django. | Editor VS Code |
-| `ISS-02_03_layout_navegacion_shell.png` | Componente Layout / Menubar implementado con rutas principales del negocio. | Editor VS Code |
-| `ISS-02_04_layout_sidebar_guia.png` | Adaptación del Layout a Menú Lateral (Sidebar) según directriz y guía académica. | Especificación del Docente |
-| `ISS-02_EVI-01_layout_render_gate.png` | **GATE:** Navegador mostrando la carcasa visual interactiva con el menú de TazaNorte listo. | Navegador (localhost:4200) |
-
-#### 1. Configuración de Variables de Entorno (environment.ts)
-![Variables de entorno con apiUrl y requireAuth false](capturas/ISS-02_01_archivo_environments.png)
-
-#### 2. Espejo de Contratos y Modelos de Dominio en TypeScript
-![Modelos e interfaces TypeScript del dominio de TazaNorte](capturas/ISS-02_02_interfaces_modelos_ts.png)
-
-#### 3. Estructuración del Shell de Navegación (Navbar y Rutas)
-![Componente Navbar con menú de módulos de cafetería](capturas/ISS-02_03_layout_navegacion_shell.png)
-
-#### 4. Verificación del Shell y Dashboard en Navegador (GATE EVI-02-01)
-![Carcasa interactiva de TazaNorte en localhost:4200](capturas/ISS-02_EVI-01_layout_render_gate.png)
-
-#### 5. Adaptación de Layout a Menú Lateral (Sidebar) según Directriz del Docente
-Para homologar la interfaz con la plantilla de referencia del docente y el estándar del curso (modelo de paneles independientes), se refactorizó el layout global incorporando `SidebarComponent`:
-* **Header Superior:** Nombre de marca `TazaNorte · Producción y venta de cafetería` y estado de la API Django `:8000`.
-* **Sidebar Izquierda:** Menú desplegable tipo acordeón con subsecciones para `Catálogo` (Clientes, Tipos, Productos), `Ventas` (POS, Historial) y `Seguridad` (Fase II).
-* **Área Central:** Espacio dinámico desacoplado conectado a `router-outlet` y pie de página institucional `Bases de Datos II · Universidad de La Guajira`.
-
-![Distribución de paneles con barra lateral izquierda según directriz académica](capturas/ISS-02_04_layout_sidebar_guia.png)
-
-### Criterio de Aceptación (GATE EVI-02-01)
-* Módulo `environments/environment.ts` configurado con `apiUrl` apuntando al backend Django y `requireAuth: false`.
-* Contratos e interfaces base (`Client`, `ProductType`, `Product`, `Sale`, `ProductSale`) declarados bajo convención camelCase.
-* Shell de navegación con `NavbarComponent`, feedback con Toasts/ConfirmDialog y dashboard de accesos directos activo en `http://localhost:4200`.
-* **Estado:** **APROBADO**
-
----
-
-## ISS-03: Módulo Business - CRUD de Clientes (Client)
-
-### Contexto y Alcance
-Implementación del primer módulo de negocio:
-1. Servicio reactivo `ClientService` conectado a los endpoints `/api/clients/` de Django.
-2. Componente de listado `ClientListComponent` con `p-table`, buscador reactivo, paginación y estado de registros.
-3. Formulario reactivo tipado (`NonNullableFormBuilder`) en modal o vista (`p-dialog`) para crear y editar clientes con validaciones (nombre, documento, email, teléfono).
-4. Acción de baja lógica (eliminación segura) con diálogo de confirmación (`p-confirmDialog`) y actualización reactiva mediante Signals.
-
-### Puntos de Verificación y Capturas Requeridas
-
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-03_01_client_service_http.png` | Servicio Angular `ClientService` con métodos `getAll`, `create`, `update`, `delete`. | Editor VS Code |
-| `ISS-03_02_client_component_codigo.png` | Componente `ClientComponent` con Signals y formularios reactivos. | Editor VS Code |
-| `ISS-03_03_client_formulario_dialog.png` | Diálogo modal de creación/edición de cliente abierto con campos validados. | Navegador |
-| `ISS-03_EVI-01_client_crud_completo_gate.png` | **GATE:** Tabla de clientes listando datos reales provenientes de la base de datos Django y mensajes toast de éxito. | Navegador |
-
-#### 1. Implementación del Servicio Reactivo HTTP (ClientService)
-![Servicio ClientService con métodos HTTP REST](capturas/ISS-03_01_client_service_http.png)
-
-#### 2. Componente Standalone con Signals y Formularios Reactivos
-![Componente ClientListComponent con reactividad y validaciones](capturas/ISS-03_02_client_component_codigo.png)
-
-#### 3. Formulario Modal Reactivo de Creación y Edición (p-dialog)
-![Modal interactivo de creación de cliente en TazaNorte](capturas/ISS-03_03_client_formulario_dialog.png)
-
-#### 4. CRUD de Clientes Completo y Conectado a Django (GATE EVI-03-01)
-![Tabla p-table con datos reales de Django y notificación Toast](capturas/ISS-03_EVI-01_client_crud_completo_gate.png)
-
-### Criterio de Aceptación (GATE EVI-03-01)
-* Servicio `ClientService` implementado y consumiendo `GET/POST/PUT/DELETE /api/clients/`.
-* `ClientListComponent` con tabla `p-table`, Signals reactivos, validaciones y baja lógica confirmada.
-* Transacción confirmada en consola y render en vivo en `http://localhost:4200/clientes` con datos de Django.
-* **Estado:** **APROBADO**
+| Módulo / Agrupador | Opción del Menú | Ruta en Navegador | Endpoint de Django REST Framework |
+|---|---|---|---|
+| **Inicio** | Dashboard General | `/` | Vista de inicio con métricas de cafetería |
+| **Catálogo** | Clientes | `/clientes` | `GET /api/clients/`, `POST /api/clients/`, `PUT /api/clients/:id/`, `DELETE /api/clients/:id/` |
+| **Catálogo** | Tipos de Producto | `/tipos-producto` | `GET /api/product-types/`, `POST /api/product-types/`, `DELETE /api/product-types/:id/` |
+| **Catálogo** | Productos del Menú | `/productos` | `GET /api/products/`, `GET /api/products/available/`, `POST /api/products/`, `PUT /api/products/:id/` |
+| **Ventas** | Nueva Venta (POS) | `/ventas/nueva` | `POST /api/sales/` (Transacción atómica de pedido) |
+| **Ventas** | Historial de Órdenes | `/ventas` | `GET /api/sales/`, `GET /api/sales/:id/`, `DELETE /api/sales/:id/` (Anulación) |
+| **Seguridad** | Roles y Usuarios | Próxima fase | `/api/users/`, `/api/roles/` *(Fase II - RBAC)* |
 
 ---
 
-## ISS-04: Módulo Business - Tipos de Producto (ProductType)
+## 5. Cómo funciona un componente en Angular 22
 
-### Contexto y Alcance
-Implementación del catálogo de clasificación de productos:
-1. Servicio `ProductTypeService` conectado a `/api/product-types/`.
-2. Componente administrativo de Tipos de Producto con `p-table` interactiva.
-3. Formulario reactivo para alta y edición de categorías de cafetería (Cafés, Repostería, Bebidas Frías, etc.).
-4. Baja lógica y confirmaciones visuales.
+Cada funcionalidad de TazaNorte se diseñó bajo el estándar moderno de componentes independientes (**Standalone Components**), sin módulos `NgModule` obsoletos. La estructura de cada componente comprende:
 
-### Puntos de Verificación y Capturas Requeridas
-
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-04_01_product_type_service.png` | Implementación de `ProductTypeService` en TypeScript. | Editor VS Code |
-| `ISS-04_02_product_type_component.png` | Componente y vista del catálogo de tipos de producto. | Editor VS Code |
-| `ISS-04_EVI-01_product_type_crud_gate.png` | **GATE:** Pantalla de tipos de producto en funcionamiento consumiendo el API de Django. | Navegador |
-
-#### 1. Implementación del Servicio Reactivo HTTP (ProductTypeService)
-![Servicio ProductTypeService con operaciones hacia Django](capturas/ISS-04_01_product_type_service.png)
-
-#### 2. Componente Standalone con Signals y Diálogos de Confirmación
-![Componente ProductTypeListComponent para categorización de menú](capturas/ISS-04_02_product_type_component.png)
-
-#### 3. Catálogo de Categorías y Alta en Navegador (GATE EVI-04-01)
-![Listado y creación interactiva de categorías en localhost:4200/tipos-producto](capturas/ISS-04_EVI-01_product_type_crud_gate.png)
-
-### Criterio de Aceptación (GATE EVI-04-01)
-* Servicio `ProductTypeService` conectado a `/api/product-types/` con manejo tipado.
-* `ProductTypeListComponent` operativo con tabla interactiva, creación y edición por modal.
-* Consumo y persistencia en base de datos de Django validada en navegador.
-* **Estado:** **APROBADO**
+1. **`.ts` (Lógica y Estado Reactivo):** Define el decorador `@Component`, los componentes/módulos importados en `imports`, la inyección de dependencias moderna mediante `inject(...)` y el estado reactivo administrado con **Angular Signals** (`signal`, `computed`).
+2. **`.html` (Plantilla Visual):** Utiliza directivas de control de flujo nativas (`@if`, `@for`, `@empty`), componentes de PrimeNG (`p-table`, `p-dialog`, `p-select`, `p-button`) y tuberías tipadas (`currency`, `date`).
+3. **`.css` (Estilos Encapsulados):** Define reglas complementarias a Tailwind CSS respetando el tema oscuro de TazaNorte.
 
 ---
 
-## ISS-05: Módulo Business - Catálogo de Productos (Product)
+## 6. Detalle por paso (ISS-00 a ISS-07)
 
-### Contexto y Alcance
-Gestión integral de los productos del negocio:
-1. Servicio `ProductService` con métodos hacia `/api/products/` y `/api/products/available/`.
-2. Vista administrativa de productos: visualización de código, nombre, tipo de producto, precio de venta, stock disponible y estado.
-3. Formulario reactivo de producto con selector desplegable (`p-dropdown` o `p-select`) alimentado dinámicamente desde el catálogo de tipos de producto.
-4. Validaciones de precio y stock numérico no negativo.
+### ISS-00: Requisitos Previos y Verificación del Entorno
 
-### Puntos de Verificación y Capturas Requeridas
+Se configuró el entorno de desarrollo en WSL2 Ubuntu 24.04 verificando Node.js v22 LTS, npm v10 y Angular CLI v22. Asimismo, se comprobó la operatividad del backend Django mediante `python manage.py check`.
 
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-05_01_product_service_http.png` | Servicio Angular `ProductService` con endpoints de catálogo y disponibles. | Editor VS Code |
-| `ISS-05_02_product_form_dropdown.png` | Formulario reactivo integrando relación de tipos de producto. | Editor VS Code |
-| `ISS-05_EVI-01_product_catalogo_gate.png` | **GATE:** Grid / Tabla de productos con relaciones resueltas y badges de disponibilidad renderizados. | Navegador |
+```bash
+node -v          # v22.14.0
+npm -v           # 10.9.2
+ng version       # Angular CLI 22.2.5
+python manage.py check  # System check identified no issues (0 silenced).
+```
 
-#### 1. Implementación del Servicio Reactivo HTTP (ProductService)
-![Servicio ProductService con operaciones hacia Django REST Framework](capturas/ISS-05_01_product_service_http.png)
+![ISS-00_01 Versiones de Node, npm y Angular CLI en terminal](capturas/ISS-00_01_version_node_npm_ng.png)
+*ISS-00_01: Verificación de versiones Node.js 22 LTS, npm y Angular CLI 22*
 
-#### 2. Componente de Catálogo con Formulario Reactivo y Selector de Tipos
-![Componente ProductListComponent con formularios reactivos tipados](capturas/ISS-05_02_product_form_dropdown.png)
+![ISS-00_02 Backend Django activo sin errores](capturas/ISS-00_02_backend_django_activo.png)
+*ISS-00_02: Comprobación de integridad del servidor Django REST Framework*
 
-#### 3. Catálogo de Menú, Precios COP y Disponibilidad en Navegador (GATE EVI-05-01)
-![Listado interactivo de productos de cafetería TazaNorte en localhost:4200/productos](capturas/ISS-05_EVI-01_product_catalogo_gate.png)
 
-### Criterio de Aceptación (GATE EVI-05-01)
-* Servicio `ProductService` con llamadas a `/api/products/` y `/api/products/available/`.
-* `ProductListComponent` operativo con tabla PrimeNG (`p-table`), formateo monetario COP (`CurrencyPipe`) y badges de stock.
-* Formulario reactivo de creación/edición con selector dinámico de categoría alimentado por `ProductTypeService`.
-* Persistencia y reactividad confirmadas con notificación toast en tiempo real conectada a Django.
-* **Estado:** **APROBADO**
+### ISS-01: Bootstrap del Proyecto, Tailwind CSS y PrimeNG
+
+Se inicializó el proyecto Angular `front-storelab-django` dentro de la carpeta `frontend/` configurando Tailwind CSS v4, PrimeNG con el tema Aura y PrimeIcons.
+
+```bash
+npx @angular/cli@22 new front-storelab-django --directory . --style=css --routing --ssr=false --skip-git
+npm install primeng @primeuix/themes primeicons @angular/cdk
+npm install tailwindcss @tailwindcss/postcss postcss
+```
+
+Configuración en `src/app/app.config.ts`:
+```ts
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes, withComponentInputBinding()),
+    provideHttpClient(),
+    providePrimeNG({
+      theme: { preset: Aura, options: { darkModeSelector: '.app-dark', cssLayer: false } },
+    }),
+    MessageService,
+    ConfirmationService,
+  ],
+};
+```
+
+![ISS-01_01 Inicialización del proyecto Angular](capturas/ISS-01_01_ng_new_proyecto.png)
+*ISS-01_01: Creación del proyecto frontend con arquitectura Standalone*
+
+![ISS-01_02 Instalación de paquetes PrimeNG y Tailwind](capturas/ISS-01_02_instalacion_tailwind_primeng.png)
+*ISS-01_02: Instalación de `@primeuix/themes`, PrimeNG y PrimeIcons*
+
+![ISS-01_03 Configuración global en app.config.ts](capturas/ISS-01_03_configuracion_app_config.png)
+*ISS-01_03: Registro de providers globales, tema Aura y servicios de diálogo*
+
+![ISS-01_04 Estilos globales con Tailwind y PrimeIcons](capturas/ISS-01_04_configuracion_styles_tailwind.png)
+*ISS-01_04: Configuración de `@import 'tailwindcss'` y `primeicons.css`*
+
+![ISS-01_EVI-01 Servidor ng serve activo con tema Aura](capturas/ISS-01_EVI-01_ng_serve_primeng_gate.png)
+*ISS-01_EVI-01: Renderizado exitoso en localhost:4200 (GATE EVI-01-01)*
+
+
+### ISS-02: Núcleo del Frontend y Arquitectura de Layout con Sidebar
+
+Se establecieron los contratos TypeScript del dominio (`Client`, `ProductType`, `Product`, `Sale`, `ProductSale`), las variables de entorno conectadas a `http://127.0.0.1:8000/api` y el layout modular con encabezado, menú lateral colapsable (`SidebarComponent`) y pie institucional.
+
+```ts
+// src/environments/environment.ts
+export const environment = {
+  production: false,
+  apiUrl: 'http://127.0.0.1:8000/api',
+  appName: 'TazaNorte',
+  requireAuth: false,
+};
+```
+
+![ISS-02_01 Archivo de configuración environment.ts](capturas/ISS-02_01_archivo_environments.png)
+*ISS-02_01: Configuración de URL base de la API Django*
+
+![ISS-02_02 Interfaces y modelos tipados en TypeScript](capturas/ISS-02_02_interfaces_modelos_ts.png)
+*ISS-02_02: Modelos de dominio tipados para Clientes, Categorías, Productos y Ventas*
+
+![ISS-02_03 Estructura del Shell de navegación](capturas/ISS-02_03_layout_navegacion_shell.png)
+*ISS-02_03: Componentes de layout y enrutamiento principal*
+
+![ISS-02_04 Layout lateral con acordeón en funcionamiento en TazaNorte](capturas/ISS-02_04_layout_sidebar_guia.png)
+*ISS-02_04: Interfaz real de TazaNorte con barra lateral (Sidebar) colapsable y módulos de negocio activos en localhost:4200/tipos-producto*
+
+![ISS-02_EVI-01 Renderizado interactivo del dashboard](capturas/ISS-02_EVI-01_layout_render_gate.png)
+*ISS-02_EVI-01: Carcasa visual en navegador con estado activo del API Django (GATE EVI-02-01)*
+
+
+### ISS-03: Módulo Business - CRUD de Clientes (Client)
+
+Implementación del servicio `ClientService` conectado a `/api/clients/` y vista administrativa interactiva con `p-table`, formularios reactivos en modal `p-dialog`, validación de campos obligatorios, búsqueda y mensajes de feedback mediante `MessageService`.
+
+```ts
+// src/app/core/services/client.service.ts
+@Injectable({ providedIn: 'root' })
+export class ClientService {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/clients/`;
+
+  getAll(): Observable<Client[]> { return this.http.get<Client[]>(this.baseUrl); }
+  create(client: Partial<Client>): Observable<Client> { return this.http.post<Client>(this.baseUrl, client); }
+  update(id: number, client: Partial<Client>): Observable<Client> { return this.http.put<Client>(`${this.baseUrl}${id}/`, client); }
+  delete(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}${id}/`); }
+}
+```
+
+![ISS-03_01 Servicio ClientService con llamadas HTTP](capturas/ISS-03_01_client_service_http.png)
+*ISS-03_01: Servicio Angular ClientService con operaciones CRUD tipadas*
+
+![ISS-03_02 Componente ClientListComponent con Signals](capturas/ISS-03_02_client_component_codigo.png)
+*ISS-03_02: Componente reactivo con FormBuilder y gestión de estado con Signals*
+
+![ISS-03_03 Formulario modal de alta y edición de clientes](capturas/ISS-03_03_client_formulario_dialog.png)
+*ISS-03_03: Modal reactivo de captura con validaciones de formulario*
+
+![ISS-03_EVI-01 Gestión de clientes operativa contra Django](capturas/ISS-03_EVI-01_client_crud_completo_gate.png)
+*ISS-03_EVI-01: Listado de clientes en vivo con persistencia validada (GATE EVI-03-01)*
+
+
+### ISS-04: Módulo Business - Catálogo de Tipos de Producto (ProductType)
+
+Desarrollo del módulo de clasificación y categorías de menú de cafetería (Cafés Calientes, Bebidas Frías, Repostería Gourmet). Servicio `ProductTypeService` conectado a `/api/product-types/` y tabla interactiva con acciones de edición y baja lógica.
+
+![ISS-04_01 Servicio ProductTypeService en TypeScript](capturas/ISS-04_01_product_type_service.png)
+*ISS-04_01: Servicio ProductTypeService con operaciones hacia Django REST Framework*
+
+![ISS-04_02 Componente ProductTypeListComponent](capturas/ISS-04_02_product_type_component.png)
+*ISS-04_02: Componente con Signals y formulario de categorías de menú*
+
+![ISS-04_EVI-01 Catálogo de categorías en funcionamiento](capturas/ISS-04_EVI-01_product_type_crud_gate.png)
+*ISS-04_EVI-01: Categorías registradas y tabla interactiva en navegador (GATE EVI-04-01)*
+
+
+### ISS-05: Módulo Business - Catálogo de Menú y Productos (Product)
+
+Gestión integral de productos comerciales de TazaNorte: servicio `ProductService` con endpoints `/api/products/` y `/api/products/available/`, formulario reactivo con selector desplegable de categoría (`p-select`) alimentado dinámicamente, precios formateados en COP y badges de control de stock.
+
+![ISS-05_01 Servicio ProductService con endpoints de catálogo](capturas/ISS-05_01_product_service_http.png)
+*ISS-05_01: Servicio ProductService con métodos de consulta y persistencia*
+
+![ISS-05_02 Formulario reactivo con selector de categoría](capturas/ISS-05_02_product_form_dropdown.png)
+*ISS-05_02: Integración de formulario de producto con relación a ProductType*
+
+![ISS-05_EVI-01 Catálogo de menú con precios COP y stock](capturas/ISS-05_EVI-01_product_catalogo_gate.png)
+*ISS-05_EVI-01: Listado en vivo de productos de cafetería TazaNorte (GATE EVI-05-01)*
+
+
+### ISS-06: Módulo Business - Punto de Venta Transaccional (POS - Sale)
+
+Implementación del flujo transaccional central: componente `SaleFormComponent` con selector dinámico de cliente, menú visual de productos, control reactivo de cesta en memoria (`CartItem[]`) con cálculo instantáneo de subtotal, impuestos y total, y despacho atómico hacia `POST /api/sales/` con confirmación inmediata de la orden generada por Django.
+
+```ts
+// src/app/features/sales/sale-form/sale-form.ts (Despacho Atómico)
+const payload: SaleRegisterPayload = {
+  clientId: this.saleForm.value.clientId,
+  saleDate: new Date().toISOString(),
+  discounts: Number(this.saleForm.value.discounts) || 0,
+  items: this.cart().map((i) => ({ productId: i.product.id!, quantity: i.quantity })),
+};
+this.saleService.createSale(payload).subscribe({
+  next: (sale) => {
+    this.lastSale.set(sale);
+    this.cart.set([]);
+    this.messageService.add({ severity: 'success', summary: 'Venta Registrada', detail: `Orden #${sale.id} exitosa.` });
+  }
+});
+```
+
+![ISS-06_01 Servicio transaccional SaleService](capturas/ISS-06_01_sale_service_transaccion.png)
+*ISS-06_01: Definición del método createSale con payload transaccional atómico*
+
+![ISS-06_02 Interfaz de Punto de Venta con canasta reactiva](capturas/ISS-06_02_pos_venta_interface.png)
+*ISS-06_02: Punto de venta con menú a la izquierda y cesta de compra reactiva*
+
+![ISS-06_EVI-01 Venta transaccional procesada en Django](capturas/ISS-06_EVI-01_venta_registrada_gate.png)
+*ISS-06_EVI-01: Transacción completada con orden generada y total liquidado por Django (GATE EVI-06-01)*
+
+
+### ISS-07: Módulo Business - Historial, Detalle y Anulación de Ventas (Cierre Fase I)
+
+Módulo de auditoría y cierre del ciclo de negocio: componente `SaleListComponent` conectado a `GET /api/sales/`, modal de inspección detallada de líneas de venta despachadas (`ProductSale`) con sus precios unitarios y subtotales, y anulación transaccional (`DELETE /api/sales/:id/`) protegida por confirmación modal (`p-confirmdialog`).
+
+![ISS-07_01 Componente de historial de ventas](capturas/ISS-07_01_sales_history_component.png)
+*ISS-07_01: Componente SaleListComponent con carga cronológica y anulación*
+
+![ISS-07_02 Modal de detalle de líneas de pedido](capturas/ISS-07_02_detalle_venta_dialog.png)
+*ISS-07_02: Modal p-dialog visualizando el desglose de productos y total de la orden*
+
+![ISS-07_EVI-01 Anulación confirmada y cierre de Fase I](capturas/ISS-07_EVI-01_anulacion_y_cierre_gate.png)
+*ISS-07_EVI-01: Venta anulada con badge de estado actualizado y confirmación en tiempo real (GATE EVI-07-01)*
 
 ---
 
-## ISS-06: Módulo Business - Registro y Transacción de Ventas (Sale)
+## 7. Bitácora Consolidada de Commits Realizados
 
-### Contexto y Alcance
-Pantalla transaccional de punto de venta (POS / Registro de Ventas):
-1. Servicio `SaleService` conectado a `POST /api/sales/`.
-2. Selección dinámica de cliente y catálogo interactivo de productos disponibles con control de cantidades.
-3. Resumen en vivo de líneas de venta (cesta/detalle temporal en memoria con Signals).
-4. Despacho atómico del payload hacia Django: el frontend envía únicamente `clientId` y el arreglo de `items: [{ productId, quantity }]`.
-5. Manejo de respuesta exitosa, feedback visual de la venta procesada con su consecutivo/ID y vaciado reactivo de la orden.
+Todos los avances cuentan con commits atómicos semánticos (`feat` y `docs`) sincronizados en la rama `main` del repositorio oficial de GitHub:
 
-### Puntos de Verificación y Capturas Requeridas
-
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-06_01_sale_service_transaccion.png` | Servicio `SaleService` con tipado del payload transaccional. | Editor VS Code |
-| `ISS-06_02_pos_venta_interface.png` | Pantalla de punto de venta estructurada con selección de items y resumen reactivo. | Editor VS Code |
-| `ISS-06_EVI-01_venta_registrada_gate.png` | **GATE:** Transacción de venta registrada exitosamente contra Django con notificación toast de confirmación y total devuelto por el servidor. | Navegador |
-
-#### 1. Implementación del Servicio Transaccional de Venta (SaleService)
-![Servicio SaleService con despacho transaccional hacia Django](capturas/ISS-06_01_sale_service_transaccion.png)
-
-#### 2. Punto de Venta Dinámico con Selección de Cliente y Cesta Reactiva (Signals)
-![Componente SaleFormComponent con cesta en memoria y totales automáticos](capturas/ISS-06_02_pos_venta_interface.png)
-
-#### 3. Registro Atómico de Venta y Confirmación de Transacción en Django (GATE EVI-06-01)
-![Confirmación visual de orden procesada y total retornado por el backend](capturas/ISS-06_EVI-01_venta_registrada_gate.png)
-
-### Criterio de Aceptación (GATE EVI-06-01)
-* Servicio `SaleService` con método transaccional conectado a `POST /api/sales/`.
-* `SaleFormComponent` con selector de cliente, catálogo de menú y cesta reactiva gestionada con Angular Signals (`cart`, `subtotal`, `tax`, `total`).
-* Payload atómico `{ clientId, saleDate, discounts, items }` despachado satisfactoriamente.
-* Venta procesada y persistida en base de datos con generación de ID de orden y totales calculados por Django.
-* **Estado:** **APROBADO**
-
----
-
-## ISS-07: Módulo Business - Consulta, Detalle y Anulación de Ventas (Cierre Fase I)
-
-### Contexto y Alcance
-Cierre operativo del módulo comercial:
-1. Historial de ventas consumiendo `GET /api/sales/` con filtros de fecha, cliente y estado.
-2. Vista o modal de detalle expandible (`Row Expansion` o `p-dialog`) mostrando los items facturados con el precio histórico fijado por el backend.
-3. Acción de anulación de venta (`DELETE /api/sales/<id>/`) con diálogo de confirmación y actualización del estado de la venta.
-4. Verificación integral de todos los flujos comerciales de la Fase I (Business).
-
-### Puntos de Verificación y Capturas Requeridas
-
-| Código Captura | Descripción del Paso / Evidencia | Ubicación sugerida |
-| :--- | :--- | :--- |
-| `ISS-07_01_sales_history_component.png` | Componente de historial de ventas y detalle en TypeScript. | Editor VS Code |
-| `ISS-07_02_detalle_venta_dialog.png` | Modal/Expansión de venta visualizando el desglose de productos y total. | Navegador |
-| `ISS-07_EVI-01_anulacion_y_cierre_gate.png` | **GATE:** Anulación de venta confirmada, cambio de estado visual y suite completa de negocio operativa. | Navegador |
-
-#### 1. Implementación del Historial de Órdenes y Acciones de Auditoría (SaleListComponent)
-![Componente SaleListComponent con consulta cronológica y acciones](capturas/ISS-07_01_sales_history_component.png)
-
-#### 2. Inspección Detallada de Líneas de Pedido y Totales Históricos
-![Modal interactivo p-dialog con desglose de ítems, precio y subtotales](capturas/ISS-07_02_detalle_venta_dialog.png)
-
-#### 3. Anulación Transaccional y Cierre Operativo de Fase I (GATE EVI-07-01)
-![Anulación confirmada con baja lógica en Django y badge de estado actualizado](capturas/ISS-07_EVI-01_anulacion_y_cierre_gate.png)
-
-### Criterio de Aceptación (GATE EVI-07-01)
-* Consumo cronológico de ventas (`GET /api/sales/`) con ordenación descendente y visualización de totales en moneda nacional COP.
-* Modal de inspección de ítems facturados con precios históricos y cantidades despachadas.
-* Anulación transaccional (`DELETE /api/sales/:id/`) integrada con cuadro de confirmación modal (`p-confirmdialog`) y reactividad en tiempo real.
-* Ciclo completo de reglas de negocio de la Fase I (Clientes, Tipos, Catálogo y Ventas) cerrado y validado al 100%.
-* **Estado:** **APROBADO**
-
----
-
-## Bitácora Consolidada de Commits Realizados
-
-| Issue | Descripción del Cambio | Hash Commit | Estado |
-| :--- | :--- | :---: | :---: |
+| Issue | Descripción del Cambio Técnico | Hash Commit | Estado |
+| :---: | :--- | :---: | :---: |
 | **ISS-00** | Requisitos previos y entorno: verificación Node 22, npm, Angular CLI y Backend Django | `8e6954d` | **COMPLETADO** |
 | **ISS-01** | Bootstrap del proyecto Angular, Tailwind CSS, PrimeNG y tema Aura | `add9579` | **COMPLETADO** |
 | **ISS-02** | Núcleo del Frontend: environments, modelos TS, servicios base y layout Shell | `52cf00b` | **COMPLETADO** |
@@ -347,3 +335,49 @@ Cierre operativo del módulo comercial:
 | **ISS-05** | Módulo Business: Catálogo de Productos con relaciones y disponibilidad | `2ca430c` | **COMPLETADO** |
 | **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | `b6d80e3` | **COMPLETADO** |
 | **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | `c4560b8` | **COMPLETADO** |
+| **Layout** | Adaptación de Layout a barra lateral (Sidebar) colapsable según directriz docente | `c6ec88e` | **COMPLETADO** |
+| **Docs** | Consolidación total de bitácora y registro de evidencias fotográficas | `f0bb657` | **COMPLETADO** |
+
+---
+
+## 8. Problemas encontrados y cómo se resolvieron
+
+| Problema Encontrado | Causa Técnica Raíz | Solución Aplicada |
+|---|---|---|
+| **Pantalla en blanco al arrancar `ng serve`** | Conflicto entre `provideZoneChangeDetection` y el modo Zoneless nativo sin `zone.js`. | Se retiró el provider tradicional de `app.config.ts`, permitiendo la reactividad pura mediante Signals de Angular 22. |
+| **Error `NG8001: 'p-confirmDialog' is not a known element`** | PrimeNG 22 estandarizó los selectores a minúsculas (`kebab-case`). | Se actualizó la etiqueta a `<p-confirmdialog>` en los componentes y se importó `ConfirmDialogModule`. |
+| **Error `NG8002: Can't bind to 'label'` en botones** | Directiva clásica `pButton` no compatible con sintaxis moderna. | Se migraron los botones HTML a componentes independientes `<p-button label="..." severity="...">`. |
+| **Tabla de productos sin renderizar filas** | En PrimeNG 22 las plantillas de tabla requieren vincularse explícitamente o importar `SharedModule`. | Se importó `SharedModule` de `primeng/api` y se vincularon las plantillas con `#header pTemplate="header"` y `#body let-prod pTemplate="body"`. |
+| **Error 401 Unauthorized en endpoints comerciales** | El backend Django tenía configurado `IsAuthenticated` por defecto heredado de la fase RBAC previa. | Se ajustó temporalmente `permission_classes = [AllowAny]` en los ViewSets comerciales de Fase I conforme a la directriz docente ("solo business"). |
+| **Campos de cliente desalineados con el serializer** | La interfaz inicial contenía `names` y `surnames`, mientras que el modelo Django utiliza un único campo `name`. | Se estandarizó el contrato TypeScript y el formulario reactivo a `name`, `email`, `phone` y `address`. |
+| **Cálculo de impuestos en la orden de venta** | El backend calcula impuestos de acuerdo a reglas fiscales o los incluye en la línea. | Se implementó una signal computada `tax = computed(...)` al 19% en memoria con liquidación final confirmada por el servidor. |
+
+---
+
+## 9. Cómo ejecutar el proyecto
+
+### 1. Iniciar el Backend (Django REST Framework)
+```bash
+cd backend
+source .venv/bin/activate
+python manage.py runserver 0.0.0.0:8000
+```
+La API quedará disponible en: `http://127.0.0.1:8000/api/`
+
+### 2. Iniciar el Frontend (Angular)
+```bash
+cd frontend
+npm install
+npm start -- --host 0.0.0.0
+```
+La aplicación web quedará accesible en: `http://localhost:4200`
+
+---
+
+## 10. Próximos pasos (Fase II: Autenticación y Seguridad RBAC)
+
+Con la **Fase I (Reglas de Negocio / Business)** completada y aprobada al 100%, los siguientes desarrollos programados comprenden:
+1. Pantalla de inicio de sesión (`/login`) autenticando credenciales contra `POST /api/auth/login/` con JWT (`access` y `refresh`).
+2. Interceptor HTTP (`authInterceptor`) inyectando automáticamente la cabecera `Authorization: Bearer <token>`.
+3. Guard funcional de rutas (`authGuard`) para restringir el acceso a los módulos comerciales según el estado de la sesión.
+4. Mapeo de perfiles y roles de usuario (Administrador de Cafetería, Cajero, Barista) según el esquema RBAC del backend.
