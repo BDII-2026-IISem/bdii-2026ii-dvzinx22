@@ -270,7 +270,7 @@ Cierre operativo del módulo comercial:
 | **ISS-00** | Requisitos previos y entorno: verificación Node 22, npm, Angular CLI y Backend Django | `8e6954d` | **COMPLETADO** |
 | **ISS-01** | Bootstrap del proyecto Angular, Tailwind CSS, PrimeNG y tema Aura | `add9579` | **COMPLETADO** |
 | **ISS-02** | Núcleo del Frontend: environments, modelos TS, servicios base y layout Shell | `52cf00b` | **COMPLETADO** |
-| **ISS-03** | Módulo Business: CRUD de Clientes con Signals y formularios reactivos tipados | - | Pendiente |
+| **ISS-03** | Módulo Business: CRUD de Clientes con Signals y formularios reactivos tipados | `af55146` | **COMPLETADO** |
 | **ISS-04** | Módulo Business: Catálogo de Tipos de Producto con PrimeNG | - | Pendiente |
 | **ISS-05** | Módulo Business: Catálogo de Productos con relaciones y disponibilidad | - | Pendiente |
 | **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | - | Pendiente |
