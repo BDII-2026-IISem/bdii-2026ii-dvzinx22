@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, SharedModule } from 'primeng/api';
 import { ClientService } from '../../../core/services/client.service';
 import { Client } from '../../../core/models/client.model';
 
@@ -17,6 +17,7 @@ import { Client } from '../../../core/models/client.model';
     CommonModule,
     ReactiveFormsModule,
     TableModule,
+    SharedModule,
     ButtonModule,
     InputTextModule,
     DialogModule,

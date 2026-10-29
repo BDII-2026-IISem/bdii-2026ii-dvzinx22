@@ -1,0 +1,178 @@
+<div class="space-y-6">
+  <!-- Cabecera del Módulo -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Inventario y Menú · Business</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i class="pi pi-box text-emerald-500"></i>
+        Catálogo de Productos
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400">
+        Control de bebidas, cafés y alimentos con relación por categorías y stock.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <p-button label="Nuevo Producto" 
+                icon="pi pi-plus" 
+                severity="success"
+                (onClick)="openNew()" />
+      <p-button icon="pi pi-refresh" 
+                severity="secondary"
+                [outlined]="true"
+                [loading]="loading()"
+                (onClick)="loadProducts()" />
+    </div>
+  </div>
+
+  <!-- Tabla de Productos -->
+  <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+    <p-table [value]="products()" 
+             [loading]="loading()"
+             [paginator]="true" 
+             [rows]="5" 
+             [rowsPerPageOptions]="[5, 10, 20]"
+             responsiveLayout="scroll"
+             styleClass="p-datatable-sm">
+      
+      <ng-template #header pTemplate="header">
+        <tr class="border-b border-slate-800 text-slate-300 text-xs uppercase tracking-wider bg-slate-950/40">
+          <th class="p-4">ID</th>
+          <th class="p-4">Nombre de Producto</th>
+          <th class="p-4">Categoría</th>
+          <th class="p-4">Precio Venta</th>
+          <th class="p-4 text-center">Stock</th>
+          <th class="p-4">Estado</th>
+          <th class="p-4 text-center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-prod pTemplate="body">
+        <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors text-sm text-slate-200">
+          <td class="p-4 font-mono font-medium text-emerald-400">
+            #{{ prod.id }}
+          </td>
+          <td class="p-4 font-semibold text-white">
+            {{ prod.name }}
+          </td>
+          <td class="p-4">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              {{ prod.productTypeName || 'Sin categoría' }}
+            </span>
+          </td>
+          <td class="p-4 font-mono font-bold text-amber-400">
+            {{ prod.price | currency:'COP':'symbol-narrow':'1.0-0' }}
+          </td>
+          <td class="p-4 text-center">
+            <span [class]="prod.stock > 10 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border">
+              {{ prod.stock }} unid.
+            </span>
+          </td>
+          <td class="p-4">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Activo
+            </span>
+          </td>
+          <td class="p-4 text-center">
+            <div class="inline-flex items-center gap-2">
+              <p-button icon="pi pi-pencil" 
+                        [rounded]="true" 
+                        [text]="true" 
+                        severity="info" 
+                        (onClick)="editProduct(prod)" />
+              <p-button icon="pi pi-trash" 
+                        [rounded]="true" 
+                        [text]="true" 
+                        severity="danger" 
+                        (onClick)="deleteProduct(prod)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="p-8 text-center text-slate-500">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            No se encontraron productos en el menú de TazaNorte.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Modal Formulario Reactivo Crear / Editar Producto -->
+<p-dialog [(visible)]="dialogVisible" 
+          [modal]="true" 
+          [header]="isEditing() ? 'Editar Producto' : 'Nuevo Producto de Cafetería'"
+          [style]="{ width: '480px' }"
+          styleClass="p-dialog-custom">
+  
+  <form [formGroup]="productForm" (ngSubmit)="saveProduct()" class="space-y-4 pt-2">
+    
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Nombre del Producto *</label>
+      <input type="text" 
+             pInputText 
+             formControlName="name" 
+             class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm"
+             placeholder="Ej: Café Latte Vainilla" />
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Categoría / Tipo de Producto *</label>
+      <p-select formControlName="productTypeId" 
+                [options]="productTypes()" 
+                optionLabel="name" 
+                optionValue="id" 
+                placeholder="Seleccione una categoría" 
+                styleClass="w-full bg-slate-800 border-slate-700 text-white rounded-lg text-sm" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Precio COP *</label>
+        <input type="number" 
+               pInputText 
+               formControlName="price" 
+               class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm"
+               placeholder="Ej: 7500" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Stock Disponible *</label>
+        <input type="number" 
+               pInputText 
+               formControlName="stock" 
+               class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm"
+               placeholder="Ej: 30" />
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Descripción (Opcional)</label>
+      <input type="text" 
+             pInputText 
+             formControlName="description" 
+             class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm"
+             placeholder="Ej: Espresso doble con leche vaporizada y jarabe" />
+    </div>
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <p-button label="Cancelar" 
+                severity="secondary" 
+                [text]="true" 
+                (onClick)="dialogVisible.set(false)" />
+      <p-button type="submit" 
+                [label]="isEditing() ? 'Actualizar' : 'Guardar Producto'" 
+                icon="pi pi-check" 
+                severity="success" />
+    </div>
+
+  </form>
+</p-dialog>
+

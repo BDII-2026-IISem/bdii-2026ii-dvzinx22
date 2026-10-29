@@ -18,6 +18,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'productos',
+    loadComponent: () =>
+      import('./features/products/product-list/product-list').then((m) => m.ProductListComponent),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

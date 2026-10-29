@@ -5,7 +5,7 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, SharedModule } from 'primeng/api';
 import { ProductTypeService } from '../../../core/services/product-type.service';
 import { ProductType } from '../../../core/models/product-type.model';
 
@@ -16,6 +16,7 @@ import { ProductType } from '../../../core/models/product-type.model';
     CommonModule,
     ReactiveFormsModule,
     TableModule,
+    SharedModule,
     ButtonModule,
     InputTextModule,
     DialogModule,
