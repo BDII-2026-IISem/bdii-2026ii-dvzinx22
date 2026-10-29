@@ -237,6 +237,22 @@ Gestión integral de los productos del negocio:
 | `ISS-05_02_product_form_dropdown.png` | Formulario reactivo integrando relación de tipos de producto. | Editor VS Code |
 | `ISS-05_EVI-01_product_catalogo_gate.png` | **GATE:** Grid / Tabla de productos con relaciones resueltas y badges de disponibilidad renderizados. | Navegador |
 
+#### 1. Implementación del Servicio Reactivo HTTP (ProductService)
+![Servicio ProductService con operaciones hacia Django REST Framework](capturas/ISS-05_01_product_service_http.png)
+
+#### 2. Componente de Catálogo con Formulario Reactivo y Selector de Tipos
+![Componente ProductListComponent con formularios reactivos tipados](capturas/ISS-05_02_product_form_dropdown.png)
+
+#### 3. Catálogo de Menú, Precios COP y Disponibilidad en Navegador (GATE EVI-05-01)
+![Listado interactivo de productos de cafetería TazaNorte en localhost:4200/productos](capturas/ISS-05_EVI-01_product_catalogo_gate.png)
+
+### Criterio de Aceptación (GATE EVI-05-01)
+* Servicio `ProductService` con llamadas a `/api/products/` y `/api/products/available/`.
+* `ProductListComponent` operativo con tabla PrimeNG (`p-table`), formateo monetario COP (`CurrencyPipe`) y badges de stock.
+* Formulario reactivo de creación/edición con selector dinámico de categoría alimentado por `ProductTypeService`.
+* Persistencia y reactividad confirmadas con notificación toast en tiempo real conectada a Django.
+* **Estado:** **APROBADO**
+
 ---
 
 ## ISS-06: Módulo Business - Registro y Transacción de Ventas (Sale)
@@ -287,6 +303,6 @@ Cierre operativo del módulo comercial:
 | **ISS-02** | Núcleo del Frontend: environments, modelos TS, servicios base y layout Shell | `52cf00b` | **COMPLETADO** |
 | **ISS-03** | Módulo Business: CRUD de Clientes con Signals y formularios reactivos tipados | `af55146` | **COMPLETADO** |
 | **ISS-04** | Módulo Business: Catálogo de Tipos de Producto con PrimeNG | `5fe7209` | **COMPLETADO** |
-| **ISS-05** | Módulo Business: Catálogo de Productos con relaciones y disponibilidad | - | Pendiente |
+| **ISS-05** | Módulo Business: Catálogo de Productos con relaciones y disponibilidad | `2ca430c` | **COMPLETADO** |
 | **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | - | Pendiente |
 | **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | - | Pendiente |
