@@ -273,6 +273,22 @@ Pantalla transaccional de punto de venta (POS / Registro de Ventas):
 | `ISS-06_02_pos_venta_interface.png` | Pantalla de punto de venta estructurada con selección de items y resumen reactivo. | Editor VS Code |
 | `ISS-06_EVI-01_venta_registrada_gate.png` | **GATE:** Transacción de venta registrada exitosamente contra Django con notificación toast de confirmación y total devuelto por el servidor. | Navegador |
 
+#### 1. Implementación del Servicio Transaccional de Venta (SaleService)
+![Servicio SaleService con despacho transaccional hacia Django](capturas/ISS-06_01_sale_service_transaccion.png)
+
+#### 2. Punto de Venta Dinámico con Selección de Cliente y Cesta Reactiva (Signals)
+![Componente SaleFormComponent con cesta en memoria y totales automáticos](capturas/ISS-06_02_pos_venta_interface.png)
+
+#### 3. Registro Atómico de Venta y Confirmación de Transacción en Django (GATE EVI-06-01)
+![Confirmación visual de orden procesada y total retornado por el backend](capturas/ISS-06_EVI-01_venta_registrada_gate.png)
+
+### Criterio de Aceptación (GATE EVI-06-01)
+* Servicio `SaleService` con método transaccional conectado a `POST /api/sales/`.
+* `SaleFormComponent` con selector de cliente, catálogo de menú y cesta reactiva gestionada con Angular Signals (`cart`, `subtotal`, `tax`, `total`).
+* Payload atómico `{ clientId, saleDate, discounts, items }` despachado satisfactoriamente.
+* Venta procesada y persistida en base de datos con generación de ID de orden y totales calculados por Django.
+* **Estado:** **APROBADO**
+
 ---
 
 ## ISS-07: Módulo Business - Consulta, Detalle y Anulación de Ventas (Cierre Fase I)
@@ -304,5 +320,5 @@ Cierre operativo del módulo comercial:
 | **ISS-03** | Módulo Business: CRUD de Clientes con Signals y formularios reactivos tipados | `af55146` | **COMPLETADO** |
 | **ISS-04** | Módulo Business: Catálogo de Tipos de Producto con PrimeNG | `5fe7209` | **COMPLETADO** |
 | **ISS-05** | Módulo Business: Catálogo de Productos con relaciones y disponibilidad | `2ca430c` | **COMPLETADO** |
-| **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | - | Pendiente |
+| **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | `b6d80e3` | **COMPLETADO** |
 | **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | - | Pendiente |
