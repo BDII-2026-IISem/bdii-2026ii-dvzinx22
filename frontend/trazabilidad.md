@@ -166,6 +166,24 @@ Implementación del primer módulo de negocio:
 | `ISS-03_03_client_formulario_dialog.png` | Diálogo modal de creación/edición de cliente abierto con campos validados. | Navegador |
 | `ISS-03_EVI-01_client_crud_completo_gate.png` | **GATE:** Tabla de clientes listando datos reales provenientes de la base de datos Django y mensajes toast de éxito. | Navegador |
 
+#### 1. Implementación del Servicio Reactivo HTTP (ClientService)
+![Servicio ClientService con métodos HTTP REST](capturas/ISS-03_01_client_service_http.png)
+
+#### 2. Componente Standalone con Signals y Formularios Reactivos
+![Componente ClientListComponent con reactividad y validaciones](capturas/ISS-03_02_client_component_codigo.png)
+
+#### 3. Formulario Modal Reactivo de Creación y Edición (p-dialog)
+![Modal interactivo de creación de cliente en TazaNorte](capturas/ISS-03_03_client_formulario_dialog.png)
+
+#### 4. CRUD de Clientes Completo y Conectado a Django (GATE EVI-03-01)
+![Tabla p-table con datos reales de Django y notificación Toast](capturas/ISS-03_EVI-01_client_crud_completo_gate.png)
+
+### Criterio de Aceptación (GATE EVI-03-01)
+* Servicio `ClientService` implementado y consumiendo `GET/POST/PUT/DELETE /api/clients/`.
+* `ClientListComponent` con tabla `p-table`, Signals reactivos, validaciones y baja lógica confirmada.
+* Transacción confirmada en consola y render en vivo en `http://localhost:4200/clientes` con datos de Django.
+* **Estado:** **APROBADO**
+
 ---
 
 ## ISS-04: Módulo Business - Tipos de Producto (ProductType)

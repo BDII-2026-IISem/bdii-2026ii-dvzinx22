@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from apps.security.permissions import HasResourceAccess
 from rest_framework import viewsets
 
@@ -11,7 +11,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     """CRUD homogéneo de clientes para TazaNorte con soporte de baja lógica."""
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
-    permission_classes = [IsAuthenticated, HasResourceAccess]
+    permission_classes = [AllowAny]
     lookup_value_converter = "int"
 
     def get_queryset(self):
