@@ -1,0 +1,193 @@
+<div class="space-y-6">
+  <!-- Cabecera del Historial -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Auditoría y Transacciones · Business</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i class="pi pi-receipt text-amber-500"></i>
+        Historial de Ventas (Órdenes)
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400">
+        Consulta cronológica de facturación, detalle de líneas de producto y anulación transaccional en Django.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <p-button label="Nueva Venta (POS)" 
+                icon="pi pi-plus" 
+                severity="warn"
+                (onClick)="newSale()" />
+      <p-button icon="pi pi-refresh" 
+                severity="secondary"
+                [outlined]="true"
+                [loading]="loading()"
+                (onClick)="loadSales()" />
+    </div>
+  </div>
+
+  <!-- Tabla de Ventas -->
+  <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+    <p-table [value]="sales()" 
+             [loading]="loading()"
+             [paginator]="true" 
+             [rows]="5" 
+             [rowsPerPageOptions]="[5, 10, 20]"
+             responsiveLayout="scroll"
+             styleClass="p-datatable-sm">
+      
+      <ng-template #header pTemplate="header">
+        <tr class="border-b border-slate-800 text-slate-300 text-xs uppercase tracking-wider bg-slate-950/40">
+          <th class="p-4">Orden #</th>
+          <th class="p-4">Fecha y Hora</th>
+          <th class="p-4">Cliente Receptor</th>
+          <th class="p-4">Líneas de Menú</th>
+          <th class="p-4">Total Facturado</th>
+          <th class="p-4">Estado</th>
+          <th class="p-4 text-center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-sale pTemplate="body">
+        <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors text-sm text-slate-200">
+          <td class="p-4 font-mono font-bold text-amber-400">
+            #00{{ sale.id }}
+          </td>
+          <td class="p-4 text-xs font-mono text-slate-300">
+            {{ sale.saleDate | date:'dd/MM/yyyy HH:mm' }}
+          </td>
+          <td class="p-4 font-semibold text-white">
+            {{ sale.clientName || 'Cliente General' }}
+          </td>
+          <td class="p-4">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+              {{ sale.lines?.length || 0 }} productos
+            </span>
+          </td>
+          <td class="p-4 font-mono font-bold text-emerald-400">
+            {{ sale.total | currency:'COP':'symbol-narrow':'1.0-0' }}
+          </td>
+          <td class="p-4">
+            @if (sale.status === 'active' || sale.status === 'A') {
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Activo
+              </span>
+            } @else {
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                Anulado
+              </span>
+            }
+          </td>
+          <td class="p-4 text-center">
+            <div class="inline-flex items-center gap-2">
+              <p-button icon="pi pi-eye" 
+                        label="Detalle"
+                        [rounded]="true" 
+                        [text]="true" 
+                        size="small"
+                        severity="info" 
+                        (onClick)="viewDetail(sale)" />
+              <p-button icon="pi pi-ban" 
+                        label="Anular"
+                        [rounded]="true" 
+                        [text]="true" 
+                        size="small"
+                        severity="danger" 
+                        [disabled]="sale.status !== 'active' && sale.status !== 'A'"
+                        (onClick)="voidSale(sale)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="p-8 text-center text-slate-500">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            No se registran ventas realizadas en el sistema.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Modal Detalle de Venta -->
+<p-dialog [(visible)]="detailVisible" 
+          [modal]="true" 
+          [header]="'Detalle de Venta #' + selectedSale()?.id"
+          [style]="{ width: '560px' }"
+          styleClass="p-dialog-custom">
+  
+  @if (selectedSale()) {
+    <div class="space-y-4 pt-2">
+      <!-- Info General -->
+      <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <span class="text-slate-400 block mb-0.5">Cliente:</span>
+          <span class="font-bold text-white text-sm">{{ selectedSale()?.clientName }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block mb-0.5">Fecha y Hora:</span>
+          <span class="font-mono text-slate-200">{{ selectedSale()?.saleDate | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block mb-0.5">Estado Transaccional:</span>
+          <span class="font-bold" [class]="selectedSale()?.status === 'active' ? 'text-emerald-400' : 'text-rose-400'">
+            {{ selectedSale()?.status === 'active' ? 'ACTIVO (Confirmada)' : 'ANULADA' }}
+          </span>
+        </div>
+        <div>
+          <span class="text-slate-400 block mb-0.5">Total Orden:</span>
+          <span class="font-mono font-bold text-amber-400 text-sm">
+            {{ selectedSale()?.total | currency:'COP':'symbol-narrow':'1.0-0' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Tabla de Líneas de Productos Vendidos -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+          Ítems Despachados (Líneas de Venta)
+        </h4>
+        <div class="border border-slate-800 rounded-xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/60 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="p-3">Producto</th>
+                <th class="p-3 text-center">Cant.</th>
+                <th class="p-3 text-right">Precio Unit.</th>
+                <th class="p-3 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 text-slate-200">
+              @for (line of selectedSale()?.lines; track line.id) {
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3 font-semibold text-white">{{ line.productName }}</td>
+                  <td class="p-3 text-center font-mono">{{ line.quantity }}</td>
+                  <td class="p-3 text-right font-mono">{{ line.unitPrice | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                  <td class="p-3 text-right font-mono font-bold text-emerald-400">{{ line.lineTotal | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer con Totales -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+        <p-button label="Cerrar Detalle" 
+                  severity="secondary" 
+                  [text]="true" 
+                  (onClick)="detailVisible.set(false)" />
+        <span class="text-base font-bold font-mono text-amber-400">
+          Total: {{ selectedSale()?.total | currency:'COP':'symbol-narrow':'1.0-0' }}
+        </span>
+      </div>
+
+    </div>
+  }
+</p-dialog>
+

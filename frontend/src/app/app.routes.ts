@@ -30,7 +30,7 @@ export const routes: Routes = [
   {
     path: 'ventas',
     loadComponent: () =>
-      import('./features/sales/sale-form/sale-form').then((m) => m.SaleFormComponent),
+      import('./features/sales/sale-list/sale-list').then((m) => m.SaleListComponent),
   },
   {
     path: '**',
