@@ -1,0 +1,39 @@
+<aside class="w-64 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col min-h-[calc(100vh-4rem-2.5rem)]">
+  <div class="p-4 space-y-2.5">
+    
+    @for (item of menuItems; track item.id) {
+      <div class="rounded-xl border border-slate-800 bg-slate-950/40 overflow-hidden transition-all shadow-sm">
+        
+        <!-- Botón Cabecera de Categoría -->
+        <button (click)="toggleSection(item.id)" 
+                class="w-full px-4 py-3 flex items-center justify-between text-left text-sm font-semibold text-slate-200 hover:text-white hover:bg-slate-800/60 transition-colors">
+          <div class="flex items-center gap-2.5">
+            <i [class]="isExpanded(item.id) ? 'pi pi-chevron-down text-amber-500' : 'pi pi-chevron-right text-slate-400'" 
+               class="text-xs transition-transform duration-200"></i>
+            <i [class]="item.icon" class="text-sm text-amber-400"></i>
+            <span>{{ item.label }}</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-500">
+            {{ item.children.length }}
+          </span>
+        </button>
+
+        <!-- Submenús Desplegables -->
+        @if (isExpanded(item.id)) {
+          <div class="border-t border-slate-800/80 bg-slate-900/60 p-2 space-y-1">
+            @for (sub of item.children; track sub.route) {
+              <a [routerLink]="sub.route" 
+                 routerLinkActive="bg-amber-500/10 text-amber-400 font-medium border-l-2 border-amber-500 pl-3"
+                 class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition-all group">
+                <i [class]="sub.icon" class="text-xs text-slate-400 group-hover:text-amber-400"></i>
+                <span>{{ sub.label }}</span>
+              </a>
+            }
+          </div>
+        }
+
+      </div>
+    }
+
+  </div>
+</aside>
