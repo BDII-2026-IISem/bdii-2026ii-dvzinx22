@@ -11,6 +11,13 @@ export const routes: Routes = [
       import('./features/clients/client-list/client-list').then((m) => m.ClientListComponent),
   },
   {
+    path: 'tipos-producto',
+    loadComponent: () =>
+      import('./features/product-types/product-type-list/product-type-list').then(
+        (m) => m.ProductTypeListComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

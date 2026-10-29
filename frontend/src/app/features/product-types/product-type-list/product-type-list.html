@@ -1,0 +1,136 @@
+<div class="space-y-6">
+  <!-- Cabecera del Módulo -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400">Catálogo Base · Business</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i class="pi pi-tags text-cyan-500"></i>
+        Tipos de Producto (Categorías)
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400">
+        Clasificación de menú de TazaNorte consumiendo /api/product-types/
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <p-button label="Nueva Categoría" 
+                icon="pi pi-plus" 
+                severity="info"
+                (onClick)="openNew()" />
+      <p-button icon="pi pi-refresh" 
+                severity="secondary"
+                [outlined]="true"
+                [loading]="loading()"
+                (onClick)="loadProductTypes()" />
+    </div>
+  </div>
+
+  <!-- Tabla de Tipos -->
+  <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+    <p-table [value]="productTypes()" 
+             [loading]="loading()"
+             [paginator]="true" 
+             [rows]="5" 
+             [rowsPerPageOptions]="[5, 10, 20]"
+             responsiveLayout="scroll"
+             styleClass="p-datatable-sm">
+      
+      <ng-template pTemplate="header">
+        <tr class="border-b border-slate-800 text-slate-300 text-xs uppercase tracking-wider bg-slate-950/40">
+          <th class="p-4">ID</th>
+          <th class="p-4">Nombre de Categoría</th>
+          <th class="p-4">Descripción</th>
+          <th class="p-4">Estado</th>
+          <th class="p-4 text-center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-type>
+        <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors text-sm text-slate-200">
+          <td class="p-4 font-mono font-medium text-cyan-400">
+            #{{ type.id }}
+          </td>
+          <td class="p-4 font-semibold text-white">
+            {{ type.name }}
+          </td>
+          <td class="p-4 text-slate-300 text-xs">
+            {{ type.description || 'Sin descripción' }}
+          </td>
+          <td class="p-4">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              Activo
+            </span>
+          </td>
+          <td class="p-4 text-center">
+            <div class="inline-flex items-center gap-2">
+              <p-button icon="pi pi-pencil" 
+                        [rounded]="true" 
+                        [text]="true" 
+                        severity="info" 
+                        (onClick)="editType(type)" />
+              <p-button icon="pi pi-trash" 
+                        [rounded]="true" 
+                        [text]="true" 
+                        severity="danger" 
+                        (onClick)="deleteType(type)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="p-8 text-center text-slate-500">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            No se encontraron tipos de producto registrados.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Modal Formulario Reactivo Crear / Editar Tipo -->
+<p-dialog [(visible)]="dialogVisible" 
+          [modal]="true" 
+          [header]="isEditing() ? 'Editar Categoría' : 'Nueva Categoría de Menú'"
+          [style]="{ width: '450px' }"
+          styleClass="p-dialog-custom">
+  
+  <form [formGroup]="typeForm" (ngSubmit)="saveType()" class="space-y-4 pt-2">
+    
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Nombre de la Categoría *</label>
+      <input type="text" 
+             pInputText 
+             formControlName="name" 
+             class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm"
+             placeholder="Ej: Repostería Fina" />
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Descripción (Opcional)</label>
+      <input type="text" 
+             pInputText 
+             formControlName="description" 
+             class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm"
+             placeholder="Ej: Postres artesanales y repostería horneada" />
+    </div>
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <p-button label="Cancelar" 
+                severity="secondary" 
+                [text]="true" 
+                (onClick)="dialogVisible.set(false)" />
+      <p-button type="submit" 
+                [label]="isEditing() ? 'Actualizar' : 'Guardar Categoría'" 
+                icon="pi pi-check" 
+                severity="info" />
+    </div>
+
+  </form>
+</p-dialog>
+

@@ -203,6 +203,21 @@ Implementación del catálogo de clasificación de productos:
 | `ISS-04_02_product_type_component.png` | Componente y vista del catálogo de tipos de producto. | Editor VS Code |
 | `ISS-04_EVI-01_product_type_crud_gate.png` | **GATE:** Pantalla de tipos de producto en funcionamiento consumiendo el API de Django. | Navegador |
 
+#### 1. Implementación del Servicio Reactivo HTTP (ProductTypeService)
+![Servicio ProductTypeService con operaciones hacia Django](capturas/ISS-04_01_product_type_service.png)
+
+#### 2. Componente Standalone con Signals y Diálogos de Confirmación
+![Componente ProductTypeListComponent para categorización de menú](capturas/ISS-04_02_product_type_component.png)
+
+#### 3. Catálogo de Categorías y Alta en Navegador (GATE EVI-04-01)
+![Listado y creación interactiva de categorías en localhost:4200/tipos-producto](capturas/ISS-04_EVI-01_product_type_crud_gate.png)
+
+### Criterio de Aceptación (GATE EVI-04-01)
+* Servicio `ProductTypeService` conectado a `/api/product-types/` con manejo tipado.
+* `ProductTypeListComponent` operativo con tabla interactiva, creación y edición por modal.
+* Consumo y persistencia en base de datos de Django validada en navegador.
+* **Estado:** **APROBADO**
+
 ---
 
 ## ISS-05: Módulo Business - Catálogo de Productos (Product)
