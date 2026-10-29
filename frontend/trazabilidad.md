@@ -128,6 +128,24 @@ Creación de la arquitectura base compartida del proyecto:
 | `ISS-02_03_layout_navegacion_shell.png` | Componente Layout / Menubar implementado con rutas principales del negocio. | Editor VS Code |
 | `ISS-02_EVI-01_layout_render_gate.png` | **GATE:** Navegador mostrando la carcasa visual interactiva con el menú de TazaNorte listo. | Navegador (localhost:4200) |
 
+#### 1. Configuración de Variables de Entorno (environment.ts)
+![Variables de entorno con apiUrl y requireAuth false](capturas/ISS-02_01_archivo_environments.png)
+
+#### 2. Espejo de Contratos y Modelos de Dominio en TypeScript
+![Modelos e interfaces TypeScript del dominio de TazaNorte](capturas/ISS-02_02_interfaces_modelos_ts.png)
+
+#### 3. Estructuración del Shell de Navegación (Navbar y Rutas)
+![Componente Navbar con menú de módulos de cafetería](capturas/ISS-02_03_layout_navegacion_shell.png)
+
+#### 4. Verificación del Shell y Dashboard en Navegador (GATE EVI-02-01)
+![Carcasa interactiva de TazaNorte en localhost:4200](capturas/ISS-02_EVI-01_layout_render_gate.png)
+
+### Criterio de Aceptación (GATE EVI-02-01)
+* Módulo `environments/environment.ts` configurado con `apiUrl` apuntando al backend Django y `requireAuth: false`.
+* Contratos e interfaces base (`Client`, `ProductType`, `Product`, `Sale`, `ProductSale`) declarados bajo convención camelCase.
+* Shell de navegación con `NavbarComponent`, feedback con Toasts/ConfirmDialog y dashboard de accesos directos activo en `http://localhost:4200`.
+* **Estado:** **APROBADO**
+
 ---
 
 ## ISS-03: Módulo Business - CRUD de Clientes (Client)
