@@ -45,6 +45,12 @@ export const routes: Routes = [
       import('./features/auth/profile/profile').then((m) => m.ProfileComponent),
   },
   {
+    path: 'seguridad/usuarios',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/security/rbac-admin/rbac-admin').then((m) => m.RbacAdminComponent),
+  },
+  {
     path: 'login',
     canActivate: [guestGuard],
     loadComponent: () =>

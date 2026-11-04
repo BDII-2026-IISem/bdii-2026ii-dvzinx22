@@ -3,3 +3,4 @@ export * from './product-type.model';
 export * from './product.model';
 export * from './sale.model';
 export * from './auth.model';
+export * from './rbac.model';
