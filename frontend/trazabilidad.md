@@ -29,6 +29,10 @@ Registro del avance del frontend de **TazaNorte** (sistema integral de gestión,
 | **ISS-05** | Módulo Business: Catálogo de Menú, precios COP, badges y stock (Product) | **Aprobado** |
 | **ISS-06** | Módulo Business: Punto de Venta (POS), cesta reactiva en memoria y despacho atómico | **Aprobado** |
 | **ISS-07** | Módulo Business: Historial cronológico de órdenes, detalle modal y anulación (Cierre Fase I) | **Aprobado** |
+| **ISS-08** | Fase II Auth: Autenticación JWT, Refresh Tokens, Interceptor y Perfil | **Aprobado** |
+| **ISS-09** | Fase II Auth: Guards y RBAC estructural en la UI (Control de Acceso) | Pendiente |
+| **ISS-10** | Fase II Auth: Administración de Usuarios, Roles, Recursos y Permisos | Pendiente |
+| **ISS-11** | Fase II Auth: Build de Producción, Calidad, Troubleshooting y Cierre 100% | Pendiente |
 
 ---
 
@@ -319,6 +323,32 @@ Módulo de auditoría y cierre del ciclo de negocio: componente `SaleListCompone
 ![ISS-07_EVI-01 Anulación confirmada y cierre de Fase I](capturas/ISS-07_EVI-01_anulacion_y_cierre_gate.png)
 *ISS-07_EVI-01: Venta anulada con badge de estado actualizado y confirmación en tiempo real (GATE EVI-07-01)*
 
+
+### ISS-08: Fase II - Autenticación JWT, Refresh Tokens y Perfil (Auth)
+
+Implementación del flujo de autenticación seguro contra los endpoints de Django REST Framework (`/api/auth/`):
+1. **Modelos tipados:** Contratos `LoginPayload`, `TokenPair` y `UserProfile` en `core/models/auth.model.ts`.
+2. **Servicio Reactivo `AuthService`:** Métodos `login()`, `refreshToken()`, `logout()`, `getProfile()`, lectura de expiración JWT (`exp`) y señales de estado reactivo (`isAuthenticated`, `currentUser`).
+3. **Interceptor HTTP `authInterceptor`:** Inyección automática de la cabecera `Authorization: Bearer <access_token>` en llamadas al API y reintento transparente con rotación de Refresh Token ante respuestas `401 Unauthorized`.
+4. **Pantalla de Inicio de Sesión (`LoginComponent`):** Formulario reactivo con PrimeNG (`pInputText`, `p-password` con toggle), validaciones y manejo de errores.
+5. **Perfil de Usuario (`ProfileComponent`):** Visualización de datos de identidad de la sesión activa y cierre de sesión.
+
+![ISS-08_01 Servicio AuthService con manejo de tokens JWT y signals](capturas/ISS-08_01_auth_service_jwt.png)
+*ISS-08_01: Implementación de AuthService con ciclo de vida de tokens y llamadas a /api/auth/*
+
+![ISS-08_02 Formulario de autenticación con PrimeNG en /login](capturas/ISS-08_02_pantalla_login_interfaz.png)
+*ISS-08_02: Pantalla de Login interactiva con validación y tema oscuro corporativo de TazaNorte*
+
+![ISS-08_EVI-01 Perfil autenticado y sesión JWT activa en navegador](capturas/ISS-08_EVI-01_login_y_perfil_exitoso_gate.png)
+*ISS-08_EVI-01: Identidad autenticada con JWT Bearer y datos de perfil en localhost:4200/perfil (GATE EVI-08-01)*
+
+### Criterio de Aceptación (GATE EVI-08-01)
+* Autenticación exitosa contra `POST /api/auth/login/` con almacenamiento de par de tokens en `localStorage`.
+* Inyección de `Authorization: Bearer` en peticiones HTTP mediante `authInterceptor`.
+* Perfil consultado en `GET /api/auth/profile/` con renderizado reactivo del usuario en el shell.
+* Cierre de sesión (`POST /api/auth/logout/`) con revocación de tokens y redirección a `/login`.
+* **Estado:** **APROBADO**
+
 ---
 
 ## 7. Bitácora Consolidada de Commits Realizados
@@ -335,6 +365,10 @@ Todos los avances cuentan con commits atómicos semánticos (`feat` y `docs`) si
 | **ISS-05** | Módulo Business: Catálogo de Productos con relaciones y disponibilidad | `2ca430c` | **COMPLETADO** |
 | **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | `b6d80e3` | **COMPLETADO** |
 | **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | `c4560b8` | **COMPLETADO** |
+| **ISS-08** | Módulo Auth: Autenticación JWT, Refresh Tokens, Interceptor HTTP y Perfil | `a32a713` | **COMPLETADO** |
+| **ISS-09** | Módulo Auth: Guards funcionales y RBAC estructural en interfaz | - | Pendiente |
+| **ISS-10** | Módulo Auth: Administración de Usuarios, Roles, Recursos y Permisos | - | Pendiente |
+| **ISS-11** | Módulo Auth: Build final de producción, Calidad y Cierre al 100% | - | Pendiente |
 | **Layout** | Adaptación de Layout a barra lateral (Sidebar) colapsable según directriz docente | `c6ec88e` | **COMPLETADO** |
 | **Docs** | Consolidación total de bitácora y registro de evidencias fotográficas | `f0bb657` | **COMPLETADO** |
 
