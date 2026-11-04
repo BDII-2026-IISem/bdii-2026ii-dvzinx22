@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard, guestGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -7,11 +8,13 @@ export const routes: Routes = [
   },
   {
     path: 'clientes',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/clients/client-list/client-list').then((m) => m.ClientListComponent),
   },
   {
     path: 'tipos-producto',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/product-types/product-type-list/product-type-list').then(
         (m) => m.ProductTypeListComponent,
@@ -19,28 +22,33 @@ export const routes: Routes = [
   },
   {
     path: 'productos',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/products/product-list/product-list').then((m) => m.ProductListComponent),
   },
   {
     path: 'ventas/nueva',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/sales/sale-form/sale-form').then((m) => m.SaleFormComponent),
   },
   {
     path: 'ventas',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/sales/sale-list/sale-list').then((m) => m.SaleListComponent),
   },
   {
-    path: 'login',
-    loadComponent: () =>
-      import('./features/auth/login/login').then((m) => m.LoginComponent),
-  },
-  {
     path: 'perfil',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/auth/profile/profile').then((m) => m.ProfileComponent),
+  },
+  {
+    path: 'login',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/login/login').then((m) => m.LoginComponent),
   },
   {
     path: '**',
