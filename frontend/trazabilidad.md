@@ -31,7 +31,7 @@ Registro del avance del frontend de **TazaNorte** (sistema integral de gestión,
 | **ISS-07** | Módulo Business: Historial cronológico de órdenes, detalle modal y anulación (Cierre Fase I) | **Aprobado** |
 | **ISS-08** | Fase II Auth: Autenticación JWT, Refresh Tokens, Interceptor y Perfil | **Aprobado** |
 | **ISS-09** | Fase II Auth: Guards y RBAC estructural en la UI (Control de Acceso) | **Aprobado** |
-| **ISS-10** | Fase II Auth: Administración de Usuarios, Roles, Recursos y Permisos | Pendiente |
+| **ISS-10** | Fase II Auth: Administración de Usuarios, Roles, Recursos y Permisos | **Aprobado** |
 | **ISS-11** | Fase II Auth: Build de Producción, Calidad, Troubleshooting y Cierre 100% | Pendiente |
 
 ---
@@ -373,6 +373,33 @@ Mecanismos de autorización y gobierno de navegación según el estado de sesió
 * Barra lateral adaptada reflejando identidad, rol activo e iconografía de seguridad.
 * **Estado:** **APROBADO**
 
+
+### ISS-10: Fase II - Administración RBAC (Usuarios, Roles, Recursos y Permisos)
+
+Desarrollo del panel integral de seguridad y gobernanza de la matriz RBAC conectado a los endpoints de Django:
+1. **Modelos tipados:** Contratos `User`, `Role`, `Resource`, `RoleUser` y `ResourceRole` en `core/models/rbac.model.ts`.
+2. **Servicio Reactivo `RbacService`:** Implementación en `core/services/rbac.service.ts` con consumo de `/api/users/`, `/api/roles/`, `/api/resources/`, `/api/role-users/` y `/api/resource-roles/`.
+3. **Módulo Administrativo Multi-Pestaña (`RbacAdminComponent`):**
+   - **Pestaña Usuarios:** Tabla PrimeNG con listado de cuentas, estados y modal reactivo para creación de nuevos usuarios con contraseña encriptada.
+   - **Pestaña Roles:** Definición y alta de roles de sistema (`admin`, cajero, barista, auditor).
+   - **Pestaña Recursos HTTP:** Catálogo de los 53 endpoints mapeados en el backend con etiquetas de método coloreadas (`GET` info, `POST` success, `PUT/PATCH` warn, `DELETE` danger).
+
+![ISS-10_01 Servicio RbacService con endpoints de seguridad y matriz](capturas/ISS-10_01_rbac_service_endpoints.png)
+*ISS-10_01: Métodos HTTP de RbacService para usuarios, roles, recursos y asignaciones pivote*
+
+![ISS-10_02 Componente RbacAdminComponent con gestión de pestañas y modales](capturas/ISS-10_02_rbac_component_pestanas.png)
+*ISS-10_02: Lógica TypeScript de RbacAdminComponent con formularios reactivos y Signals*
+
+![ISS-10_EVI-01 Pantalla administrativa RBAC completa en funcionamiento](capturas/ISS-10_EVI-01_administracion_rbac_gate.png)
+*ISS-10_EVI-01: Panel de administración RBAC en localhost:4200/seguridad/usuarios con pestañas activas (GATE EVI-10-01)*
+
+### Criterio de Aceptación (GATE EVI-10-01)
+* Consumo y renderizado exitoso de usuarios desde `/api/users/`.
+* Alta y listado de roles con persistencia validada en `/api/roles/`.
+* Inspección de catálogo de recursos HTTP clasificados por método (`GET`, `POST`, `PUT`, `DELETE`).
+* Flujo de navegación integrado con el menú lateral de seguridad.
+* **Estado:** **APROBADO**
+
 ---
 
 ## 7. Bitácora Consolidada de Commits Realizados
@@ -391,7 +418,7 @@ Todos los avances cuentan con commits atómicos semánticos (`feat` y `docs`) si
 | **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | `c4560b8` | **COMPLETADO** |
 | **ISS-08** | Módulo Auth: Autenticación JWT, Refresh Tokens, Interceptor HTTP y Perfil | `a32a713` | **COMPLETADO** |
 | **ISS-09** | Módulo Auth: Guards funcionales y RBAC estructural en interfaz | `561c497` | **COMPLETADO** |
-| **ISS-10** | Módulo Auth: Administración de Usuarios, Roles, Recursos y Permisos | - | Pendiente |
+| **ISS-10** | Módulo Auth: Administración de Usuarios, Roles, Recursos y Permisos | `50ec771` | **COMPLETADO** |
 | **ISS-11** | Módulo Auth: Build final de producción, Calidad y Cierre al 100% | - | Pendiente |
 | **Layout** | Adaptación de Layout a barra lateral (Sidebar) colapsable según directriz docente | `c6ec88e` | **COMPLETADO** |
 | **Docs** | Consolidación total de bitácora y registro de evidencias fotográficas | `f0bb657` | **COMPLETADO** |
