@@ -30,7 +30,7 @@ Registro del avance del frontend de **TazaNorte** (sistema integral de gestión,
 | **ISS-06** | Módulo Business: Punto de Venta (POS), cesta reactiva en memoria y despacho atómico | **Aprobado** |
 | **ISS-07** | Módulo Business: Historial cronológico de órdenes, detalle modal y anulación (Cierre Fase I) | **Aprobado** |
 | **ISS-08** | Fase II Auth: Autenticación JWT, Refresh Tokens, Interceptor y Perfil | **Aprobado** |
-| **ISS-09** | Fase II Auth: Guards y RBAC estructural en la UI (Control de Acceso) | Pendiente |
+| **ISS-09** | Fase II Auth: Guards y RBAC estructural en la UI (Control de Acceso) | **Aprobado** |
 | **ISS-10** | Fase II Auth: Administración de Usuarios, Roles, Recursos y Permisos | Pendiente |
 | **ISS-11** | Fase II Auth: Build de Producción, Calidad, Troubleshooting y Cierre 100% | Pendiente |
 
@@ -349,6 +349,30 @@ Implementación del flujo de autenticación seguro contra los endpoints de Djang
 * Cierre de sesión (`POST /api/auth/logout/`) con revocación de tokens y redirección a `/login`.
 * **Estado:** **APROBADO**
 
+
+### ISS-09: Fase II - Guards y RBAC Estructural en la UI (Control de Acceso)
+
+Mecanismos de autorización y gobierno de navegación según el estado de sesión y matriz RBAC:
+1. **Guards Funcionales (`authGuard` y `guestGuard`):** Implementados en `core/guards/auth.guard.ts`. Protegen las rutas de negocio (`/clientes`, `/tipos-producto`, `/productos`, `/ventas`, `/perfil`) interceptando accesos no autenticados y redirigiendo hacia `/login?returnUrl=...`. `guestGuard` previene el acceso redundante al login si la sesión ya está activa.
+2. **Directiva Estructural de Permisos (`[appHasRole]`):** En `core/directives/has-role.directive.ts`, controla condicionalmente la inserción o remoción de elementos del DOM según el rol o permisos efectivos de la sesión activa en tiempo real.
+3. **Adaptación del Menú Lateral (`SidebarComponent`):** Renderizado reactivo de la tarjeta de estado del usuario (`Rol: Administrador · admin (RBAC Activo)`), insignia de estado y candados de protección visual.
+
+![ISS-09_01 Implementación de Guards funcionales authGuard y guestGuard](capturas/ISS-09_01_auth_guard_rutas.png)
+*ISS-09_01: Guards en TypeScript para protección de rutas comerciales y control de navegación*
+
+![ISS-09_02 Directiva estructural appHasRole para gobierno de UI](capturas/ISS-09_02_rbac_directiva_permisos.png)
+*ISS-09_02: Directiva personalizada con Signals evaluando roles y permisos en el DOM*
+
+![ISS-09_EVI-01 Menú lateral adaptativo con estado de rol y módulos protegidos](capturas/ISS-09_EVI-01_guard_y_sidebar_rbac_gate.png)
+*ISS-09_EVI-01: Interfaz con RBAC activo y control de acceso funcional en localhost:4200 (GATE EVI-09-01)*
+
+### Criterio de Aceptación (GATE EVI-09-01)
+* `authGuard` funcional protegiendo todas las rutas comerciales del sistema.
+* Redirección controlada al login con parámetro `returnUrl` para usuarios no autenticados.
+* Directiva estructural `[appHasRole]` operativa con Angular Signals.
+* Barra lateral adaptada reflejando identidad, rol activo e iconografía de seguridad.
+* **Estado:** **APROBADO**
+
 ---
 
 ## 7. Bitácora Consolidada de Commits Realizados
@@ -366,7 +390,7 @@ Todos los avances cuentan con commits atómicos semánticos (`feat` y `docs`) si
 | **ISS-06** | Módulo Business: Punto de venta transaccional y registro atómico de ventas | `b6d80e3` | **COMPLETADO** |
 | **ISS-07** | Módulo Business: Consulta, detalle de líneas, anulación de ventas y cierre de Fase I | `c4560b8` | **COMPLETADO** |
 | **ISS-08** | Módulo Auth: Autenticación JWT, Refresh Tokens, Interceptor HTTP y Perfil | `a32a713` | **COMPLETADO** |
-| **ISS-09** | Módulo Auth: Guards funcionales y RBAC estructural en interfaz | - | Pendiente |
+| **ISS-09** | Módulo Auth: Guards funcionales y RBAC estructural en interfaz | `561c497` | **COMPLETADO** |
 | **ISS-10** | Módulo Auth: Administración de Usuarios, Roles, Recursos y Permisos | - | Pendiente |
 | **ISS-11** | Módulo Auth: Build final de producción, Calidad y Cierre al 100% | - | Pendiente |
 | **Layout** | Adaptación de Layout a barra lateral (Sidebar) colapsable según directriz docente | `c6ec88e` | **COMPLETADO** |
