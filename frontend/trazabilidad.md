@@ -8,12 +8,12 @@ Registro del avance del frontend de **TazaNorte** (sistema integral de gestión,
 | **Asignatura** | Bases de Datos II (2026-II) · Universidad de La Guajira |
 | **Estudiante** | Moises David Bolivar Fragozo |
 | **Docente** | Ing. Jaider Quintero M. |
-| **Alcance Fase I** | Arquitectura Frontend Standalone en Angular 22 Zoneless con Tailwind CSS y PrimeNG (tema Aura), layout con encabezado superior, barra lateral colapsable (`SidebarComponent`), dashboard principal, módulos de negocio *Business*: CRUD de Clientes, Catálogo de Categorías/Tipos, Catálogo de Menú de Productos, Punto de Venta Transaccional (POS) con Signals y despacho atómico, e Historial de Ventas con inspección de líneas de pedido y anulación lógica con Django REST Framework. |
-| **Guías de referencia** | [Guía Académica Frontend 2026](https://tecnogua.com/academic/site/frontend2026/) (Requisitos, Bootstrap, Núcleo, Clientes, Tipos, Productos y Ventas) |
+| **Alcance Total (Fase I y Fase II)** | Arquitectura Frontend Standalone en Angular 22 Zoneless con Tailwind CSS y PrimeNG (tema Aura), layout con encabezado superior, barra lateral colapsable (`SidebarComponent`), dashboard principal. Módulos Business: CRUD de Clientes, Catálogo de Categorías/Tipos, Catálogo de Menú, Punto de Venta (POS) reactivo y transaccional, e Historial de Ventas con anulación lógica. Módulos Auth con RBAC: Login JWT con refresh tokens, interceptor HTTP con rotación, guards funcionales (`authGuard`), directiva de permisos, perfil de usuario y administración completa de la matriz RBAC (Usuarios, Roles y Recursos). |
+| **Guías de referencia** | [Guía Académica Frontend 2026](https://tecnogua.com/academic/site/frontend2026/) (Fase I: ISS-00 a ISS-07, Fase II: ISS-08 a ISS-11) |
 | **Backend relacionado** | API REST de TazaNorte (Django 5.2 + Django REST Framework), `http://127.0.0.1:8000/api` |
 | **Repositorio oficial** | `https://github.com/BDII-2026-IISem/bdii-2026ii-dvzinx22.git` |
-| **Capturas** | 28 capturas reales organizadas en `capturas/`, tomadas en Visual Studio Code y en navegador en tiempo real contra la API viva de Django |
-| **Fecha de cierre** | 29 de octubre de 2026 |
+| **Capturas** | 37 capturas reales organizadas en `capturas/`, tomadas en Visual Studio Code y en navegador en tiempo real contra la API viva de Django |
+| **Fecha de cierre** | 3 de noviembre de 2026 |
 
 ---
 
@@ -32,7 +32,7 @@ Registro del avance del frontend de **TazaNorte** (sistema integral de gestión,
 | **ISS-08** | Fase II Auth: Autenticación JWT, Refresh Tokens, Interceptor y Perfil | **Aprobado** |
 | **ISS-09** | Fase II Auth: Guards y RBAC estructural en la UI (Control de Acceso) | **Aprobado** |
 | **ISS-10** | Fase II Auth: Administración de Usuarios, Roles, Recursos y Permisos | **Aprobado** |
-| **ISS-11** | Fase II Auth: Build de Producción, Calidad, Troubleshooting y Cierre 100% | Pendiente |
+| **ISS-11** | Fase II Auth: Build de Producción, Calidad, Troubleshooting y Cierre 100% | **Aprobado** |
 
 ---
 
@@ -400,6 +400,32 @@ Desarrollo del panel integral de seguridad y gobernanza de la matriz RBAC conect
 * Flujo de navegación integrado con el menú lateral de seguridad.
 * **Estado:** **APROBADO**
 
+
+### ISS-11: Fase II - Build Final, Calidad y Cierre al 100%
+
+Consolidación de calidad, optimización de presupuestos y compilación para producción:
+1. **Ajuste de Presupuestos (`angular.json`):** Configuración de umbrales en 1 MB de advertencia y 2 MB de error para el paquete inicial, absorbiendo con holgura los componentes de PrimeNG 22 y utilidades de Tailwind CSS v4.
+2. **Banderas de Entorno (`environment.ts`):** Establecimiento de `production: true`, `requireAuth: true` y `apiUrl: 'http://127.0.0.1:8000/api'` sincronizado con el backend Django.
+3. **Carga Perezosa Universal (`loadComponent`):** Todas las vistas secundarias divididas en chunks asíncronos independientes, optimizando el tiempo de primera carga (*FCP*).
+4. **Compilación Limpia (`npx ng build`):** Generación de bundle de producción en `dist/front-storelab-django` con 0 errores y 0 advertencias.
+5. **Cierre Integral de Trazabilidad:** Cumplimiento total de los 11 issues (ISS-00 a ISS-11) cubriendo tanto la Fase I (Business) como la Fase II (Auth con RBAC).
+
+![ISS-11_01 Banderas de producción y configuración en environment.ts](capturas/ISS-11_01_environment_production_flags.png)
+*ISS-11_01: Variables de entorno de producción con requireAuth activado*
+
+![ISS-11_02 Compilación limpia de producción con ng build sin advertencias](capturas/ISS-11_02_ng_build_produccion_limpio.png)
+*ISS-11_02: Salida de compilación exitosa y generación de bundles en dist/front-storelab-django*
+
+![ISS-11_EVI-01 Suite completa de TazaNorte operativa al 100%](capturas/ISS-11_EVI-01_cierre_fase_ii_suite_completa_gate.png)
+*ISS-11_EVI-01: Cierre definitivo de Fase I y Fase II con aplicación completa en ejecución (GATE EVI-11-01)*
+
+### Criterio de Aceptación (GATE EVI-11-01)
+* Compilación `ng build` exitosa sin errores ni advertencias de presupuesto.
+* Rutas protegidas y autenticación sincronizada con el backend mediante `requireAuth: true`.
+* Suite completa operativa con menú lateral, clientes, categorías, catálogo, punto de venta transaccional, historial, perfil y panel RBAC.
+* Bitácora consolidada al 100% con 34 capturas reales y commits atómicos en GitHub.
+* **Estado:** **APROBADO**
+
 ---
 
 ## 7. Bitácora Consolidada de Commits Realizados
@@ -419,7 +445,7 @@ Todos los avances cuentan con commits atómicos semánticos (`feat` y `docs`) si
 | **ISS-08** | Módulo Auth: Autenticación JWT, Refresh Tokens, Interceptor HTTP y Perfil | `a32a713` | **COMPLETADO** |
 | **ISS-09** | Módulo Auth: Guards funcionales y RBAC estructural en interfaz | `561c497` | **COMPLETADO** |
 | **ISS-10** | Módulo Auth: Administración de Usuarios, Roles, Recursos y Permisos | `50ec771` | **COMPLETADO** |
-| **ISS-11** | Módulo Auth: Build final de producción, Calidad y Cierre al 100% | - | Pendiente |
+| **ISS-11** | Módulo Auth: Build final de producción, Calidad y Cierre al 100% | `15acfd8` | **COMPLETADO** |
 | **Layout** | Adaptación de Layout a barra lateral (Sidebar) colapsable según directriz docente | `c6ec88e` | **COMPLETADO** |
 | **Docs** | Consolidación total de bitácora y registro de evidencias fotográficas | `f0bb657` | **COMPLETADO** |
 
