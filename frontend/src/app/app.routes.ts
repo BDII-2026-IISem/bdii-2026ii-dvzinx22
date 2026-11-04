@@ -33,6 +33,16 @@ export const routes: Routes = [
       import('./features/sales/sale-list/sale-list').then((m) => m.SaleListComponent),
   },
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/login/login').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'perfil',
+    loadComponent: () =>
+      import('./features/auth/profile/profile').then((m) => m.ProfileComponent),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

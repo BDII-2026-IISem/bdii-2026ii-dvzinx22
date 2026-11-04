@@ -1,0 +1,105 @@
+<div class="max-w-3xl mx-auto space-y-6">
+  <!-- Cabecera del Perfil -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-amber-500/20">
+        <i class="pi pi-user"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Sesión Activa · JWT Bearer</span>
+        </div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">
+          Perfil de Usuario
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-400">
+          Identidad y credenciales sincronizadas con Django REST Framework.
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <p-button label="Cerrar Sesión" 
+                icon="pi pi-power-off" 
+                severity="danger" 
+                [outlined]="true"
+                (onClick)="onLogout()" />
+    </div>
+  </div>
+
+  <!-- Tarjeta de Datos de Perfil -->
+  <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl space-y-6">
+    
+    @if (profile()) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        
+        <div class="space-y-1">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nombre de Usuario</span>
+          <div class="text-base font-bold text-white font-mono flex items-center gap-2">
+            <i class="pi pi-at text-amber-500"></i>
+            {{ profile()?.username }}
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Correo Electrónico</span>
+          <div class="text-base font-semibold text-slate-200 flex items-center gap-2">
+            <i class="pi pi-envelope text-cyan-500"></i>
+            {{ profile()?.email || 'Sin correo registrado' }}
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nombres y Apellidos</span>
+          <div class="text-base font-semibold text-slate-200">
+            {{ (profile()?.firstName || '') + ' ' + (profile()?.lastName || '') | titlecase }}
+            @if (!profile()?.firstName && !profile()?.lastName) {
+              <span class="text-slate-500 text-sm italic">Administrador TazaNorte</span>
+            }
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado de Cuenta</span>
+          <div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <i class="pi pi-check-circle mr-1.5 text-xs"></i> Activo
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sección de Seguridad y Token JWT -->
+      <div class="pt-6 border-t border-slate-800 space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i class="pi pi-shield text-amber-500"></i>
+          Seguridad de Sesión y Rotación
+        </h3>
+        
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-xs space-y-2">
+          <div class="flex items-center justify-between text-slate-300">
+            <span>Tipo de Token:</span>
+            <span class="font-mono text-amber-400 font-bold">Bearer JWT (RFC 7519)</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-300">
+            <span>Rotación de Refresh:</span>
+            <span class="font-mono text-emerald-400 font-bold">Habilitada (Familia Única)</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-300">
+            <span>Control de Expiración:</span>
+            <span class="font-mono text-slate-400">Renovación automática vía Interceptor HTTP</span>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="text-center py-12 text-slate-500">
+        <i class="pi pi-spin pi-spinner text-3xl mb-2 block"></i>
+        Cargando datos del perfil autenticado...
+      </div>
+    }
+
+  </div>
+</div>
+
