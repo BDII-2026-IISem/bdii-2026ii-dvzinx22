@@ -48,7 +48,7 @@ export class RbacAdminComponent implements OnInit {
   userForm: FormGroup = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
     firstName: [''],
     lastName: [''],
   });
@@ -122,10 +122,18 @@ export class RbacAdminComponent implements OnInit {
         this.loadUsers();
       },
       error: (err) => {
+        let detail = 'Error al registrar usuario.';
+        if (err?.error?.password) {
+          detail = Array.isArray(err.error.password) ? err.error.password.join(' ') : err.error.password;
+        } else if (err?.error?.username) {
+          detail = Array.isArray(err.error.username) ? err.error.username.join(' ') : 'El nombre de usuario ya existe.';
+        } else if (err?.error?.email) {
+          detail = Array.isArray(err.error.email) ? err.error.email.join(' ') : err.error.email;
+        }
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err?.error?.username ? 'El nombre de usuario ya existe.' : 'Error al registrar usuario.',
+          summary: 'Error de Validación',
+          detail,
         });
       },
     });

@@ -151,8 +151,11 @@
       <input type="email" pInputText formControlName="email" class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm" placeholder="cajero@tazanorte.com" />
     </div>
     <div>
-      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Contraseña Inicial *</label>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Contraseña Inicial * (mínimo 8 caracteres)</label>
       <input type="password" pInputText formControlName="password" class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm" placeholder="••••••••" />
+      @if (userForm.get('password')?.invalid && userForm.get('password')?.touched) {
+        <small class="text-rose-400 text-xs mt-1 block">La contraseña debe tener al menos 8 caracteres.</small>
+      }
     </div>
     <div class="grid grid-cols-2 gap-3">
       <div>
