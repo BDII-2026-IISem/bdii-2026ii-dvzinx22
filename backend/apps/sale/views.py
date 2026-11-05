@@ -11,7 +11,6 @@ from apps.sale.serializers import SaleRegisterSerializer, SaleSerializer
 
 class SaleRegisterAPIView(APIView):
     permission_classes = [IsAuthenticated, HasResourceAccess]
-    permission_classes = [AllowAny]
 
     @extend_schema(
         request=SaleRegisterSerializer,
@@ -44,7 +43,7 @@ class SaleReadViewSet(
         .order_by("-sale_date", "-id")
     )
     serializer_class = SaleSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, HasResourceAccess]
     lookup_value_converter = "int"
 
     def perform_destroy(self, instance):
@@ -53,7 +52,6 @@ class SaleReadViewSet(
 
 class SaleCollectionAPIView(APIView):
     permission_classes = [IsAuthenticated, HasResourceAccess]
-    permission_classes = [AllowAny]
 
     @extend_schema(responses=SaleSerializer(many=True))
     def get(self, request, *args, **kwargs):

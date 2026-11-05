@@ -11,7 +11,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     """CRUD homogéneo de clientes para TazaNorte con soporte de baja lógica."""
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, HasResourceAccess]
     lookup_value_converter = "int"
 
     def get_queryset(self):
