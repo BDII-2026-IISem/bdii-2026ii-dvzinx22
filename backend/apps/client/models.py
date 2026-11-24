@@ -1,6 +1,6 @@
 from django.core.validators import MinLengthValidator
 from django.db import models
-from apps.common.models import StoreLabModel
+from apps.common.models import StoreLabModel, TazaNorteModel
 
 class Client(StoreLabModel):
     name = models.CharField(max_length=150, validators=[MinLengthValidator(2)])

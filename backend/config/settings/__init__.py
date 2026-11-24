@@ -109,6 +109,7 @@ REST_FRAMEWORK = {
         "djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer",
     ],
             "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.security.authentication.TazaNorteJWTAuthentication",
         "apps.security.authentication.StoreLabJWTAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",

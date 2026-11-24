@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from apps.client.models import Client
-from apps.common.models import StoreLabModel
+from apps.common.models import StoreLabModel, TazaNorteModel
 from apps.common.status import RecordStatus
 from apps.product.models import Product
 from apps.sale.managers import SaleManager

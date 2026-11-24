@@ -4,7 +4,7 @@ from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from apps.common.status import RecordStatus
 
 
-class StoreLabJWTAuthentication(JWTAuthentication):
+class TazaNorteJWTAuthentication(JWTAuthentication):
     """
     Autenticación JWT adaptada para TazaNorte.
     Verifica que el usuario permanezca con status=ACTIVE tras validar la firma del token.
@@ -17,3 +17,7 @@ class StoreLabJWTAuthentication(JWTAuthentication):
                 code="user_inactive",
             )
         return user
+
+
+# Alias retrocompatible
+StoreLabJWTAuthentication = TazaNorteJWTAuthentication

@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "front-storelab-django": {
+    "tazanorte": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -55,10 +55,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "front-storelab-django:build:production"
+              "buildTarget": "tazanorte:build:production"
             },
             "development": {
-              "buildTarget": "front-storelab-django:build:development"
+              "buildTarget": "tazanorte:build:development"
             }
           },
           "defaultConfiguration": "development"

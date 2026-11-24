@@ -241,6 +241,12 @@ class SaleTransactionTests(APITestCase):
 
 class SaleReadAndVoidTests(APITestCase):
     def setUp(self):
+        self.user = create_active_user(username="cajero_audit", email="cajero_audit@tazanorte.test")
+        grant(self.user, "GET", "/api/sales/")
+        grant(self.user, "POST", "/api/sales/")
+        grant(self.user, "GET", "/api/sales/1/")
+        grant(self.user, "DELETE", "/api/sales/1/")
+        self.client.force_authenticate(user=self.user)
         self.buyer = Client.objects.create(name="Cliente Mostrador TazaNorte", status=RecordStatus.ACTIVE)
         product_type = ProductType.objects.create(name="Bebidas Calientes", status=RecordStatus.ACTIVE)
         self.coffee = Product.objects.create(

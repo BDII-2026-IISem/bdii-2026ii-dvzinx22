@@ -8,7 +8,12 @@ class TimeStampedModel(models.Model):
     class Meta:
         abstract = True
 
-class StoreLabModel(TimeStampedModel):
+class TazaNorteModel(TimeStampedModel):
+    """
+    Modelo base para todas las entidades del sistema TazaNorte.
+    Incluye timestamps de auditoría, control de estado con baja lógica
+    y restricción portable de base de datos.
+    """
     status = models.CharField(
         max_length=8,
         choices=RecordStatus.choices,
@@ -24,3 +29,6 @@ class StoreLabModel(TimeStampedModel):
             condition=models.Q(status__in=RecordStatus.values),
             name=name,
         )
+
+# Alias retrocompatible para modelos heredados
+StoreLabModel = TazaNorteModel
