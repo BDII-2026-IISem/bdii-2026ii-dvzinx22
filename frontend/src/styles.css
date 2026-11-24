@@ -18,7 +18,7 @@
   --surface-card: #ffffff;
   --surface-border: #e7e0d3;
   --text-color: #1c1917;
-  --text-color-secondary: #57534e;
+  --text-color-secondary: #44403c;
 }
 
 body {
@@ -27,7 +27,70 @@ body {
   font-family: inherit;
 }
 
-/* Tablas PrimeNG en Blanco y Ámbar */
+/* ==========================================================================
+   Corrección de Contraste y Visibilidad de Textos (Evita letras grises lavadas)
+   ========================================================================== */
+
+main, .p-datatable, .p-dialog {
+  color: #1c1917;
+}
+
+/* Textos que eran blancos en tema oscuro ahora son negros/stone-900 en lienzo blanco */
+main .text-white,
+.p-datatable .text-white,
+.p-dialog .text-white {
+  color: #1c1917 !important;
+}
+
+/* Textos grises secundarios que no se veían en fondo blanco: forzar a Stone-700 (#44403c) */
+main .text-slate-200,
+main .text-slate-300,
+main .text-slate-400,
+.p-datatable .text-slate-200,
+.p-datatable .text-slate-300,
+.p-datatable .text-slate-400,
+.p-dialog .text-slate-300,
+.p-dialog .text-slate-400 {
+  color: #44403c !important;
+  font-weight: 500;
+}
+
+main .text-slate-500,
+.p-datatable .text-slate-500 {
+  color: #57534e !important;
+}
+
+/* Excepción: En el sidebar oscuro se preserva el texto blanco/claro */
+aside .text-white,
+aside .text-stone-200,
+aside .text-stone-300 {
+  color: #f5f5f4 !important;
+}
+
+/* Reemplazo de cajas oscuras residuales bg-slate-900 por tarjetas blancas */
+main .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e7e0d3 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+main .bg-slate-950\/40,
+main .bg-slate-950\/60,
+main .bg-slate-800,
+main .bg-slate-800\/40,
+main .bg-slate-800\/60 {
+  background-color: #fdfbf7 !important;
+  border-color: #e7e0d3 !important;
+  color: #1c1917 !important;
+}
+
+main .border-slate-800,
+main .border-slate-800\/60,
+main .border-slate-700 {
+  border-color: #e7e0d3 !important;
+}
+
+/* Tablas PrimeNG en Blanco y Ámbar con Alto Contraste */
 .p-datatable {
   background: #ffffff !important;
   border-radius: 1rem !important;
@@ -36,7 +99,7 @@ body {
 
 .p-datatable .p-datatable-thead > tr > th {
   background: #fdfbf7 !important;
-  color: #57534e !important;
+  color: #44403c !important;
   border-bottom: 1px solid #e7e0d3 !important;
   font-weight: 700 !important;
   font-size: 0.75rem !important;
@@ -46,7 +109,7 @@ body {
 
 .p-datatable .p-datatable-tbody > tr {
   background: #ffffff !important;
-  color: #292524 !important;
+  color: #1c1917 !important;
   border-bottom: 1px solid #f3ede2 !important;
   transition: background-color 0.15s ease !important;
 }
@@ -58,12 +121,13 @@ body {
 .p-datatable .p-datatable-tbody > tr > td {
   padding: 0.85rem 1rem !important;
   font-size: 0.8125rem !important;
+  color: #1c1917 !important;
 }
 
 .p-paginator {
   background: #ffffff !important;
   border-top: 1px solid #e7e0d3 !important;
-  color: #57534e !important;
+  color: #44403c !important;
   padding: 0.75rem !important;
   border-bottom-left-radius: 1rem !important;
   border-bottom-right-radius: 1rem !important;

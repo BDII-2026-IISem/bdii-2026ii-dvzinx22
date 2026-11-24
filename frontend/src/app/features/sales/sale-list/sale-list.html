@@ -1,116 +1,113 @@
 <div class="space-y-6">
   <!-- Cabecera del Historial -->
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-2">
     <div>
-      <div class="flex items-center gap-2 mb-1">
-        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Auditoría y Transacciones · Business</span>
-      </div>
-      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-        <i class="pi pi-receipt text-amber-500"></i>
-        Historial de Ventas (Órdenes)
+      <h1 class="text-3xl font-extrabold text-stone-900 tracking-tight font-serif flex items-center gap-2">
+        <i class="pi pi-receipt text-amber-600"></i>
+        <span>Historial de Ventas (Órdenes)</span>
       </h1>
-      <p class="text-xs sm:text-sm text-slate-400">
+      <p class="text-xs sm:text-sm text-stone-600 mt-1">
         Consulta cronológica de facturación, detalle de líneas de producto y anulación transaccional en Django.
       </p>
     </div>
 
     <div class="flex items-center gap-3">
-      <p-button label="Nueva Venta (POS)" 
-                icon="pi pi-plus" 
-                severity="warn"
-                (onClick)="newSale()" />
-      <p-button icon="pi pi-refresh" 
-                severity="secondary"
-                [outlined]="true"
-                [loading]="loading()"
-                (onClick)="loadSales()" />
+      <button (click)="newSale()"
+              class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02]">
+        <i class="pi pi-plus text-xs"></i>
+        <span>Nueva Venta (POS)</span>
+      </button>
+      <button (click)="loadSales()"
+              title="Refrescar"
+              class="w-8 h-8 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 flex items-center justify-center cursor-pointer shadow-xs">
+        <i class="pi pi-refresh text-xs" [class.pi-spin]="loading()"></i>
+      </button>
     </div>
   </div>
 
-  <!-- Tabla de Ventas -->
-  <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
-    <p-table [value]="sales()" 
-             [loading]="loading()"
-             [paginator]="true" 
-             [rows]="5" 
-             [rowsPerPageOptions]="[5, 10, 20]"
-             responsiveLayout="scroll"
-             styleClass="p-datatable-sm">
-      
-      <ng-template #header pTemplate="header">
-        <tr class="border-b border-slate-800 text-slate-300 text-xs uppercase tracking-wider bg-slate-950/40">
-          <th class="p-4">Orden #</th>
-          <th class="p-4">Fecha y Hora</th>
-          <th class="p-4">Cliente Receptor</th>
-          <th class="p-4">Líneas de Menú</th>
-          <th class="p-4">Total Facturado</th>
-          <th class="p-4">Estado</th>
-          <th class="p-4 text-center">Acciones</th>
-        </tr>
-      </ng-template>
+  <!-- Tarjeta Blanca de Ventas -->
+  <div class="bg-white rounded-2xl border border-stone-200/90 p-5 shadow-sm space-y-4">
+    <div class="overflow-x-auto border border-stone-200 rounded-xl">
+      <p-table [value]="sales()" 
+               [loading]="loading()"
+               [paginator]="true" 
+               [rows]="10" 
+               [rowsPerPageOptions]="[5, 10, 20]"
+               responsiveLayout="scroll"
+               styleClass="p-datatable-sm">
+        
+        <ng-template #header pTemplate="header">
+          <tr class="border-b border-stone-200 text-stone-700 text-xs uppercase bg-[#FDFBF7]">
+            <th class="p-3 font-bold">Orden #</th>
+            <th class="p-3 font-bold">Fecha y Hora</th>
+            <th class="p-3 font-bold">Cliente Receptor</th>
+            <th class="p-3 font-bold">Líneas de Menú</th>
+            <th class="p-3 font-bold">Total Facturado</th>
+            <th class="p-3 font-bold text-center">Estado</th>
+            <th class="p-3 font-bold text-center">Acciones</th>
+          </tr>
+        </ng-template>
 
-      <ng-template #body let-sale pTemplate="body">
-        <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors text-sm text-slate-200">
-          <td class="p-4 font-mono font-bold text-amber-400">
-            #00{{ sale.id }}
-          </td>
-          <td class="p-4 text-xs font-mono text-slate-300">
-            {{ sale.saleDate | date:'dd/MM/yyyy HH:mm' }}
-          </td>
-          <td class="p-4 font-semibold text-white">
-            {{ sale.clientName || 'Cliente General' }}
-          </td>
-          <td class="p-4">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-              {{ sale.lines?.length || 0 }} productos
-            </span>
-          </td>
-          <td class="p-4 font-mono font-bold text-emerald-400">
-            {{ sale.total | currency:'COP':'symbol-narrow':'1.0-0' }}
-          </td>
-          <td class="p-4">
-            @if (sale.status === 'active' || sale.status === 'A') {
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Activo
+        <ng-template #body let-sale pTemplate="body">
+          <tr class="border-b border-stone-100 hover:bg-amber-50/25 transition-colors text-xs text-stone-800">
+            <td class="p-3 font-mono font-bold text-amber-800">
+              #00{{ sale.id }}
+            </td>
+            <td class="p-3 text-xs font-mono text-stone-700">
+              {{ sale.saleDate | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+            <td class="p-3 font-bold text-stone-900">
+              {{ sale.clientName || 'Cliente General' }}
+            </td>
+            <td class="p-3">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-stone-100 text-stone-800 border border-stone-200">
+                {{ sale.lines?.length || 0 }} productos
               </span>
-            } @else {
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                Anulado
-              </span>
-            }
-          </td>
-          <td class="p-4 text-center">
-            <div class="inline-flex items-center gap-2">
-              <p-button icon="pi pi-eye" 
-                        label="Detalle"
-                        [rounded]="true" 
-                        [text]="true" 
-                        size="small"
-                        severity="info" 
-                        (onClick)="viewDetail(sale)" />
-              <p-button icon="pi pi-ban" 
-                        label="Anular"
-                        [rounded]="true" 
-                        [text]="true" 
-                        size="small"
-                        severity="danger" 
+            </td>
+            <td class="p-3 font-mono font-bold text-stone-900 text-sm">
+              {{ sale.total | currency:'COP':'symbol-narrow':'1.0-0' }}
+            </td>
+            <td class="p-3 text-center">
+              @if (sale.status === 'active' || sale.status === 'A') {
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Activo
+                </span>
+              } @else {
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                  Anulado
+                </span>
+              }
+            </td>
+            <td class="p-3 text-center">
+              <div class="inline-flex items-center justify-center gap-2">
+                <button (click)="viewDetail(sale)" 
+                        title="Ver detalle"
+                        class="px-2.5 py-1 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer">
+                  <i class="pi pi-eye text-[11px]"></i>
+                  <span>Detalle</span>
+                </button>
+                <button (click)="voidSale(sale)" 
                         [disabled]="sale.status !== 'active' && sale.status !== 'A'"
-                        (onClick)="voidSale(sale)" />
-            </div>
-          </td>
-        </tr>
-      </ng-template>
+                        title="Anular venta"
+                        class="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium flex items-center gap-1 cursor-pointer disabled:opacity-40">
+                  <i class="pi pi-ban text-[11px]"></i>
+                  <span>Anular</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
 
-      <ng-template #emptymessage pTemplate="emptymessage">
-        <tr>
-          <td colspan="7" class="p-8 text-center text-slate-500">
-            <i class="pi pi-inbox text-3xl mb-2 block"></i>
-            No se registran ventas realizadas en el sistema.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+        <ng-template #emptymessage pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="p-8 text-center text-stone-400 text-xs">
+              <i class="pi pi-inbox text-3xl mb-2 block text-stone-300"></i>
+              No se registran ventas realizadas en el sistema.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
   </div>
 </div>
 
@@ -118,30 +115,29 @@
 <p-dialog [(visible)]="detailVisible" 
           [modal]="true" 
           [header]="'Detalle de Venta #' + selectedSale()?.id"
-          [style]="{ width: '560px' }"
-          styleClass="p-dialog-custom">
+          [style]="{ width: '560px' }">
   
   @if (selectedSale()) {
     <div class="space-y-4 pt-2">
       <!-- Info General -->
-      <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 grid grid-cols-2 gap-3 text-xs">
+      <div class="bg-stone-50 p-4 rounded-xl border border-stone-200 grid grid-cols-2 gap-3 text-xs">
         <div>
-          <span class="text-slate-400 block mb-0.5">Cliente:</span>
-          <span class="font-bold text-white text-sm">{{ selectedSale()?.clientName }}</span>
+          <span class="text-stone-500 block mb-0.5 font-medium">Cliente:</span>
+          <span class="font-bold text-stone-900 text-sm">{{ selectedSale()?.clientName }}</span>
         </div>
         <div>
-          <span class="text-slate-400 block mb-0.5">Fecha y Hora:</span>
-          <span class="font-mono text-slate-200">{{ selectedSale()?.saleDate | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+          <span class="text-stone-500 block mb-0.5 font-medium">Fecha y Hora:</span>
+          <span class="font-mono text-stone-800">{{ selectedSale()?.saleDate | date:'dd/MM/yyyy HH:mm:ss' }}</span>
         </div>
         <div>
-          <span class="text-slate-400 block mb-0.5">Estado Transaccional:</span>
-          <span class="font-bold" [class]="selectedSale()?.status === 'active' ? 'text-emerald-400' : 'text-rose-400'">
+          <span class="text-stone-500 block mb-0.5 font-medium">Estado Transaccional:</span>
+          <span class="font-bold" [class]="selectedSale()?.status === 'active' ? 'text-emerald-700' : 'text-rose-700'">
             {{ selectedSale()?.status === 'active' ? 'ACTIVO (Confirmada)' : 'ANULADA' }}
           </span>
         </div>
         <div>
-          <span class="text-slate-400 block mb-0.5">Total Orden:</span>
-          <span class="font-mono font-bold text-amber-400 text-sm">
+          <span class="text-stone-500 block mb-0.5 font-medium">Total Orden:</span>
+          <span class="font-mono font-bold text-stone-900 text-sm">
             {{ selectedSale()?.total | currency:'COP':'symbol-narrow':'1.0-0' }}
           </span>
         </div>
@@ -149,26 +145,28 @@
 
       <!-- Tabla de Líneas de Productos Vendidos -->
       <div>
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">
           Ítems Despachados (Líneas de Venta)
         </h4>
-        <div class="border border-slate-800 rounded-xl overflow-hidden">
+        <div class="border border-stone-200 rounded-xl overflow-hidden">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-950/60 text-slate-400 border-b border-slate-800">
+            <thead class="bg-[#FDFBF7] text-stone-700 border-b border-stone-200">
               <tr>
-                <th class="p-3">Producto</th>
-                <th class="p-3 text-center">Cant.</th>
-                <th class="p-3 text-right">Precio Unit.</th>
-                <th class="p-3 text-right">Subtotal</th>
+                <th class="p-3 font-bold">Producto</th>
+                <th class="p-3 text-center font-bold">Cant.</th>
+                <th class="p-3 text-right font-bold">Precio Unit.</th>
+                <th class="p-3 text-right font-bold">Subtotal</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800/60 text-slate-200">
+            <tbody class="divide-y divide-stone-100 text-stone-800">
               @for (line of selectedSale()?.lines; track line.id) {
-                <tr class="hover:bg-slate-800/40">
-                  <td class="p-3 font-semibold text-white">{{ line.productName }}</td>
+                <tr class="hover:bg-amber-50/25">
+                  <td class="p-3 font-bold text-stone-900">{{ line.productName }}</td>
                   <td class="p-3 text-center font-mono">{{ line.quantity }}</td>
                   <td class="p-3 text-right font-mono">{{ line.unitPrice | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
-                  <td class="p-3 text-right font-mono font-bold text-emerald-400">{{ line.lineTotal | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                  <td class="p-3 text-right font-mono font-bold text-stone-900">
+                    {{ (line.subtotal || line.lineTotal || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </td>
                 </tr>
               }
             </tbody>
@@ -176,18 +174,12 @@
         </div>
       </div>
 
-      <!-- Footer con Totales -->
-      <div class="flex items-center justify-between pt-3 border-t border-slate-800">
-        <p-button label="Cerrar Detalle" 
-                  severity="secondary" 
-                  [text]="true" 
-                  (onClick)="detailVisible.set(false)" />
-        <span class="text-base font-bold font-mono text-amber-400">
-          Total: {{ selectedSale()?.total | currency:'COP':'symbol-narrow':'1.0-0' }}
-        </span>
+      <div class="flex items-center justify-end pt-3 border-t border-stone-100">
+        <button (click)="detailVisible.set(false)" 
+                class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold cursor-pointer">
+          Cerrar Detalle
+        </button>
       </div>
-
     </div>
   }
 </p-dialog>
-
