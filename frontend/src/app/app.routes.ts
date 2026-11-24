@@ -51,6 +51,36 @@ export const routes: Routes = [
       import('./features/security/rbac-admin/rbac-admin').then((m) => m.RbacAdminComponent),
   },
   {
+    path: 'seguridad/roles',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/security/roles/roles').then((m) => m.RolesComponent),
+  },
+  {
+    path: 'seguridad/recursos',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/security/recursos/recursos').then((m) => m.RecursosComponent),
+  },
+  {
+    path: 'seguridad/asignaciones',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/security/asignaciones/asignaciones').then((m) => m.AsignacionesComponent),
+  },
+  {
+    path: 'seguridad/concesiones',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/security/concesiones/concesiones').then((m) => m.ConcesionesComponent),
+  },
+  {
+    path: 'seguridad/matriz-permisos',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/security/matriz-permisos/matriz-permisos').then((m) => m.MatrizPermisosComponent),
+  },
+  {
     path: 'login',
     canActivate: [guestGuard],
     loadComponent: () =>

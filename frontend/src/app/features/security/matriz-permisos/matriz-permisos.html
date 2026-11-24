@@ -1,0 +1,243 @@
+<div class="space-y-6">
+  <!-- Cabecera Principal -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Seguridad · Matriz RBAC</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i class="pi pi-th-large text-amber-500"></i>
+        Matriz de permisos
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400">
+        Marca qué puede hacer cada rol sobre cada tabla. Cada casilla crea, reactiva o retira concesiones.
+      </p>
+    </div>
+
+    <div>
+      <span class="text-xs font-mono text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+        {{ totalGranted() }} casillas concedidas
+      </span>
+    </div>
+  </div>
+
+  <!-- Contenedor de 2 Columnas -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- Columna Izquierda: Lista de Roles -->
+    <div class="lg:col-span-3 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
+      <h2 class="text-sm font-bold text-white flex items-center gap-2">
+        <i class="pi pi-id-card text-amber-400"></i>
+        Roles
+      </h2>
+
+      <!-- Buscador de roles -->
+      <div class="relative w-full">
+        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input type="text"
+               [value]="roleSearch()"
+               (input)="roleSearch.set($any($event.target).value)"
+               placeholder="Buscar rol..."
+               class="w-full pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-500" />
+      </div>
+
+      <!-- Lista seleccionable de roles -->
+      <div class="space-y-1">
+        @for (role of filteredRoles(); track role.id) {
+          <button (click)="selectRole(role)"
+                  [class]="selectedRole()?.id === role.id ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 font-semibold' : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border-transparent'"
+                  class="w-full px-3 py-2.5 rounded-xl text-xs text-left border transition-all flex items-center justify-between group">
+            <span class="capitalize">{{ role.name }}</span>
+            <i class="pi pi-chevron-right text-[10px] text-slate-500 group-hover:text-amber-400 transition-colors"
+               [class.text-amber-400]="selectedRole()?.id === role.id"></i>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Columna Derecha: Matriz Interactiva -->
+    <div class="lg:col-span-9 bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl space-y-6">
+      
+      <!-- Barra Superior de Acciones de la Matriz -->
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            Permisos de «{{ selectedRole()?.name || 'Seleccione un rol' }}»
+          </h2>
+          <p class="text-xs text-slate-400">
+            {{ selectedRole()?.description || ('Rol ' + (selectedRole()?.name || '') + ' sembrado por seed_rbac') }}
+          </p>
+        </div>
+
+        <!-- Botones de Acción Masiva -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button (click)="markAll()"
+                  class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors">
+            <i class="pi pi-check-square text-xs text-emerald-400"></i>
+            <span>Marcar todo</span>
+          </button>
+          <button (click)="unmarkAll()"
+                  class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors">
+            <i class="pi pi-stop text-xs text-rose-400"></i>
+            <span>Desmarcar todo</span>
+          </button>
+          <button (click)="discard()"
+                  class="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors">
+            <i class="pi pi-undo text-xs"></i>
+            <span>Descartar</span>
+          </button>
+          <button (click)="saveChanges()"
+                  [disabled]="saving()"
+                  class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md">
+            <i [class]="saving() ? 'pi pi-spin pi-spinner' : 'pi pi-save'" class="text-xs"></i>
+            <span>{{ saving() ? 'Guardando...' : 'Guardar cambios' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Buscador de Tablas / Rutas -->
+      <div class="relative w-full max-w-sm">
+        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input type="text"
+               [value]="tableSearch()"
+               (input)="tableSearch.set($any($event.target).value)"
+               placeholder="Buscar tabla o ruta..."
+               class="w-full pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-500" />
+      </div>
+
+      <!-- Tabla de Matriz -->
+      <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] text-slate-300 uppercase tracking-wider">
+              <th class="p-3 font-semibold text-slate-400">Tabla</th>
+              
+              <!-- Columna Crear (POST) -->
+              <th class="p-3 text-center">
+                <div>Crear</div>
+                <div class="text-[9px] font-mono text-emerald-400 font-normal">POST</div>
+                <div class="flex items-center justify-center gap-1.5 text-[9px] font-normal normal-case text-slate-400 pt-0.5">
+                  <button (click)="toggleColumn('POST', true)" class="hover:text-amber-400">todo</button>
+                  <span>·</span>
+                  <button (click)="toggleColumn('POST', false)" class="hover:text-rose-400">nada</button>
+                </div>
+              </th>
+
+              <!-- Columna Leer (GET) -->
+              <th class="p-3 text-center">
+                <div>Leer</div>
+                <div class="text-[9px] font-mono text-blue-400 font-normal">GET</div>
+                <div class="flex items-center justify-center gap-1.5 text-[9px] font-normal normal-case text-slate-400 pt-0.5">
+                  <button (click)="toggleColumn('GET', true)" class="hover:text-amber-400">todo</button>
+                  <span>·</span>
+                  <button (click)="toggleColumn('GET', false)" class="hover:text-rose-400">nada</button>
+                </div>
+              </th>
+
+              <!-- Columna Actualizar (PUT - PATCH) -->
+              <th class="p-3 text-center">
+                <div>Actualizar</div>
+                <div class="text-[9px] font-mono text-amber-400 font-normal">PUT · PATCH</div>
+                <div class="flex items-center justify-center gap-1.5 text-[9px] font-normal normal-case text-slate-400 pt-0.5">
+                  <button (click)="toggleColumn('PUT', true)" class="hover:text-amber-400">todo</button>
+                  <span>·</span>
+                  <button (click)="toggleColumn('PUT', false)" class="hover:text-rose-400">nada</button>
+                </div>
+              </th>
+
+              <!-- Columna Eliminar (DELETE) -->
+              <th class="p-3 text-center">
+                <div>Eliminar</div>
+                <div class="text-[9px] font-mono text-rose-400 font-normal">DELETE</div>
+                <div class="flex items-center justify-center gap-1.5 text-[9px] font-normal normal-case text-slate-400 pt-0.5">
+                  <button (click)="toggleColumn('DELETE', true)" class="hover:text-amber-400">todo</button>
+                  <span>·</span>
+                  <button (click)="toggleColumn('DELETE', false)" class="hover:text-rose-400">nada</button>
+                </div>
+              </th>
+
+              <!-- Acciones de Fila -->
+              <th class="p-3 text-center font-normal text-slate-400">Fila</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 text-xs">
+            @for (row of matrixRows(); track row.key) {
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                
+                <!-- Nombre y ruta de la tabla -->
+                <td class="p-3">
+                  <div class="font-semibold text-slate-200">{{ row.label }}</div>
+                  <div class="text-[10px] font-mono text-slate-500">{{ row.route }}</div>
+                </td>
+
+                <!-- Casilla POST -->
+                <td class="p-3 text-center">
+                  @if (row.postResource) {
+                    <input type="checkbox"
+                           [checked]="isGranted(row.postResource.id)"
+                           (change)="togglePermission(row.postResource.id)"
+                           class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500" />
+                  } @else {
+                    <span class="text-slate-600">—</span>
+                  }
+                </td>
+
+                <!-- Casilla GET -->
+                <td class="p-3 text-center">
+                  @if (row.getResource) {
+                    <input type="checkbox"
+                           [checked]="isGranted(row.getResource.id)"
+                           (change)="togglePermission(row.getResource.id)"
+                           class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500" />
+                  } @else {
+                    <span class="text-slate-600">—</span>
+                  }
+                </td>
+
+                <!-- Casilla PUT/PATCH -->
+                <td class="p-3 text-center">
+                  @if (row.putResource) {
+                    <input type="checkbox"
+                           [checked]="isGranted(row.putResource.id)"
+                           (change)="togglePermission(row.putResource.id)"
+                           class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500" />
+                  } @else {
+                    <span class="text-slate-600">—</span>
+                  }
+                </td>
+
+                <!-- Casilla DELETE -->
+                <td class="p-3 text-center">
+                  @if (row.deleteResource) {
+                    <input type="checkbox"
+                           [checked]="isGranted(row.deleteResource.id)"
+                           (change)="togglePermission(row.deleteResource.id)"
+                           class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500" />
+                  } @else {
+                    <span class="text-slate-600">—</span>
+                  }
+                </td>
+
+                <!-- Acciones Rápidas de Fila -->
+                <td class="p-3 text-center">
+                  <div class="flex items-center justify-center gap-2">
+                    <button (click)="toggleRow(row, true)" title="Conceder toda la fila" class="text-slate-500 hover:text-emerald-400 transition-colors">
+                      <i class="pi pi-check text-[11px]"></i>
+                    </button>
+                    <button (click)="toggleRow(row, false)" title="Retirar toda la fila" class="text-slate-500 hover:text-rose-400 transition-colors">
+                      <i class="pi pi-times text-[11px]"></i>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</div>

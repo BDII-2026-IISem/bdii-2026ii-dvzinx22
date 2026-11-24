@@ -60,8 +60,12 @@ export class SidebarComponent {
       icon: 'pi pi-shield',
       requiresAuth: true,
       children: [
-        { label: 'Mi Perfil JWT', route: '/perfil', icon: 'pi pi-id-card' },
-        { label: 'Gestión RBAC (ISS-10)', route: '/seguridad/usuarios', icon: 'pi pi-lock' },
+        { label: 'Usuarios', route: '/seguridad/usuarios', icon: 'pi pi-users' },
+        { label: 'Roles', route: '/seguridad/roles', icon: 'pi pi-id-card' },
+        { label: 'Recursos', route: '/seguridad/recursos', icon: 'pi pi-sitemap' },
+        { label: 'Asignaciones', route: '/seguridad/asignaciones', icon: 'pi pi-link' },
+        { label: 'Concesiones', route: '/seguridad/concesiones', icon: 'pi pi-key' },
+        { label: 'Matriz de permisos', route: '/seguridad/matriz-permisos', icon: 'pi pi-th-large' },
       ],
     },
   ];

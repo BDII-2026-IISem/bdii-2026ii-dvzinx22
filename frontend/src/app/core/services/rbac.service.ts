@@ -70,6 +70,14 @@ export class RbacService {
     });
   }
 
+  updateRoleUser(id: number, payload: Partial<RoleUser>): Observable<RoleUser> {
+    return this.http.patch<RoleUser>(`${this.apiUrl}/role-users/${id}/`, payload);
+  }
+
+  deleteRoleUser(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/role-users/${id}/`);
+  }
+
   // Concesiones Resource-Role
   getResourceRoles(): Observable<ResourceRole[]> {
     return this.http.get<ResourceRole[]>(`${this.apiUrl}/resource-roles/`);
@@ -80,6 +88,14 @@ export class RbacService {
       ...payload,
       status: payload.status || 'active',
     });
+  }
+
+  updateResourceRole(id: number, payload: Partial<ResourceRole>): Observable<ResourceRole> {
+    return this.http.patch<ResourceRole>(`${this.apiUrl}/resource-roles/${id}/`, payload);
+  }
+
+  deleteResourceRole(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/resource-roles/${id}/`);
   }
 }
 

@@ -33,6 +33,8 @@ export interface RoleUser {
   id?: number;
   user: number;
   role: number;
+  username?: string;
+  roleName?: string;
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -42,6 +44,10 @@ export interface ResourceRole {
   id?: number;
   role: number;
   resource: number;
+  roleName?: string;
+  resourceRoute?: string;
+  resourceMethod?: string;
+  resourceName?: string;
   status: string;
   createdAt?: string;
   updatedAt?: string;

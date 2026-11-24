@@ -1,0 +1,106 @@
+<div class="space-y-6">
+  <!-- Cabecera -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Seguridad · Matriz RBAC</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i class="pi pi-id-card text-amber-500"></i>
+        Roles
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400">
+        Agrupan concesiones. La baja es lógica.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-mono text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+        {{ filteredRoles().length }} roles
+      </span>
+      <p-button label="Nuevo rol" icon="pi pi-plus" severity="warn" (onClick)="openNewRole()" />
+      <p-button icon="pi pi-refresh" severity="secondary" [outlined]="true" [loading]="loading()" (onClick)="loadRoles()" />
+    </div>
+  </div>
+
+  <!-- Barra de Búsqueda -->
+  <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+    <div class="relative w-full max-w-md">
+      <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+      <input type="text"
+             [value]="searchTerm()"
+             (input)="searchTerm.set($any($event.target).value)"
+             placeholder="Buscar por nombre o descripción..."
+             class="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-500" />
+    </div>
+  </div>
+
+  <!-- Tabla de Roles -->
+  <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+    <p-table [value]="filteredRoles()" [loading]="loading()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+      <ng-template #header pTemplate="header">
+        <tr class="border-b border-slate-800 text-slate-300 text-xs uppercase bg-slate-950/40">
+          <th class="p-4">Rol</th>
+          <th class="p-4">Descripción</th>
+          <th class="p-4">Estado</th>
+          <th class="p-4 text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body pTemplate="body" let-role>
+        <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors text-xs text-slate-300">
+          <td class="p-4 font-semibold text-white flex items-center gap-2">
+            <i class="pi pi-id-card text-amber-400/80"></i>
+            <span>{{ role.name }}</span>
+            <span class="text-[10px] text-slate-500 font-mono">#{{ role.id }}</span>
+          </td>
+          <td class="p-4 text-slate-400">{{ role.description || 'Sin descripción' }}</td>
+          <td class="p-4">
+            <span [class]="role.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'"
+                  class="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border inline-block">
+              {{ role.status === 'active' ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td class="p-4 text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button (click)="editRole(role)" title="Editar Rol" class="p-1.5 text-slate-400 hover:text-amber-400 transition-colors">
+                <i class="pi pi-pencil text-xs"></i>
+              </button>
+              <button (click)="toggleRoleStatus(role)"
+                      [title]="role.status === 'active' ? 'Retirar (Baja Lógica)' : 'Reactivar'"
+                      [class]="role.status === 'active' ? 'text-slate-400 hover:text-rose-400' : 'text-slate-400 hover:text-emerald-400'"
+                      class="p-1.5 transition-colors">
+                <i [class]="role.status === 'active' ? 'pi pi-ban' : 'pi pi-check-circle'" class="text-xs"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="p-6 text-center text-slate-500 text-xs">
+            No se encontraron roles registrados.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Modal Rol -->
+<p-dialog [(visible)]="roleDialog" [modal]="true" [header]="isEditing() ? 'Editar Rol' : 'Nuevo Rol del Sistema'" [style]="{ width: '420px' }" styleClass="dark-dialog">
+  <form [formGroup]="roleForm" (ngSubmit)="saveRole()" class="space-y-4 pt-2">
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Nombre del Rol *</label>
+      <input type="text" pInputText formControlName="name" class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm" placeholder="Ej: cajero_turno" />
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Descripción</label>
+      <textarea pInputTextarea formControlName="description" rows="3" class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm" placeholder="Detalle de funciones del rol..."></textarea>
+    </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" [outlined]="true" severity="secondary" (onClick)="roleDialog.set(false)" />
+      <p-button [label]="isEditing() ? 'Guardar Cambios' : 'Crear Rol'" icon="pi pi-check" severity="warn" type="submit" />
+    </div>
+  </form>
+</p-dialog>

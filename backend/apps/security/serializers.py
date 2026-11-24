@@ -91,10 +91,22 @@ class RoleSerializer(serializers.ModelSerializer):
 
 
 class RoleUserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    role_name = serializers.CharField(source="role.name", read_only=True)
+
     class Meta:
         model = RoleUser
-        fields = "__all__"
-        read_only_fields = ["created_at", "updated_at"]
+        fields = [
+            "id",
+            "user",
+            "role",
+            "username",
+            "role_name",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at", "username", "role_name"]
 
 
 class ResourceSerializer(serializers.ModelSerializer):
@@ -105,8 +117,31 @@ class ResourceSerializer(serializers.ModelSerializer):
 
 
 class ResourceRoleSerializer(serializers.ModelSerializer):
+    role_name = serializers.CharField(source="role.name", read_only=True)
+    resource_route = serializers.CharField(source="resource.route", read_only=True)
+    resource_method = serializers.CharField(source="resource.method", read_only=True)
+    resource_name = serializers.CharField(source="resource.name", read_only=True)
+
     class Meta:
         model = ResourceRole
-        fields = "__all__"
-        read_only_fields = ["created_at", "updated_at"]
+        fields = [
+            "id",
+            "role",
+            "resource",
+            "role_name",
+            "resource_route",
+            "resource_method",
+            "resource_name",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "created_at",
+            "updated_at",
+            "role_name",
+            "resource_route",
+            "resource_method",
+            "resource_name",
+        ]
 

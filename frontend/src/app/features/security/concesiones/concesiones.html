@@ -1,0 +1,121 @@
+<div class="space-y-6">
+  <!-- Cabecera -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Seguridad · Concesiones</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <i class="pi pi-key text-amber-500"></i>
+        Concesiones
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400">
+        Qué recursos puede usar cada rol. Retirar es una baja lógica.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-mono text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+        {{ filteredResourceRoles().length }} concesiones
+      </span>
+      <p-button label="Conceder permiso" icon="pi pi-plus" severity="warn" (onClick)="openGrantDialog()" />
+      <p-button icon="pi pi-refresh" severity="secondary" [outlined]="true" [loading]="loading()" (onClick)="loadAll()" />
+    </div>
+  </div>
+
+  <!-- Barra de Búsqueda -->
+  <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+    <div class="relative w-full max-w-md">
+      <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+      <input type="text"
+             [value]="searchTerm()"
+             (input)="searchTerm.set($any($event.target).value)"
+             placeholder="Buscar por rol, verbo o ruta..."
+             class="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-500" />
+    </div>
+  </div>
+
+  <!-- Tabla de Concesiones -->
+  <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+    <p-table [value]="filteredResourceRoles()" [loading]="loading()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+      <ng-template #header pTemplate="header">
+        <tr class="border-b border-slate-800 text-slate-300 text-xs uppercase bg-slate-950/40">
+          <th class="p-4">Método</th>
+          <th class="p-4">Ruta</th>
+          <th class="p-4">Rol</th>
+          <th class="p-4">Estado</th>
+          <th class="p-4 text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body pTemplate="body" let-rr>
+        <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors text-xs text-slate-300">
+          <td class="p-4">
+            <span [class]="getMethodClass(rr.resourceMethod)"
+                  class="px-2 py-0.5 rounded font-mono text-[11px] font-bold border inline-block">
+              {{ rr.resourceMethod }}
+            </span>
+          </td>
+          <td class="p-4 font-mono text-xs text-slate-200">
+            {{ rr.resourceRoute }}
+          </td>
+          <td class="p-4">
+            <span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-xs font-semibold inline-flex items-center gap-1">
+              <i class="pi pi-id-card text-[10px]"></i>
+              {{ rr.roleName || ('Rol #' + rr.role) }}
+            </span>
+          </td>
+          <td class="p-4">
+            <span [class]="rr.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'"
+                  class="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border inline-block">
+              {{ rr.status === 'active' ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td class="p-4 text-right">
+            <button (click)="toggleStatus(rr)"
+                    [class]="rr.status === 'active' ? 'text-slate-400 hover:text-rose-400' : 'text-slate-400 hover:text-emerald-400'"
+                    class="px-2.5 py-1 rounded-lg border border-slate-700/60 hover:border-slate-600 text-xs transition-colors inline-flex items-center gap-1.5">
+              <i [class]="rr.status === 'active' ? 'pi pi-ban' : 'pi pi-check-circle'" class="text-[11px]"></i>
+              <span>{{ rr.status === 'active' ? 'Retirar' : 'Reactivar' }}</span>
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="p-6 text-center text-slate-500 text-xs">
+            No se encontraron concesiones registradas.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Modal Conceder Permiso -->
+<p-dialog [(visible)]="grantDialog" [modal]="true" header="Conceder Permiso a Rol" [style]="{ width: '480px' }" styleClass="dark-dialog">
+  <form [formGroup]="grantForm" (ngSubmit)="saveGrant()" class="space-y-4 pt-2">
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Rol *</label>
+      <select formControlName="role" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg p-2.5 text-sm focus:outline-none focus:border-amber-500">
+        <option [ngValue]="null" disabled>Seleccionar rol...</option>
+        @for (r of roles(); track r.id) {
+          <option [ngValue]="r.id">{{ r.name }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Recurso HTTP *</label>
+      <select formControlName="resource" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg p-2.5 text-sm focus:outline-none focus:border-amber-500">
+        <option [ngValue]="null" disabled>Seleccionar recurso...</option>
+        @for (res of resources(); track res.id) {
+          <option [ngValue]="res.id">[{{ res.method }}] {{ res.route }} ({{ res.name }})</option>
+        }
+      </select>
+    </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" [outlined]="true" severity="secondary" (onClick)="grantDialog.set(false)" />
+      <p-button label="Guardar Concesión" icon="pi pi-check" severity="warn" type="submit" />
+    </div>
+  </form>
+</p-dialog>
