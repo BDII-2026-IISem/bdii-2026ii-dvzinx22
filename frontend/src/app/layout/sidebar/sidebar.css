@@ -1,2 +1,19 @@
-/* Sidebar navigation styles */
+/* Estilos del Sidebar Oscuro idéntico a HornoRaíz */
 
+:host {
+  display: block;
+}
+
+/* Enlace Activo Estilo HornoRaíz: Borde ámbar con brillo cálido */
+.active-nav-item {
+  border: 1.5px solid #d97706 !important;
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  color: #fef08a !important;
+  font-weight: 600 !important;
+  border-radius: 0.85rem !important;
+  box-shadow: 0 0 14px rgba(217, 119, 6, 0.18) !important;
+}
+
+.active-nav-item .nav-icon {
+  color: #f59e0b !important;
+}

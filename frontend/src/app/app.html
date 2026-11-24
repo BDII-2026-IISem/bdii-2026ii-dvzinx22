@@ -8,18 +8,25 @@
   <p-confirmdialog />
   
   <!-- Header Superior -->
-  <app-navbar />
+  <app-navbar [isLogin]="isLoginRoute()" />
 
-  <!-- Contenedor Principal: Sidebar Izquierda + Contenido Central -->
-  <div class="flex-1 flex flex-col md:flex-row w-full">
-    <!-- Menú Lateral -->
-    <app-sidebar />
-
-    <!-- Área de Vistas -->
-    <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 max-w-full overflow-x-hidden">
+  @if (isLoginRoute()) {
+    <!-- Vista Centrada de Login sin Sidebar -->
+    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 bg-gradient-to-b from-[#FAF8F5] via-[#F4EFE6] to-[#FAF8F5] min-h-[calc(100vh-4rem-2.5rem)]">
       <router-outlet />
     </main>
-  </div>
+  } @else {
+    <!-- Contenedor Principal: Sidebar Izquierda Estilo HornoRaíz + Área de Contenido -->
+    <div class="flex-1 flex flex-col md:flex-row w-full min-h-[calc(100vh-4rem-2.5rem)]">
+      <!-- Menú Lateral Oscuro Estilo HornoRaíz -->
+      <app-sidebar />
+
+      <!-- Área de Vistas con Fondo Crema Cálido Gourmet -->
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 max-w-full overflow-x-hidden bg-[#FAF8F5]">
+        <router-outlet />
+      </main>
+    </div>
+  }
 
   <!-- Footer Inferior -->
   <footer class="border-t border-amber-200/60 bg-white py-3 text-center text-xs text-stone-500 font-medium">

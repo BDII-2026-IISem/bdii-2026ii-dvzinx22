@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { NavbarComponent } from './layout/navbar/navbar';
@@ -26,6 +27,21 @@ export class App {
   protected readonly authService = inject(AuthService);
 
   showSplash = signal<boolean>(!sessionStorage.getItem('tazanorte_intro_seen'));
+  isLoginRoute = signal<boolean>(false);
+
+  constructor() {
+    this.checkLogin(this.router.url);
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => {
+        this.checkLogin(e.urlAfterRedirects || e.url);
+      });
+  }
+
+  private checkLogin(url: string): void {
+    const isLogin = url.includes('/login') || (typeof window !== 'undefined' && window.location.pathname.includes('/login'));
+    this.isLoginRoute.set(isLogin);
+  }
 
   onSplashComplete(): void {
     sessionStorage.setItem('tazanorte_intro_seen', 'true');

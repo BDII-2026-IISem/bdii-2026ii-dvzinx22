@@ -59,17 +59,17 @@ export class RecursosComponent implements OnInit {
   getMethodClass(method?: string): string {
     switch (method?.toUpperCase()) {
       case 'GET':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+        return 'bg-sky-100 text-sky-800 border-sky-200';
       case 'POST':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'PUT':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'PATCH':
-        return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'DELETE':
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        return 'bg-rose-100 text-rose-800 border-rose-200';
       default:
-        return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
+        return 'bg-stone-100 text-stone-700 border-stone-200';
     }
   }
 }

@@ -3,16 +3,17 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
-interface MenuItem {
+interface NavChild {
+  label: string;
+  route: string;
+  icon: string;
+  exact?: boolean;
+}
+
+interface NavSection {
   id: string;
   label: string;
-  icon: string;
-  requiresAuth?: boolean;
-  children: {
-    label: string;
-    route: string;
-    icon: string;
-  }[];
+  children: NavChild[];
 }
 
 @Component({
@@ -25,40 +26,28 @@ interface MenuItem {
 export class SidebarComponent {
   protected readonly authService = inject(AuthService);
 
-  // Estado de secciones desplegadas
+  // Secciones desplegadas por defecto
   expandedSections = signal<Record<string, boolean>>({
-    catalogo: true,
-    ventas: true,
+    operacion: true,
     seguridad: true,
   });
 
-  menuItems: MenuItem[] = [
+  sections: NavSection[] = [
     {
-      id: 'catalogo',
-      label: 'Catálogo',
-      icon: 'pi pi-file',
-      requiresAuth: true,
+      id: 'operacion',
+      label: 'OPERACIÓN',
       children: [
+        { label: 'Dashboard', route: '/', icon: 'pi pi-chart-bar', exact: true },
         { label: 'Clientes', route: '/clientes', icon: 'pi pi-users' },
         { label: 'Tipos de Producto', route: '/tipos-producto', icon: 'pi pi-tags' },
         { label: 'Productos', route: '/productos', icon: 'pi pi-box' },
-      ],
-    },
-    {
-      id: 'ventas',
-      label: 'Ventas',
-      icon: 'pi pi-shopping-cart',
-      requiresAuth: true,
-      children: [
-        { label: 'Nueva Venta (POS)', route: '/ventas/nueva', icon: 'pi pi-plus-circle' },
-        { label: 'Historial de Órdenes', route: '/ventas', icon: 'pi pi-receipt' },
+        { label: 'Ventas (POS)', route: '/ventas/nueva', icon: 'pi pi-shopping-cart' },
+        { label: 'Detalle de ventas', route: '/ventas', icon: 'pi pi-receipt', exact: true },
       ],
     },
     {
       id: 'seguridad',
-      label: 'Seguridad',
-      icon: 'pi pi-shield',
-      requiresAuth: true,
+      label: 'SEGURIDAD',
       children: [
         { label: 'Usuarios', route: '/seguridad/usuarios', icon: 'pi pi-users' },
         { label: 'Roles', route: '/seguridad/roles', icon: 'pi pi-id-card' },

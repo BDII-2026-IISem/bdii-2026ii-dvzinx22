@@ -1,106 +1,140 @@
 <div class="space-y-6">
-  <!-- Cabecera -->
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-lg">
+  <!-- Cabecera Limpia Estilo HornoRaíz -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-2">
     <div>
-      <div class="flex items-center gap-2 mb-1">
-        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-        <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Seguridad · Matriz RBAC</span>
-      </div>
-      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-        <i class="pi pi-id-card text-amber-500"></i>
+      <h1 class="text-3xl font-extrabold text-stone-900 tracking-tight font-serif">
         Roles
       </h1>
-      <p class="text-xs sm:text-sm text-slate-400">
+      <p class="text-xs sm:text-sm text-stone-600 mt-1">
         Agrupan concesiones. La baja es lógica.
       </p>
     </div>
 
     <div class="flex items-center gap-3">
-      <span class="text-xs font-mono text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+      <span class="text-xs font-mono font-medium text-stone-500">
         {{ filteredRoles().length }} roles
       </span>
-      <p-button label="Nuevo rol" icon="pi pi-plus" severity="warn" (onClick)="openNewRole()" />
-      <p-button icon="pi pi-refresh" severity="secondary" [outlined]="true" [loading]="loading()" (onClick)="loadRoles()" />
+      <button (click)="openNewRole()" 
+              class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02]">
+        <i class="pi pi-plus text-xs"></i>
+        <span>Nuevo rol</span>
+      </button>
+      <button (click)="loadRoles()" 
+              title="Refrescar"
+              class="w-8 h-8 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 flex items-center justify-center cursor-pointer shadow-xs">
+        <i class="pi pi-refresh text-xs" [class.pi-spin]="loading()"></i>
+      </button>
     </div>
   </div>
 
-  <!-- Barra de Búsqueda -->
-  <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+  <!-- Tarjeta Blanca de Roles: Buscador + Tabla -->
+  <div class="bg-white rounded-2xl border border-stone-200/90 p-5 shadow-sm space-y-4">
+    
+    <!-- Barra de Búsqueda -->
     <div class="relative w-full max-w-md">
-      <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+      <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
       <input type="text"
              [value]="searchTerm()"
              (input)="searchTerm.set($any($event.target).value)"
              placeholder="Buscar por nombre o descripción..."
-             class="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-500" />
+             class="w-full pl-9 pr-4 py-2 bg-stone-50/70 border border-stone-200 rounded-xl text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all" />
     </div>
+
+    <!-- Tabla de Roles -->
+    <div class="overflow-x-auto border border-stone-200 rounded-xl">
+      <p-table [value]="filteredRoles()" [loading]="loading()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
+        <ng-template #header pTemplate="header">
+          <tr class="border-b border-stone-200 text-stone-700 text-xs uppercase bg-[#FDFBF7]">
+            <th class="p-3 font-bold" pSortableColumn="name">
+              Rol <i class="pi pi-sort-alt text-[10px] text-stone-400 ml-1"></i>
+            </th>
+            <th class="p-3 font-bold" pSortableColumn="description">
+              Descripción <i class="pi pi-sort-alt text-[10px] text-stone-400 ml-1"></i>
+            </th>
+            <th class="p-3 font-bold text-center">Estado</th>
+            <th class="p-3 font-bold text-center">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template #body pTemplate="body" let-role>
+          <tr class="border-b border-stone-100 hover:bg-amber-50/25 transition-colors text-xs text-stone-800">
+            <td class="p-3 font-mono font-bold text-stone-900 flex items-center gap-2">
+              <i class="pi pi-id-card text-amber-600 text-sm"></i>
+              <span>{{ role.name }}</span>
+              <span class="text-[10px] text-stone-400 font-mono">#{{ role.id }}</span>
+            </td>
+            <td class="p-3 text-stone-600">{{ role.description || 'Sin descripción' }}</td>
+            <td class="p-3 text-center">
+              <span [class]="role.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'"
+                    class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold border inline-block">
+                {{ role.status === 'active' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="p-3 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <button (click)="editRole(role)" 
+                        title="Editar rol" 
+                        class="p-1 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer">
+                  <i class="pi pi-pencil text-xs"></i>
+                </button>
+                <button (click)="toggleRoleStatus(role)" 
+                        [title]="role.status === 'active' ? 'Desactivar rol' : 'Reactivar rol'" 
+                        [class]="role.status === 'active' ? 'text-stone-400 hover:text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'"
+                        class="p-1 rounded-lg transition-colors cursor-pointer">
+                  <i [class]="role.status === 'active' ? 'pi pi-ban' : 'pi pi-check'" class="text-xs"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage pTemplate="emptymessage">
+          <tr>
+            <td colspan="4" class="p-6 text-center text-stone-400 text-xs">
+              No se encontraron roles registrados.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
   </div>
 
-  <!-- Tabla de Roles -->
-  <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
-    <p-table [value]="filteredRoles()" [loading]="loading()" [paginator]="true" [rows]="10" styleClass="p-datatable-sm">
-      <ng-template #header pTemplate="header">
-        <tr class="border-b border-slate-800 text-slate-300 text-xs uppercase bg-slate-950/40">
-          <th class="p-4">Rol</th>
-          <th class="p-4">Descripción</th>
-          <th class="p-4">Estado</th>
-          <th class="p-4 text-right">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template #body pTemplate="body" let-role>
-        <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors text-xs text-slate-300">
-          <td class="p-4 font-semibold text-white flex items-center gap-2">
-            <i class="pi pi-id-card text-amber-400/80"></i>
-            <span>{{ role.name }}</span>
-            <span class="text-[10px] text-slate-500 font-mono">#{{ role.id }}</span>
-          </td>
-          <td class="p-4 text-slate-400">{{ role.description || 'Sin descripción' }}</td>
-          <td class="p-4">
-            <span [class]="role.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'"
-                  class="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border inline-block">
-              {{ role.status === 'active' ? 'Activo' : 'Inactivo' }}
-            </span>
-          </td>
-          <td class="p-4 text-right">
-            <div class="flex items-center justify-end gap-2">
-              <button (click)="editRole(role)" title="Editar Rol" class="p-1.5 text-slate-400 hover:text-amber-400 transition-colors">
-                <i class="pi pi-pencil text-xs"></i>
-              </button>
-              <button (click)="toggleRoleStatus(role)"
-                      [title]="role.status === 'active' ? 'Retirar (Baja Lógica)' : 'Reactivar'"
-                      [class]="role.status === 'active' ? 'text-slate-400 hover:text-rose-400' : 'text-slate-400 hover:text-emerald-400'"
-                      class="p-1.5 transition-colors">
-                <i [class]="role.status === 'active' ? 'pi pi-ban' : 'pi pi-check-circle'" class="text-xs"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage pTemplate="emptymessage">
-        <tr>
-          <td colspan="4" class="p-6 text-center text-slate-500 text-xs">
-            No se encontraron roles registrados.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </div>
+  <!-- Diálogo Crear/Editar Rol -->
+  <p-dialog [visible]="roleDialog()" 
+            (visibleChange)="roleDialog.set($event)"
+            [modal]="true" 
+            [draggable]="false" 
+            [resizable]="false" 
+            [header]="isEditing() ? 'Editar Rol' : 'Nuevo Rol'" 
+            [style]="{ width: '450px' }">
+    <form [formGroup]="roleForm" (ngSubmit)="saveRole()" class="space-y-4 pt-2">
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider">Nombre del Rol *</label>
+        <input type="text" 
+               formControlName="name" 
+               class="w-full bg-stone-50/70 border border-stone-200 text-stone-900 rounded-xl px-3 py-2 text-xs focus:border-amber-500 focus:bg-white outline-none" 
+               placeholder="ej: supervisor, cajero" />
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider">Descripción</label>
+        <textarea formControlName="description" 
+                  rows="3" 
+                  class="w-full bg-stone-50/70 border border-stone-200 text-stone-900 rounded-xl px-3 py-2 text-xs focus:border-amber-500 focus:bg-white outline-none" 
+                  placeholder="Responsabilidades y alcance del rol..."></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-4 border-t border-stone-100">
+        <button type="button" 
+                (click)="roleDialog.set(false)" 
+                class="px-4 py-2 rounded-xl border border-stone-200 text-xs font-medium text-stone-600 hover:bg-stone-50 cursor-pointer">
+          Cancelar
+        </button>
+        <button type="submit" 
+                [disabled]="roleForm.invalid || loading()"
+                class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 disabled:opacity-50 cursor-pointer">
+          {{ loading() ? 'Guardando...' : (isEditing() ? 'Actualizar' : 'Crear') }}
+        </button>
+      </div>
+    </form>
+  </p-dialog>
 </div>
-
-<!-- Modal Rol -->
-<p-dialog [(visible)]="roleDialog" [modal]="true" [header]="isEditing() ? 'Editar Rol' : 'Nuevo Rol del Sistema'" [style]="{ width: '420px' }" styleClass="dark-dialog">
-  <form [formGroup]="roleForm" (ngSubmit)="saveRole()" class="space-y-4 pt-2">
-    <div>
-      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Nombre del Rol *</label>
-      <input type="text" pInputText formControlName="name" class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm" placeholder="Ej: cajero_turno" />
-    </div>
-    <div>
-      <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Descripción</label>
-      <textarea pInputTextarea formControlName="description" rows="3" class="w-full bg-slate-800 border-slate-700 text-white rounded-lg p-2.5 text-sm" placeholder="Detalle de funciones del rol..."></textarea>
-    </div>
-    <div class="flex justify-end gap-2 pt-2">
-      <p-button label="Cancelar" [outlined]="true" severity="secondary" (onClick)="roleDialog.set(false)" />
-      <p-button [label]="isEditing() ? 'Guardar Cambios' : 'Crear Rol'" icon="pi pi-check" severity="warn" type="submit" />
-    </div>
-  </form>
-</p-dialog>

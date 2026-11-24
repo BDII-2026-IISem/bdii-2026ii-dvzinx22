@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -12,5 +12,6 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrl: './navbar.css',
 })
 export class NavbarComponent {
+  isLogin = input<boolean>(false);
   protected readonly authService = inject(AuthService);
 }
