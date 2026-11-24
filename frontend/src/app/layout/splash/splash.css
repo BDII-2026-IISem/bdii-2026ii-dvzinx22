@@ -1,0 +1,40 @@
+.steam-particle {
+  width: 8px;
+  height: 24px;
+  background: linear-gradient(to top, rgba(245, 158, 11, 0.4), transparent);
+  border-radius: 50%;
+  filter: blur(2px);
+  display: inline-block;
+  animation: steamRise 2s infinite ease-out;
+}
+
+.steam-1 {
+  animation-delay: 0s;
+}
+
+.steam-2 {
+  animation-delay: 0.6s;
+  height: 28px;
+}
+
+.steam-3 {
+  animation-delay: 1.2s;
+}
+
+@keyframes steamRise {
+  0% {
+    transform: translateY(0) scaleX(1);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  70% {
+    transform: translateY(-25px) scaleX(1.8);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-45px) scaleX(2.5);
+    opacity: 0;
+  }
+}
