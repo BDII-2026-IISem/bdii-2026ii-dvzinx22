@@ -374,30 +374,37 @@ Mecanismos de autorización y gobierno de navegación según el estado de sesió
 * **Estado:** **APROBADO**
 
 
-### ISS-10: Fase II - Administración RBAC (Usuarios, Roles, Recursos y Permisos)
+### ISS-10: Fase II - Administración RBAC (Usuarios, Roles, Recursos, Asignaciones, Concesiones y Matriz de Permisos)
 
-Desarrollo del panel integral de seguridad y gobernanza de la matriz RBAC conectado a los endpoints de Django:
+Desarrollo del panel integral de seguridad y gobernanza de la matriz RBAC conectado a los endpoints de Django REST Framework:
 1. **Modelos tipados:** Contratos `User`, `Role`, `Resource`, `RoleUser` y `ResourceRole` en `core/models/rbac.model.ts`.
 2. **Servicio Reactivo `RbacService`:** Implementación en `core/services/rbac.service.ts` con consumo de `/api/users/`, `/api/roles/`, `/api/resources/`, `/api/role-users/` y `/api/resource-roles/`.
-3. **Módulo Administrativo Multi-Pestaña (`RbacAdminComponent`):**
-   - **Pestaña Usuarios:** Tabla PrimeNG con listado de cuentas, estados y modal reactivo para creación de nuevos usuarios con contraseña encriptada.
-   - **Pestaña Roles:** Definición y alta de roles de sistema (`admin`, cajero, barista, auditor).
-   - **Pestaña Recursos HTTP:** Catálogo de los 53 endpoints mapeados en el backend con etiquetas de método coloreadas (`GET` info, `POST` success, `PUT/PATCH` warn, `DELETE` danger).
+3. **Módulo Administrativo y Vistas Especializadas:**
+   - **Gestión de Roles (`RolesComponent` en `/seguridad/roles`):** Definición y alta de roles de sistema (`admin`, `inventario`, `recetas`, `productos`, `ventas`, `lector`, `seguridad`), con modal de creación reactivo y baja lógica.
+   - **Catálogo de Recursos (`RecursosComponent` en `/seguridad/recursos`):** Catálogo de los 53 endpoints mapeados en el backend con etiquetas de método coloreadas (`GET` info, `POST` success, `PUT/PATCH` warn, `DELETE` danger).
+   - **Asignaciones de Usuario-Rol (`AsignacionesComponent` en `/seguridad/asignaciones`):** Gestión de la relación N:M entre `User` y `Role` mediante la tabla pivote `RoleUser`, con soporte de asignación interactiva y retiro/reactivación vía baja lógica.
+   - **Concesiones Planas (`ConcesionesComponent` en `/seguridad/concesiones`):** Listado detallado de todas las concesiones individuales que vinculan cada Rol con cada Recurso HTTP (`ResourceRole`).
+   - **Matriz de Permisos Interactiva (`MatrizPermisosComponent` en `/seguridad/matriz-permisos`):**
+     - **Data Pivoting Dinámico:** Transforma la lista plana de 53 recursos en una cuadrícula matricial bidimensional cruzando cada entidad de negocio (`matrixDefinitions`) con los métodos HTTP estándar (`POST`, `GET`, `PUT/PATCH`, `DELETE`).
+     - **Gestión de Estado con Signals:** Señal reactiva `permissionState = signal<Record<number, boolean>>({})` y contador dinámico de casillas concedidas en tiempo real.
+     - **Acciones Masivas:** Métodos de marcado/desmarcado por columna (`toggleColumn`), por fila (`toggleRow`), global (`markAll`, `unmarkAll`) y reversión de cambios (`discard`).
+     - **Persistencia en Lote Atómica:** Despacho paralelo con `forkJoin` de RxJS enviando altas (`POST /api/resource-roles/`) y bajas lógicas (`PATCH /api/resource-roles/:id/` con `status: 'inactive'`).
 
 ![ISS-10_01 Servicio RbacService con endpoints de seguridad y matriz](capturas/ISS-10_01_rbac_service_endpoints.png)
 *ISS-10_01: Métodos HTTP de RbacService para usuarios, roles, recursos y asignaciones pivote*
 
 ![ISS-10_02 Componente RbacAdminComponent con gestión de pestañas y modales](capturas/ISS-10_02_rbac_component_pestanas.png)
-*ISS-10_02: Lógica TypeScript de RbacAdminComponent con formularios reactivos y Signals*
+*ISS-10_02: Lógica TypeScript de administración RBAC con formularios reactivos y Signals*
 
 ![ISS-10_EVI-01 Pantalla administrativa RBAC completa en funcionamiento](capturas/ISS-10_EVI-01_administracion_rbac_gate.png)
-*ISS-10_EVI-01: Panel de administración RBAC en localhost:4200/seguridad/usuarios con pestañas activas (GATE EVI-10-01)*
+*ISS-10_EVI-01: Panel de administración RBAC y Matriz de Permisos operativa en localhost:4200 (GATE EVI-10-01)*
 
 ### Criterio de Aceptación (GATE EVI-10-01)
 * Consumo y renderizado exitoso de usuarios desde `/api/users/`.
 * Alta y listado de roles con persistencia validada en `/api/roles/`.
 * Inspección de catálogo de recursos HTTP clasificados por método (`GET`, `POST`, `PUT`, `DELETE`).
-* Flujo de navegación integrado con el menú lateral de seguridad.
+* Flujo de navegación integrado con el menú lateral de seguridad (Usuarios, Roles, Recursos, Asignaciones, Concesiones y Matriz de Permisos).
+* Matriz de permisos interactiva con selección de roles, visualización de concesiones y actualización masiva vía `forkJoin`.
 * **Estado:** **APROBADO**
 
 
