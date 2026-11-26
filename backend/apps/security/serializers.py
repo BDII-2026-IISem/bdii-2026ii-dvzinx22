@@ -6,11 +6,36 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+from apps.common.status import RecordStatus
+
+
 class ProfileSerializer(serializers.ModelSerializer):
+    roles = serializers.SerializerMethodField()
+    is_superuser = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "status"]
-        read_only_fields = ["id", "username", "status"]
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "status",
+            "is_superuser",
+            "roles",
+        ]
+        read_only_fields = ["id", "username", "status", "is_superuser", "roles"]
+
+    def get_roles(self, obj):
+        if hasattr(obj, "role_links"):
+            return list(
+                obj.role_links.filter(
+                    status=RecordStatus.ACTIVE,
+                    role__status=RecordStatus.ACTIVE,
+                ).values_list("role__name", flat=True)
+            )
+        return []
 
 
 class LoginSerializer(serializers.Serializer):

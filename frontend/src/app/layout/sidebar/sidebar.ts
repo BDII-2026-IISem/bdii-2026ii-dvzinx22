@@ -14,6 +14,7 @@ interface NavSection {
   id: string;
   label: string;
   children: NavChild[];
+  roles?: string[];
 }
 
 @Component({
@@ -48,6 +49,7 @@ export class SidebarComponent {
     {
       id: 'seguridad',
       label: 'SEGURIDAD',
+      roles: ['admin', 'seguridad'],
       children: [
         { label: 'Usuarios', route: '/seguridad/usuarios', icon: 'pi pi-users' },
         { label: 'Roles', route: '/seguridad/roles', icon: 'pi pi-id-card' },
@@ -58,6 +60,28 @@ export class SidebarComponent {
       ],
     },
   ];
+
+  canViewSection(section: NavSection): boolean {
+    if (!section.roles || section.roles.length === 0) return true;
+    const user = this.authService.currentUser();
+    if (!user) {
+      const token = this.authService.getAccessToken();
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          return payload.username === 'admin';
+        } catch {
+          return false;
+        }
+      }
+      return false;
+    }
+
+    if (user.username === 'admin' || user.isSuperuser) return true;
+
+    const userRoles = user.roles || [];
+    return section.roles.some((r) => r === user.username || userRoles.includes(r));
+  }
 
   toggleSection(id: string): void {
     const current = this.expandedSections();

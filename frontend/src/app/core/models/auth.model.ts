@@ -18,6 +18,7 @@ export interface UserProfile {
   firstName?: string;
   lastName?: string;
   status: string;
+  isSuperuser?: boolean;
   roles?: string[];
   permissions?: string[];
 }

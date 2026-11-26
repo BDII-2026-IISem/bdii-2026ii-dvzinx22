@@ -28,3 +28,37 @@ export const guestGuard: CanActivateFn = () => {
   return true;
 };
 
+export const adminGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    return router.createUrlTree(['/login']);
+  }
+
+  const user = authService.currentUser();
+  if (user) {
+    const isAdmin =
+      user.username === 'admin' ||
+      !!user.isSuperuser ||
+      (user.roles && (user.roles.includes('admin') || user.roles.includes('seguridad')));
+
+    if (isAdmin) {
+      return true;
+    }
+    // Usuario normal: no tiene acceso a seguridad, redirigir al inicio
+    return router.createUrlTree(['/']);
+  }
+
+  // Comprobación de respaldo leyendo el token si el perfil aún se está cargando
+  const token = authService.getAccessToken();
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.username === 'admin') return true;
+    } catch {}
+  }
+
+  return true;
+};
+
